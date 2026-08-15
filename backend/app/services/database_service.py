@@ -60,6 +60,16 @@ class DatabaseService:
     def _is_supabase_configured(cls) -> bool:
         return bool(settings.SUPABASE_URL and settings.SUPABASE_KEY and len(settings.SUPABASE_KEY.strip()) > 10)
 
+    @staticmethod
+    def _is_valid_uuid(val: Any) -> bool:
+        if not val:
+            return False
+        try:
+            uuid.UUID(str(val))
+            return True
+        except (ValueError, TypeError, AttributeError):
+            return False
+
     @classmethod
     def _get_supabase_headers(cls, user_token: Optional[str] = None) -> Dict[str, str]:
         token = user_token or settings.SUPABASE_KEY
@@ -416,7 +426,7 @@ class DatabaseService:
         limit: int = 100
     ) -> List[Dict[str, Any]]:
         """Retrieves stored memories belonging to the authenticated user."""
-        if cls._is_supabase_configured():
+        if cls._is_supabase_configured() and cls._is_valid_uuid(user_id):
             try:
                 async with httpx.AsyncClient() as client:
                     res = await client.get(
@@ -451,7 +461,7 @@ class DatabaseService:
         user_token: Optional[str] = None
     ) -> Optional[Dict[str, Any]]:
         """Retrieves a single memory record ensuring user ownership."""
-        if cls._is_supabase_configured():
+        if cls._is_supabase_configured() and cls._is_valid_uuid(user_id):
             try:
                 async with httpx.AsyncClient() as client:
                     res = await client.get(
@@ -507,7 +517,7 @@ class DatabaseService:
             "last_used_at": None
         }
 
-        if cls._is_supabase_configured():
+        if cls._is_supabase_configured() and cls._is_valid_uuid(user_id):
             try:
                 async with httpx.AsyncClient() as client:
                     res = await client.post(
@@ -559,7 +569,7 @@ class DatabaseService:
         if importance is not None:
             update_fields["importance"] = max(1, min(5, importance))
 
-        if cls._is_supabase_configured():
+        if cls._is_supabase_configured() and cls._is_valid_uuid(user_id):
             try:
                 async with httpx.AsyncClient() as client:
                     res = await client.patch(
@@ -608,7 +618,7 @@ class DatabaseService:
     ) -> None:
         """Updates last_used_at timestamp when a memory is retrieved and injected into context."""
         now_iso = datetime.now(timezone.utc).isoformat()
-        if cls._is_supabase_configured():
+        if cls._is_supabase_configured() and cls._is_valid_uuid(user_id):
             try:
                 async with httpx.AsyncClient() as client:
                     await client.patch(
@@ -639,7 +649,7 @@ class DatabaseService:
         user_token: Optional[str] = None
     ) -> bool:
         """Deletes a specific memory record with user ownership check."""
-        if cls._is_supabase_configured():
+        if cls._is_supabase_configured() and cls._is_valid_uuid(user_id):
             try:
                 async with httpx.AsyncClient() as client:
                     res = await client.delete(

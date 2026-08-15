@@ -17,7 +17,7 @@ class ChatService:
         user_token: Optional[str] = None
     ) -> ChatResponse:
         """
-        Processes authenticated chat requests (Phase 6):
+        Processes chat requests with full Phase 6 Long-Term Memory integration:
         1. Checks for explicit memory commands ("Remember that...", "Forget that...").
         2. Ensures conversation record exists and is owned by user_id.
         3. Saves user prompt message with ownership.
@@ -30,8 +30,8 @@ class ChatService:
         """
         conv_id = request.conversation_id or f"pml-conv-{uuid.uuid4().hex[:12]}"
         
-        # 1. Check for explicit memory commands
-        if request.memory_enabled and user_id != "guest_user":
+        # 1. Check for explicit memory commands ("Remember that...", "Forget that...")
+        if request.memory_enabled:
             explicit_reply = await MemoryService.handle_explicit_commands(
                 user_message=request.message,
                 user_id=user_id,
@@ -73,12 +73,12 @@ class ChatService:
 
         # 3. Retrieve relevant long-term memories (Phase 6)
         relevant_memories_list: List[str] = []
-        if request.memory_enabled and user_id != "guest_user":
+        if request.memory_enabled:
             matched_memories = await MemoryService.retrieve_relevant_memories(
                 user_id=user_id,
                 query=request.message,
                 user_token=user_token,
-                max_memories=4
+                max_memories=6
             )
             relevant_memories_list = [m["memory"] for m in matched_memories if m.get("memory")]
 
@@ -119,7 +119,7 @@ class ChatService:
         )
 
         # 7. Asynchronously analyze exchange to extract durable long-term memory
-        if request.memory_enabled and user_id != "guest_user":
+        if request.memory_enabled:
             asyncio.create_task(
                 MemoryService.analyze_and_extract_memory(
                     user_message=request.message,

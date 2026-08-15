@@ -16,11 +16,8 @@ async def list_memories(current_user: Dict[str, Any] = Depends(get_current_user)
     """
     Returns list of long-term memories belonging to the authenticated user.
     """
-    user_id = current_user["id"]
+    user_id = current_user.get("id", "guest_user")
     token = current_user.get("token")
-
-    if not user_id or user_id == "guest_user":
-        return MemoryListResponse(memories=[], total_count=0, memory_enabled=True)
 
     try:
         memories = await DatabaseService.get_memories(user_id=user_id, user_token=token)
@@ -51,16 +48,10 @@ async def create_memory(
     current_user: Dict[str, Any] = Depends(get_current_user)
 ):
     """
-    Explicitly saves a new memory fact for the authenticated user.
+    Explicitly saves a new memory fact for the user.
     """
-    user_id = current_user["id"]
+    user_id = current_user.get("id", "guest_user")
     token = current_user.get("token")
-
-    if not user_id or user_id == "guest_user":
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="You must be logged in to save long-term memories."
-        )
 
     try:
         created = await DatabaseService.create_memory(

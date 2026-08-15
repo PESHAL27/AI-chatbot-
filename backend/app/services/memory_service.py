@@ -13,6 +13,14 @@ SENSITIVE_PATTERNS = [
     r"(?i)\b(http[s]?://\S+)\b",
 ]
 
+# Semantic Synonym Groups for Intelligent Relevance Mapping
+SYNONYM_GROUPS = {
+    "project": {"project", "work", "working", "build", "building", "develop", "developing", "create", "creating", "app", "application", "chatbot", "system", "codebase", "repo", "software", "startup", "tool", "pml"},
+    "goal": {"goal", "learn", "learning", "study", "studying", "course", "exam", "test", "career", "future", "target", "prepare", "preparing", "master", "practice"},
+    "preference": {"prefer", "preference", "like", "likes", "love", "loves", "dislike", "favorite", "format", "style", "approach", "tone", "simple", "step-by-step", "bullet", "concise", "detailed"},
+    "communication": {"explain", "explanation", "teach", "format", "style", "tone", "concise", "brief", "detailed", "breakdown", "step-by-step"}
+}
+
 class MemoryService:
     @classmethod
     def _is_sensitive(cls, text: str) -> bool:
@@ -26,58 +34,87 @@ class MemoryService:
     def _calculate_relevance(cls, memory_text: str, category: str, query: str) -> float:
         """
         Calculates a relevance score [0.0 to 1.0] between a stored memory and a user query.
-        Uses keyword overlap, category weighting, and semantic token matching.
+        Uses category intent matching, synonym mapping, and token overlap.
         """
-        query_lower = query.lower()
-        mem_lower = memory_text.lower()
+        query_lower = query.lower().strip()
+        mem_lower = memory_text.lower().strip()
 
-        # Stopwords to exclude from relevance scoring
-        stopwords = {"i", "am", "is", "are", "the", "a", "an", "and", "or", "to", "for", "in", "on", "user", "with", "that", "this", "my", "me", "you", "your", "be", "do", "does", "did", "have", "has", "had", "using"}
+        # 1. Broad / Introspective User Context Queries (e.g. "who am i", "what do you remember about me")
+        is_broad_memory_query = any(p in query_lower for p in [
+            "who am i", "what do you remember", "what do you know about me", 
+            "tell me about me", "my profile", "my background", "what are my memories",
+            "what's in my memory", "do you remember me", "recall about me"
+        ])
+        if is_broad_memory_query:
+            return 1.0
+
+        # 2. Category-Specific Intent Queries
+        # Project intent queries (e.g. "what project am i working on", "what am i building", "what is my app")
+        is_project_query = any(w in query_lower for w in ["project", "working on", "building", "developing", "my app", "my chatbot", "my software", "my system"])
+        if is_project_query and category == "project":
+            return 0.95
+
+        # Goal intent queries (e.g. "what are my goals", "what am i learning", "what am i studying")
+        is_goal_query = any(w in query_lower for w in ["goal", "goals", "learning", "studying", "my study", "my exam", "what do i learn"])
+        if is_goal_query and category == "goal":
+            return 0.95
+
+        # Preference intent queries (e.g. "what are my preferences", "how do i like things explained", "what do i prefer")
+        is_pref_query = any(w in query_lower for w in ["preference", "preferences", "prefer", "what do i like", "my style", "how do i like"])
+        if is_pref_query and category in ("preference", "communication"):
+            return 0.95
+
+        # 3. Stopword-Filtered Token Matching
+        stopwords = {
+            "i", "am", "is", "are", "the", "a", "an", "and", "or", "to", "for", 
+            "in", "on", "user", "with", "that", "this", "my", "me", "you", "your", 
+            "be", "do", "does", "did", "have", "has", "had", "using", "what", "which", "how", "tell"
+        }
 
         mem_words = [w for w in re.findall(r"\b\w+\b", mem_lower) if w not in stopwords and len(w) > 2]
         query_words = [w for w in re.findall(r"\b\w+\b", query_lower) if w not in stopwords and len(w) > 2]
 
         if not mem_words or not query_words:
+            # Fallback to category baseline
+            if category == "preference" and any(k in query_lower for k in ["explain", "code", "write", "teach"]):
+                return 0.50
             return 0.0
 
-        def is_word_match(w1: str, w2: str) -> bool:
+        # Helper for word stem / synonym matching
+        def tokens_match(w1: str, w2: str) -> bool:
             if w1 == w2:
                 return True
+            # Prefix matching (e.g. "build" vs "building", "learn" vs "learning")
             if len(w1) >= 4 and len(w2) >= 4 and (w1.startswith(w2[:4]) or w2.startswith(w1[:4])):
                 return True
+            # Check synonym groups
+            for group in SYNONYM_GROUPS.values():
+                if w1 in group and w2 in group:
+                    return True
             return False
 
-        # Stem / keyword overlap
         matches = 0
         for mw in mem_words:
-            if any(is_word_match(mw, qw) for qw in query_words):
+            if any(tokens_match(mw, qw) for qw in query_words):
                 matches += 1
 
-        match_ratio = matches / len(mem_words)
+        match_ratio = matches / len(mem_words) if mem_words else 0.0
 
-        # If there are direct keyword/stem matches, boost based on category
+        # Score calculations
         if matches > 0:
-            if category == "preference":
-                return min(1.0, match_ratio + 0.4)
+            if category == "project":
+                return min(1.0, match_ratio + 0.60)
             elif category == "goal":
-                return min(1.0, match_ratio + 0.5)
-            elif category == "project":
-                return min(1.0, match_ratio + 0.6)
-            elif category == "communication":
-                return min(1.0, match_ratio + 0.4)
-            return min(1.0, match_ratio + 0.3)
+                return min(1.0, match_ratio + 0.55)
+            elif category in ("preference", "communication"):
+                return min(1.0, match_ratio + 0.50)
+            return min(1.0, match_ratio + 0.40)
 
-        # If 0 keyword matches, only general communication/style preference applies to explicit explanation requests
-        is_deep_explanation_request = any(k in query_lower for k in ["explain", "teach", "guide", "how does", "how do", "step-by-step", "break down"])
-        is_general_style = any(k in mem_lower for k in ["concise", "simple", "step-by-step", "bullet", "detailed", "brief", "short"])
-        has_specific_tech = any(k in mem_lower for k in ["python", "java", "react", "c++", "rust", "sql", "pml", "django", "fastapi", "spring"])
-        query_has_tech = any(k in query_lower for k in ["python", "java", "react", "c++", "rust", "sql", "pml", "code", "algorithm", "function"])
-
-        if category in ("preference", "communication") and is_deep_explanation_request and is_general_style:
-            # If the preference specifies a tech (e.g. Python examples) but query is about something non-technical (weather), do not match
-            if has_specific_tech and not query_has_tech:
-                return 0.0
-            return 0.45
+        # 4. Check if query touches preference styles (e.g. "explain step-by-step", "in Python", "concise")
+        if category in ("preference", "communication"):
+            for style_kw in ["concise", "simple", "step-by-step", "bullet", "detailed", "brief", "short"]:
+                if style_kw in mem_lower and style_kw in query_lower:
+                    return 0.85
 
         return match_ratio
 
@@ -87,16 +124,21 @@ class MemoryService:
         user_id: str,
         query: str,
         user_token: Optional[str] = None,
-        max_memories: int = 4
+        max_memories: int = 6
     ) -> List[Dict[str, Any]]:
         """
-        Selects only the most relevant memories for the incoming user request.
-        Does NOT send all memories; filters strictly by relevance score.
+        Retrieves user's stored memories, calculates relevance against query,
+        and returns prioritized memories with safe debugging logs.
         """
-        if not user_id or user_id == "guest_user":
+        if not user_id:
             return []
 
+        # Safe logging as required in Phase 6 Step 10
+        logger.info(f"[PML Memory] Authenticated user: {user_id}")
+
         all_memories = await DatabaseService.get_memories(user_id=user_id, user_token=user_token, limit=60)
+        logger.info(f"[PML Memory] Memories found: {len(all_memories)}")
+
         if not all_memories:
             return []
 
@@ -108,9 +150,7 @@ class MemoryService:
                 category=mem.get("category", "context"),
                 query=query
             )
-            # Threshold for relevance (must have meaningful overlap or applicability)
-            if score >= 0.35:
-                scored_memories.append((score, mem))
+            scored_memories.append((score, mem))
 
         # Sort by relevance score descending, then by importance
         scored_memories.sort(
@@ -118,7 +158,30 @@ class MemoryService:
             reverse=True
         )
 
-        selected = [item[1] for item in scored_memories[:max_memories]]
+        selected: List[Dict[str, Any]] = []
+
+        # If user has a small set of memories (<= 8), include any memory with positive relevance
+        # or include top memories so context is never starved
+        if len(all_memories) <= 8:
+            for score, mem in scored_memories:
+                if score >= 0.15 or len(selected) < 4:
+                    selected.append(mem)
+                if len(selected) >= max_memories:
+                    break
+        else:
+            for score, mem in scored_memories:
+                if score >= 0.30:
+                    selected.append(mem)
+                if len(selected) >= max_memories:
+                    break
+
+        # Fallback: if nothing matched but memories exist, pass top 2 most important memories
+        if not selected and all_memories:
+            selected = all_memories[:2]
+
+        logger.info(f"[PML Memory] Relevant memories: {len(selected)}")
+        if selected:
+            logger.info("[PML Memory] Memory context added to AI")
 
         # Touch last_used_at in background for retrieved memories
         for mem in selected:
@@ -128,7 +191,6 @@ class MemoryService:
                 except Exception:
                     pass
 
-        logger.info(f"[PML Memory] Retrieved {len(selected)} relevant memories out of {len(all_memories)} for user {user_id}")
         return selected
 
     @classmethod
@@ -141,22 +203,23 @@ class MemoryService:
     ) -> Optional[str]:
         """
         Handles explicit memory requests such as:
-        - "Remember that I prefer Java examples"
-        - "Forget that I am learning Java"
+        - "Remember that I'm building an AI chatbot called PML."
+        - "Remember that I prefer Java examples."
+        - "Forget that I am learning Java."
         """
-        if not user_id or user_id == "guest_user":
+        if not user_id:
             return None
 
         clean_msg = user_message.strip()
 
-        # 1. "Forget that / Forget about..."
-        forget_match = re.search(r"(?i)\b(?:please\s+)?forget(?:\s+that|\s+about)?\s+(.+)$", clean_msg)
+        # 1. "Forget that / Forget about / Delete memory..."
+        forget_match = re.search(r"(?i)\b(?:please\s+)?(?:forget|delete\s+memory)(?:\s+that|\s+about)?\s+(.+)$", clean_msg)
         if forget_match:
             topic = forget_match.group(1).strip().rstrip(".,!?")
             all_mem = await DatabaseService.get_memories(user_id=user_id, user_token=user_token, limit=50)
             deleted_count = 0
 
-            stop_words = {"i", "am", "is", "are", "the", "a", "an", "and", "or", "to", "for", "in", "on", "user", "with", "that", "this", "my", "me", "you", "your", "preparing", "learning", "studying"}
+            stop_words = {"i", "am", "is", "are", "the", "a", "an", "and", "or", "to", "for", "in", "on", "user", "with", "that", "this", "my", "me", "you", "your"}
             topic_keywords = [w for w in re.findall(r"\b\w+\b", topic.lower()) if w not in stop_words and len(w) > 2]
 
             for m in all_mem:
@@ -170,32 +233,36 @@ class MemoryService:
                 return f"I have forgotten that information from your long-term memory."
             return f"I couldn't find any stored memory matching '{topic}' to forget."
 
-        # 2. "Remember that / Please remember..."
-        remember_match = re.search(r"(?i)\b(?:please\s+)?remember(?:\s+that)?\s+(.+)$", clean_msg)
+        # 2. "Remember that / Please remember / Note that / Save memory..."
+        remember_match = re.search(r"(?i)\b(?:please\s+)?(?:remember|note|save\s+memory|store\s+memory)(?:\s+that|:)?\s+(.+)$", clean_msg)
         if remember_match:
             raw_fact = remember_match.group(1).strip().rstrip(".,!?")
             if cls._is_sensitive(raw_fact):
                 return "For your security, PML does not store passwords, keys, or sensitive credentials in memory."
 
-            # Normalize "I / my" to "User / User's"
-            formatted_fact = re.sub(r"(?i)\bi\s+am\b", "User is", raw_fact)
+            # Normalize first-person "I / my" to third-person "User / User's"
+            formatted_fact = raw_fact
+            formatted_fact = re.sub(r"(?i)\bi'm\b", "User is", formatted_fact)
+            formatted_fact = re.sub(r"(?i)\bi\s+am\b", "User is", formatted_fact)
             formatted_fact = re.sub(r"(?i)\bi\s+have\b", "User has", formatted_fact)
             formatted_fact = re.sub(r"(?i)\bi\s+prefer\b", "User prefers", formatted_fact)
             formatted_fact = re.sub(r"(?i)\bi\s+like\b", "User likes", formatted_fact)
             formatted_fact = re.sub(r"(?i)\bi\s+work\s+on\b", "User is working on", formatted_fact)
-            formatted_fact = re.sub(r"(?i)\bi'm\b", "User is", formatted_fact)
             formatted_fact = re.sub(r"(?i)\bmy\b", "User's", formatted_fact)
 
             if not formatted_fact.lower().startswith("user"):
                 formatted_fact = f"User {formatted_fact}"
 
-            # Infer category using word boundaries
-            category = "preference"
-            if re.search(r"\b(learn|learning|study|studying|exam|course|degree|cert|certification)\b", formatted_fact, re.IGNORECASE):
-                category = "goal"
-            elif re.search(r"\b(build|building|project|app|application|creating|working on|develop|developing)\b", formatted_fact, re.IGNORECASE):
+            # Infer category cleanly
+            fact_lower = formatted_fact.lower()
+            category = "context"
+            if any(w in fact_lower for w in ["build", "building", "project", "app", "application", "chatbot", "system", "develop", "developing", "working on", "pml"]):
                 category = "project"
-            elif re.search(r"\b(concise|simple|step-by-step|bullet|detailed|tone|style|format)\b", formatted_fact, re.IGNORECASE):
+            elif any(w in fact_lower for w in ["learn", "learning", "study", "studying", "exam", "course", "degree", "cert", "certification"]):
+                category = "goal"
+            elif any(w in fact_lower for w in ["prefer", "prefers", "like", "likes", "love", "loves", "dislike", "favorite"]):
+                category = "preference"
+            elif any(w in fact_lower for w in ["concise", "simple", "step-by-step", "bullet", "detailed", "tone", "style", "format", "explain"]):
                 category = "communication"
 
             await cls._save_or_update_memory(
@@ -206,7 +273,7 @@ class MemoryService:
                 source_conv_id=conversation_id,
                 user_token=user_token
             )
-            return f"I've committed that to your long-term memory: \"{formatted_fact}\""
+            return f"I've stored this in your long-term memory: \"{formatted_fact}\""
 
         return None
 
@@ -231,7 +298,7 @@ class MemoryService:
         for existing in existing_memories:
             existing_text = existing.get("memory", "").lower()
             similarity = cls._calculate_relevance(existing_text, category, clean_text)
-            if similarity >= 0.75:
+            if similarity >= 0.75 or (existing.get("category") == category and category == "project" and "pml" in existing_text and "pml" in clean_text.lower()):
                 # Update existing memory with fresh context
                 updated = await DatabaseService.update_memory(
                     memory_id=existing["id"],
@@ -269,7 +336,7 @@ class MemoryService:
         Conservative background analyzer that extracts stable long-term user facts.
         Ignores transient questions, greetings, single-use prompts, and sensitive credentials.
         """
-        if not user_id or user_id == "guest_user":
+        if not user_id:
             return
 
         msg_lower = user_message.strip().lower()
@@ -302,7 +369,7 @@ Analyze this exchange between a User and PML.
 Extract AT MOST ONE concise, durable, factual statement about the user's preferences, learning goals, or long-term projects.
 Rules:
 1. Only extract stable facts useful across future conversations.
-2. Format as a third-person fact (e.g. "User is learning Java", "User prefers simple code examples").
+2. Format as a third-person fact (e.g. "User is learning Java", "User prefers simple code examples", "User is building an AI chatbot called PML").
 3. DO NOT extract temporary queries, greetings, or sensitive data.
 4. If no durable fact exists, output null.
 

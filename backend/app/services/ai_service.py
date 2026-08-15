@@ -59,10 +59,23 @@ class AIService:
         # Base system prompt
         system_content = PML_SYSTEM_PROMPT
 
-        # Inject Long-Term Memory Context if relevant memories exist
+        # Inject Long-Term Memory Context if relevant memories exist (Phase 6)
         if relevant_memories and len(relevant_memories) > 0:
             memory_block = "\n".join([f"- {m}" for m in relevant_memories])
-            system_content += f"\n\n[RELEVANT USER LONG-TERM MEMORY]\nYou have access to the following relevant verified long-term facts/preferences about the user:\n{memory_block}\nIncorporate this context naturally and seamlessly into your response without explicitly saying 'According to my database'."
+            system_content += f"""
+
+==================================================
+LONG-TERM USER MEMORY & FACTS
+==================================================
+You have the following verified long-term memory about the user:
+{memory_block}
+
+DIRECTIVES FOR USING LONG-TERM MEMORY:
+1. When the user asks about their background, project, learning goals, preferences, or personal context (e.g., "What project am I working on?", "What am I building?", "What do I like?"), USE THE LONG-TERM MEMORY ABOVE to answer directly, accurately, and confidently.
+2. NEVER say "I cannot recall specific past conversations or projects" or "I don't have access to past chats" when the relevant facts are provided in the memory above.
+3. Incorporate these facts naturally and helpfully in your personalized response.
+==================================================
+"""
 
         # Construct message payload with system instruction
         messages: List[Dict[str, str]] = [
