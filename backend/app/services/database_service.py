@@ -51,6 +51,34 @@ class DatabaseService:
                     last_used_at TEXT
                 );
             """)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS documents (
+                    id TEXT PRIMARY KEY,
+                    user_id TEXT NOT NULL,
+                    file_name TEXT NOT NULL,
+                    file_type TEXT NOT NULL,
+                    file_size INTEGER NOT NULL,
+                    storage_path TEXT NOT NULL,
+                    status TEXT NOT NULL DEFAULT 'processing',
+                    error_message TEXT,
+                    chunk_count INTEGER DEFAULT 0,
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+                );
+            """)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS document_chunks (
+                    id TEXT PRIMARY KEY,
+                    document_id TEXT NOT NULL,
+                    user_id TEXT NOT NULL,
+                    content TEXT NOT NULL,
+                    chunk_index INTEGER NOT NULL,
+                    page_number INTEGER,
+                    embedding TEXT,
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (document_id) REFERENCES documents(id) ON DELETE CASCADE
+                );
+            """)
             conn.commit()
             conn.close()
         except Exception as e:
@@ -697,6 +725,366 @@ class DatabaseService:
         conn = sqlite3.connect(SQLITE_DB_PATH)
         cursor = conn.cursor()
         cursor.execute("DELETE FROM memories WHERE user_id = ?", (user_id,))
+        count = cursor.rowcount
+        conn.commit()
+        conn.close()
+        return count
+
+    # ==================== DOCUMENT & RAG OPERATIONS (PHASE 7) ====================
+
+    @classmethod
+    async def create_document(
+        cls,
+        user_id: str,
+        file_name: str,
+        file_type: str,
+        file_size: int,
+        storage_path: str,
+        document_id: Optional[str] = None,
+        status: str = "processing",
+        user_token: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Creates a document record tied to the user."""
+        doc_id = document_id or f"pml-doc-{uuid.uuid4().hex[:12]}"
+        now_iso = datetime.now(timezone.utc).isoformat()
+
+        payload = {
+            "id": doc_id,
+            "user_id": user_id,
+            "file_name": file_name,
+            "file_type": file_type,
+            "file_size": file_size,
+            "storage_path": storage_path,
+            "status": status,
+            "error_message": None,
+            "chunk_count": 0,
+            "created_at": now_iso,
+            "updated_at": now_iso
+        }
+
+        if cls._is_supabase_configured() and cls._is_valid_uuid(user_id):
+            try:
+                async with httpx.AsyncClient() as client:
+                    res = await client.post(
+                        f"{settings.SUPABASE_URL}/rest/v1/documents",
+                        json=payload,
+                        headers=cls._get_supabase_headers(user_token),
+                        timeout=10.0
+                    )
+                    if res.status_code in (200, 201):
+                        data = res.json()
+                        return data[0] if isinstance(data, list) and data else payload
+            except Exception as err:
+                logger.warn(f"Supabase create document failed, using SQLite fallback: {err}")
+
+        # SQLite Fallback
+        cls._init_sqlite()
+        conn = sqlite3.connect(SQLITE_DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute(
+            """INSERT INTO documents (id, user_id, file_name, file_type, file_size, storage_path, status, error_message, chunk_count, created_at, updated_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (
+                doc_id, user_id, file_name, file_type, file_size, 
+                storage_path, status, None, 0, now_iso, now_iso
+            )
+        )
+        conn.commit()
+        conn.close()
+        return payload
+
+    @classmethod
+    async def update_document_status(
+        cls,
+        document_id: str,
+        user_id: str,
+        status: str,
+        chunk_count: Optional[int] = None,
+        error_message: Optional[str] = None,
+        user_token: Optional[str] = None
+    ) -> Optional[Dict[str, Any]]:
+        """Updates document status, chunk count, and optional error message."""
+        now_iso = datetime.now(timezone.utc).isoformat()
+        update_fields: Dict[str, Any] = {"status": status, "updated_at": now_iso}
+
+        if chunk_count is not None:
+            update_fields["chunk_count"] = chunk_count
+        if error_message is not None:
+            update_fields["error_message"] = error_message
+
+        if cls._is_supabase_configured() and cls._is_valid_uuid(user_id):
+            try:
+                async with httpx.AsyncClient() as client:
+                    res = await client.patch(
+                        f"{settings.SUPABASE_URL}/rest/v1/documents?id=eq.{document_id}&user_id=eq.{user_id}",
+                        json=update_fields,
+                        headers=cls._get_supabase_headers(user_token),
+                        timeout=10.0
+                    )
+                    if res.status_code == 200:
+                        data = res.json()
+                        if data and len(data) > 0:
+                            return data[0]
+            except Exception as err:
+                logger.warn(f"Supabase update document status failed, using SQLite fallback: {err}")
+
+        # SQLite Fallback
+        cls._init_sqlite()
+        conn = sqlite3.connect(SQLITE_DB_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        set_clauses = []
+        values = []
+        for k, v in update_fields.items():
+            set_clauses.append(f"{k} = ?")
+            values.append(v)
+
+        values.extend([document_id, user_id])
+        cursor.execute(
+            f"UPDATE documents SET {', '.join(set_clauses)} WHERE id = ? AND user_id = ?",
+            tuple(values)
+        )
+        conn.commit()
+
+        cursor.execute("SELECT * FROM documents WHERE id = ? AND user_id = ?", (document_id, user_id))
+        row = cursor.fetchone()
+        conn.close()
+        return dict(row) if row else None
+
+    @classmethod
+    async def get_documents(
+        cls, 
+        user_id: str, 
+        user_token: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """Retrieves list of documents belonging to user."""
+        if cls._is_supabase_configured() and cls._is_valid_uuid(user_id):
+            try:
+                async with httpx.AsyncClient() as client:
+                    res = await client.get(
+                        f"{settings.SUPABASE_URL}/rest/v1/documents?select=*&user_id=eq.{user_id}&order=created_at.desc",
+                        headers=cls._get_supabase_headers(user_token),
+                        timeout=10.0
+                    )
+                    if res.status_code == 200:
+                        return res.json()
+            except Exception as err:
+                logger.warn(f"Supabase get documents failed, using SQLite fallback: {err}")
+
+        # SQLite Fallback
+        cls._init_sqlite()
+        conn = sqlite3.connect(SQLITE_DB_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM documents WHERE user_id = ? ORDER BY created_at DESC", (user_id,))
+        rows = cursor.fetchall()
+        result = [dict(r) for r in rows]
+        conn.close()
+        return result
+
+    @classmethod
+    async def get_document(
+        cls, 
+        document_id: str, 
+        user_id: str, 
+        user_token: Optional[str] = None
+    ) -> Optional[Dict[str, Any]]:
+        """Retrieves a single document ensuring user ownership."""
+        if cls._is_supabase_configured() and cls._is_valid_uuid(user_id):
+            try:
+                async with httpx.AsyncClient() as client:
+                    res = await client.get(
+                        f"{settings.SUPABASE_URL}/rest/v1/documents?select=*&id=eq.{document_id}&user_id=eq.{user_id}&limit=1",
+                        headers=cls._get_supabase_headers(user_token),
+                        timeout=10.0
+                    )
+                    if res.status_code == 200:
+                        data = res.json()
+                        if data and len(data) > 0:
+                            return data[0]
+            except Exception as err:
+                logger.warn(f"Supabase get single document failed, using SQLite fallback: {err}")
+
+        # SQLite Fallback
+        cls._init_sqlite()
+        conn = sqlite3.connect(SQLITE_DB_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM documents WHERE id = ? AND user_id = ? LIMIT 1", (document_id, user_id))
+        row = cursor.fetchone()
+        conn.close()
+        return dict(row) if row else None
+
+    @classmethod
+    async def delete_document(
+        cls, 
+        document_id: str, 
+        user_id: str, 
+        user_token: Optional[str] = None
+    ) -> bool:
+        """Deletes a document record and all its chunks with user ownership check."""
+        doc = await cls.get_document(document_id, user_id, user_token)
+        if not doc:
+            return False
+
+        # Delete local file if it exists
+        storage_path = doc.get("storage_path")
+        if storage_path and os.path.exists(storage_path):
+            try:
+                os.remove(storage_path)
+            except Exception as e:
+                logger.warn(f"Failed to delete local document file {storage_path}: {e}")
+
+        # Delete chunks first
+        await cls.delete_document_chunks(document_id, user_id, user_token)
+
+        if cls._is_supabase_configured() and cls._is_valid_uuid(user_id):
+            try:
+                async with httpx.AsyncClient() as client:
+                    res = await client.delete(
+                        f"{settings.SUPABASE_URL}/rest/v1/documents?id=eq.{document_id}&user_id=eq.{user_id}",
+                        headers=cls._get_supabase_headers(user_token),
+                        timeout=10.0
+                    )
+                    if res.status_code in (200, 204):
+                        return True
+            except Exception as err:
+                logger.warn(f"Supabase delete document failed, using SQLite fallback: {err}")
+
+        # SQLite Fallback
+        cls._init_sqlite()
+        conn = sqlite3.connect(SQLITE_DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM documents WHERE id = ? AND user_id = ?", (document_id, user_id))
+        deleted_count = cursor.rowcount
+        conn.commit()
+        conn.close()
+        return deleted_count > 0
+
+    @classmethod
+    async def save_document_chunks(
+        cls,
+        chunks: List[Dict[str, Any]],
+        user_token: Optional[str] = None
+    ) -> int:
+        """Saves a batch of document chunks with embedding vectors."""
+        if not chunks:
+            return 0
+
+        # Extract user_id from first chunk
+        user_id = chunks[0].get("user_id", "")
+
+        if cls._is_supabase_configured() and cls._is_valid_uuid(user_id):
+            try:
+                async with httpx.AsyncClient() as client:
+                    res = await client.post(
+                        f"{settings.SUPABASE_URL}/rest/v1/document_chunks",
+                        json=chunks,
+                        headers=cls._get_supabase_headers(user_token),
+                        timeout=15.0
+                    )
+                    if res.status_code in (200, 201):
+                        return len(chunks)
+            except Exception as err:
+                logger.warn(f"Supabase batch save chunks failed, using SQLite fallback: {err}")
+
+        # SQLite Fallback
+        cls._init_sqlite()
+        conn = sqlite3.connect(SQLITE_DB_PATH)
+        cursor = conn.cursor()
+        now_iso = datetime.now(timezone.utc).isoformat()
+
+        insert_data = [
+            (
+                c.get("id", f"pml-chk-{uuid.uuid4().hex[:12]}"),
+                c["document_id"],
+                c["user_id"],
+                c["content"],
+                c.get("chunk_index", 0),
+                c.get("page_number"),
+                c.get("embedding"),
+                now_iso
+            )
+            for c in chunks
+        ]
+
+        cursor.executemany(
+            """INSERT INTO document_chunks (id, document_id, user_id, content, chunk_index, page_number, embedding, created_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+            insert_data
+        )
+        conn.commit()
+        conn.close()
+        return len(chunks)
+
+    @classmethod
+    async def get_document_chunks(
+        cls,
+        user_id: str,
+        document_id: Optional[str] = None,
+        user_token: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """Retrieves chunks belonging to user, optionally filtered by specific document."""
+        if cls._is_supabase_configured() and cls._is_valid_uuid(user_id):
+            try:
+                async with httpx.AsyncClient() as client:
+                    url = f"{settings.SUPABASE_URL}/rest/v1/document_chunks?select=*&user_id=eq.{user_id}"
+                    if document_id:
+                        url += f"&document_id=eq.{document_id}"
+                    url += "&order=chunk_index.asc"
+                    res = await client.get(url, headers=cls._get_supabase_headers(user_token), timeout=12.0)
+                    if res.status_code == 200:
+                        return res.json()
+            except Exception as err:
+                logger.warn(f"Supabase get document chunks failed, using SQLite fallback: {err}")
+
+        # SQLite Fallback
+        cls._init_sqlite()
+        conn = sqlite3.connect(SQLITE_DB_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        if document_id:
+            cursor.execute(
+                "SELECT * FROM document_chunks WHERE user_id = ? AND document_id = ? ORDER BY chunk_index ASC",
+                (user_id, document_id)
+            )
+        else:
+            cursor.execute(
+                "SELECT * FROM document_chunks WHERE user_id = ? ORDER BY chunk_index ASC",
+                (user_id,)
+            )
+        rows = cursor.fetchall()
+        result = [dict(r) for r in rows]
+        conn.close()
+        return result
+
+    @classmethod
+    async def delete_document_chunks(
+        cls,
+        document_id: str,
+        user_id: str,
+        user_token: Optional[str] = None
+    ) -> int:
+        """Deletes all chunks for a document."""
+        if cls._is_supabase_configured() and cls._is_valid_uuid(user_id):
+            try:
+                async with httpx.AsyncClient() as client:
+                    res = await client.delete(
+                        f"{settings.SUPABASE_URL}/rest/v1/document_chunks?document_id=eq.{document_id}&user_id=eq.{user_id}",
+                        headers=cls._get_supabase_headers(user_token),
+                        timeout=10.0
+                    )
+                    if res.status_code in (200, 204):
+                        return 1
+            except Exception as err:
+                logger.warn(f"Supabase delete chunks failed, using SQLite fallback: {err}")
+
+        # SQLite Fallback
+        cls._init_sqlite()
+        conn = sqlite3.connect(SQLITE_DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM document_chunks WHERE document_id = ? AND user_id = ?", (document_id, user_id))
         count = cursor.rowcount
         conn.commit()
         conn.close()

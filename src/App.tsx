@@ -7,7 +7,8 @@ import type {
   PMLSettings, 
   UserProfile, 
   QuickAction, 
-  Attachment 
+  Attachment,
+  DocumentItem
 } from './types/pml';
 import { pmlApi } from './services/pmlApi';
 import { cosmicAudio } from './utils/audioSynth';
@@ -21,6 +22,7 @@ import { MessageComposer } from './components/MessageComposer';
 import { SettingsModal } from './components/SettingsModal';
 import { UserProfileModal } from './components/UserProfileModal';
 import { MemoryManagementModal } from './components/MemoryManagementModal';
+import { DocumentLibraryModal } from './components/DocumentLibraryModal';
 import { AuthExperience } from './components/AuthExperience';
 import { PMLCore } from './components/PMLCore';
 
@@ -56,8 +58,11 @@ const PMLAppContent: React.FC = () => {
   const [settingsModalOpen, setSettingsModalOpen] = useState<boolean>(false);
   const [profileModalOpen, setProfileModalOpen] = useState<boolean>(false);
   const [memoryModalOpen, setMemoryModalOpen] = useState<boolean>(false);
+  const [documentModalOpen, setDocumentModalOpen] = useState<boolean>(false);
   const [authModalOpen, setAuthModalOpen] = useState<boolean>(false);
   const [showGuestBanner, setShowGuestBanner] = useState<boolean>(true);
+
+  const [selectedDocument, setSelectedDocument] = useState<DocumentItem | null>(null);
 
   const [settings, setSettings] = useState<PMLSettings>(() => {
     const saved = localStorage.getItem('pml_settings');
@@ -66,7 +71,7 @@ const PMLAppContent: React.FC = () => {
 
   const abortControllerRef = useRef<boolean>(false);
 
-  // Dynamic user profile from authenticated session (Strict priority: profile.full_name -> user_metadata -> email -> fallback)
+  // Dynamic user profile from authenticated session
   const resolvedName = user
     ? (profile?.full_name?.trim() || user.user_metadata?.full_name?.trim() || (user.email ? user.email.split('@')[0] : 'Cosmic Explorer'))
     : 'Guest Explorer';
@@ -117,59 +122,62 @@ const PMLAppContent: React.FC = () => {
     setActiveConversationId(null);
     setProfileModalOpen(false);
     setMemoryModalOpen(false);
+    setDocumentModalOpen(false);
+    setSelectedDocument(null);
   };
 
-  // Start new conversation
-  const handleNewConversation = () => {
-    cosmicAudio.playClickSound(settings.soundEffects);
-    setActiveConversationId(null);
+  // Start New Conversation
+  const handleNewConversation = async () => {
+    cosmicAudio.playInitiateSound(settings.soundEffects);
+    const newConv = await pmlApi.createConversation('New Cosmic Thread');
+    const updated = [newConv, ...conversations];
+    saveConversationsState(updated);
+    setActiveConversationId(newConv.id);
   };
 
-  // Select conversation & load messages from backend database
-  const handleSelectConversation = async (id: string) => {
-    cosmicAudio.playClickSound(settings.soundEffects);
+  // Select Existing Conversation
+  const handleSelectConversation = (id: string) => {
+    cosmicAudio.playNodeSound(settings.soundEffects);
     setActiveConversationId(id);
-
-    const convDetail = await pmlApi.fetchConversationDetails(id);
-    if (convDetail && convDetail.messages) {
-      setConversations(prev =>
-        prev.map(c => (c.id === id ? { ...c, messages: convDetail.messages } : c))
-      );
-    }
   };
 
-  // Delete conversation
+  // Delete Conversation
   const handleDeleteConversation = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    cosmicAudio.playClickSound(settings.soundEffects);
+    await pmlApi.deleteConversation(id);
     const updated = conversations.filter(c => c.id !== id);
     saveConversationsState(updated);
     if (activeConversationId === id) {
-      setActiveConversationId(null);
+      setActiveConversationId(updated.length > 0 ? updated[0].id : null);
     }
-    await pmlApi.deleteConversation(id);
   };
 
-  // Toggle star/bookmark on conversation
+  // Toggle Star / Pin Status
   const handleToggleStarConversation = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    cosmicAudio.playClickSound(settings.soundEffects);
-    const updated = conversations.map(c =>
-      c.id === id ? { ...c, isStarred: !c.isStarred } : c
-    );
+    const updated = conversations.map(c => (c.id === id ? { ...c, isStarred: !c.isStarred } : c));
     saveConversationsState(updated);
   };
 
-  // Rename conversation
+  // Rename Conversation
   const handleRenameConversation = async (id: string, newTitle: string) => {
-    const updated = conversations.map(c =>
-      c.id === id ? { ...c, title: newTitle } : c
-    );
-    saveConversationsState(updated);
     await pmlApi.renameConversation(id, newTitle);
+    const updated = conversations.map(c => (c.id === id ? { ...c, title: newTitle } : c));
+    saveConversationsState(updated);
   };
 
-  // Send message flow (Streaming + DB persistence for guests & users + Long-Term Memory)
+  // Direct Document Upload Handler from Composer / Drag & Drop
+  const handleUploadDocument = async (file: File) => {
+    try {
+      const doc = await pmlApi.uploadDocument(file);
+      setSelectedDocument(doc);
+      // Open library to show ingestion status if desired
+    } catch (err: any) {
+      alert(`Document upload error: ${err.message || err}`);
+    }
+  };
+
+  // Send User Message
   const handleSendMessage = async (text: string, attachments: Attachment[] = []) => {
     if (!text.trim() && attachments.length === 0) return;
 
@@ -179,22 +187,16 @@ const PMLAppContent: React.FC = () => {
     let currentConvId = activeConversationId;
     let updatedConversations = [...conversations];
 
-    // Auto-create new conversation if currently in welcome screen
-    if (!currentConvId) {
-      const generatedTitle = text.slice(0, 32) + (text.length > 32 ? '...' : '');
-      const newConv: Conversation = {
-        id: `conv_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
-        title: generatedTitle,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        messages: [],
-      };
-      updatedConversations = [newConv, ...updatedConversations];
-      currentConvId = newConv.id;
+    // Create new conversation if none exists
+    if (!currentConvId || !conversations.some(c => c.id === currentConvId)) {
+      const firstTitle = text.slice(0, 32) + (text.length > 32 ? '...' : '');
+      const createdConv = await pmlApi.createConversation(firstTitle || 'New Conversation');
+      currentConvId = createdConv.id;
+      updatedConversations = [createdConv, ...conversations];
       setActiveConversationId(currentConvId);
     }
 
-    // 1. Append User Message
+    // 1. Prepare User Message
     const userMsg: Message = {
       id: `msg_user_${Date.now()}`,
       role: 'user',
@@ -238,10 +240,12 @@ const PMLAppContent: React.FC = () => {
 
     let accumulatedContent = '';
 
+    const convId: string = currentConvId || `pml-conv-${Date.now()}`;
+
     await pmlApi.sendMessageStream(
       text,
       attachments,
-      currentConvId,
+      convId,
       settings,
       {
         onChunk: (_chunk, fullText) => {
@@ -265,7 +269,7 @@ const PMLAppContent: React.FC = () => {
             })
           );
         },
-        onComplete: fullText => {
+        onComplete: (fullText, metadata) => {
           cosmicAudio.playReceiveSound(settings.soundEffects);
           setIsStreaming(false);
           setCoreState('idle');
@@ -277,7 +281,13 @@ const PMLAppContent: React.FC = () => {
                   ...c,
                   messages: c.messages.map(m =>
                     m.id === assistantMsgId
-                      ? { ...m, content: fullText, isStreaming: false }
+                      ? {
+                          ...m,
+                          content: fullText,
+                          isStreaming: false,
+                          memoriesUsed: metadata?.memoriesUsed,
+                          sources: metadata?.sources
+                        }
                       : m
                   ),
                 };
@@ -316,7 +326,8 @@ const PMLAppContent: React.FC = () => {
           );
         },
       },
-      contextHistory
+      contextHistory,
+      selectedDocument?.id
     );
   };
 
@@ -346,26 +357,22 @@ const PMLAppContent: React.FC = () => {
     pmlApi.sendFeedback(messageId, feedback);
   };
 
-  // 1. Initial Checking Session Loading Animation (Prevents flashing guest before session resolves)
+  // Initial Checking Session Loading Animation
   if (loading) {
     return (
-      <div className="relative w-screen h-screen overflow-hidden flex flex-col items-center justify-center bg-black">
-        <CosmicBackground density={settings.particleDensity} theme={settings.theme} />
-        <div className="relative z-10 flex flex-col items-center gap-4 text-center">
-          <PMLCore size="medium" state="thinking" />
-          <p className="font-mono text-sm uppercase tracking-widest text-purple-300 font-semibold animate-pulse">
-            Connecting to PML Universe...
-          </p>
-        </div>
+      <div className="fixed inset-0 bg-[#070510] flex flex-col items-center justify-center text-white z-50">
+        <PMLCore size="large" state="thinking" />
+        <p className="mt-4 font-mono text-xs text-purple-300 tracking-widest uppercase animate-pulse">
+          Synchronizing PML Space State...
+        </p>
       </div>
     );
   }
 
-  // 2. Main Interface (Open to both Guests and Authenticated Users)
   return (
-    <div className="relative w-screen h-screen overflow-hidden flex flex-col">
-      {/* Dynamic Deep Space Canvas Background */}
-      <CosmicBackground density={settings.particleDensity} theme={settings.theme} />
+    <div className="flex h-screen w-screen overflow-hidden bg-transparent text-white font-sans select-none relative">
+      {/* Dynamic Cosmic Background */}
+      <CosmicBackground density={settings.particleDensity} />
 
       {/* Floating Glass Navigation Drawer */}
       <NavigationPanel
@@ -380,6 +387,7 @@ const PMLAppContent: React.FC = () => {
         onOpenSettings={() => setSettingsModalOpen(true)}
         onOpenProfile={() => (user ? setProfileModalOpen(true) : setAuthModalOpen(true))}
         onOpenMemory={() => (user ? setMemoryModalOpen(true) : setAuthModalOpen(true))}
+        onOpenDocuments={() => setDocumentModalOpen(true)}
         userProfile={userProfile}
         isAuthenticated={Boolean(user)}
         onOpenAuth={() => setAuthModalOpen(true)}
@@ -410,7 +418,7 @@ const PMLAppContent: React.FC = () => {
           onOpenAuth={() => setAuthModalOpen(true)}
         />
 
-        {/* Guest Session Top Notice Pill (Subtle & Non-Intrusive, only shown for unauthenticated guests) */}
+        {/* Guest Session Top Notice Pill */}
         {!user && showGuestBanner && (
           <div className="mx-auto mt-2 px-4 py-1.5 rounded-full bg-purple-950/70 border border-purple-500/40 text-purple-200 text-xs font-mono flex items-center gap-2 shadow-[0_0_15px_rgba(168,85,247,0.25)] z-20 backdrop-blur-md">
             <Sparkles className="w-3.5 h-3.5 text-purple-400 animate-pulse" />
@@ -439,14 +447,22 @@ const PMLAppContent: React.FC = () => {
           onRegenerateResponse={handleRegenerateResponse}
           onFeedback={handleFeedback}
           onSendMessage={handleSendMessage}
+          selectedDocument={selectedDocument}
+          onClearDocumentScope={() => setSelectedDocument(null)}
+          onOpenDocumentLibrary={() => setDocumentModalOpen(true)}
+          onUploadDocument={handleUploadDocument}
         />
 
-        {/* Floating Message Console (only shown when conversation active with messages) */}
+        {/* Floating Message Console */}
         {activeConversation && activeConversation.messages.length > 0 && (
           <MessageComposer
             onSendMessage={handleSendMessage}
             isStreaming={isStreaming}
             onStopGeneration={handleStopGeneration}
+            selectedDocument={selectedDocument}
+            onClearDocumentScope={() => setSelectedDocument(null)}
+            onOpenDocumentLibrary={() => setDocumentModalOpen(true)}
+            onUploadDocument={handleUploadDocument}
           />
         )}
       </div>
@@ -479,7 +495,16 @@ const PMLAppContent: React.FC = () => {
         onOpenAuth={() => setAuthModalOpen(true)}
       />
 
-      {/* Auth Modal (Triggerable by user anytime or dismissible) */}
+      {/* Document Intelligence & RAG Library (Phase 7) */}
+      <DocumentLibraryModal
+        isOpen={documentModalOpen}
+        onClose={() => setDocumentModalOpen(false)}
+        selectedDocumentId={selectedDocument?.id || null}
+        onSelectDocument={doc => setSelectedDocument(doc)}
+        onUploadSuccess={doc => setSelectedDocument(doc)}
+      />
+
+      {/* Auth Modal */}
       {authModalOpen && (
         <AuthExperience onClose={() => setAuthModalOpen(false)} />
       )}

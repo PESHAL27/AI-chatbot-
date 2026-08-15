@@ -10,7 +10,8 @@ import {
   Sparkles,
   X,
   LogOut,
-  Brain
+  Brain,
+  BookOpen
 } from 'lucide-react';
 import type { Conversation, UserProfile as UserProfileType } from '../types/pml';
 import { PMLCore } from './PMLCore';
@@ -27,6 +28,7 @@ interface NavigationPanelProps {
   onOpenSettings: () => void;
   onOpenProfile: () => void;
   onOpenMemory?: () => void;
+  onOpenDocuments?: () => void;
   userProfile: UserProfileType;
   isAuthenticated?: boolean;
   onOpenAuth?: () => void;
@@ -45,6 +47,7 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
   onOpenSettings,
   onOpenProfile,
   onOpenMemory,
+  onOpenDocuments,
   userProfile,
   isAuthenticated = false,
   onOpenAuth,
@@ -103,21 +106,46 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
         </div>
 
         {/* Action Controls */}
-        <div className="p-5 space-y-5">
+        <div className="p-5 space-y-4">
           {/* New Conversation Button */}
           <button
             onClick={() => {
               onNewConversation();
               if (window.innerWidth < 768) onToggle();
             }}
-            className="w-full py-4 px-4 rounded-2xl bg-gradient-to-r from-violet-600 via-indigo-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-display font-bold text-sm uppercase tracking-wider flex items-center justify-center gap-3 shadow-[0_0_25px_rgba(139,92,246,0.5)] hover:shadow-[0_0_35px_rgba(168,85,247,0.7)] transition-all duration-300 active:scale-98 my-2 border border-white/20"
+            className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-violet-600 via-indigo-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-display font-bold text-sm uppercase tracking-wider flex items-center justify-center gap-3 shadow-[0_0_25px_rgba(139,92,246,0.5)] hover:shadow-[0_0_35px_rgba(168,85,247,0.7)] transition-all duration-300 active:scale-98 border border-white/20"
           >
             <Plus className="w-5 h-5 text-white" />
             <span>New Chat</span>
           </button>
 
-          {/* Search Input Bar with Left Icon + Colon Separator */}
-          <div className="flex items-center gap-2.5 px-3.5 py-2 rounded-2xl bg-black/70 border border-white/15 focus-within:border-purple-500 focus-within:shadow-[0_0_20px_rgba(168,85,247,0.4)] transition-all my-4">
+          {/* Quick Hub Buttons: Documents RAG & Memory */}
+          <div className="grid grid-cols-2 gap-2">
+            {onOpenDocuments && (
+              <button
+                onClick={onOpenDocuments}
+                className="py-2 px-3 rounded-xl bg-violet-950/40 hover:bg-violet-900/60 border border-violet-500/30 text-violet-200 hover:text-white text-xs font-semibold flex items-center justify-center gap-2 transition-all shadow-sm"
+                title="Open Document Intelligence Library"
+              >
+                <BookOpen className="w-4 h-4 text-violet-400" />
+                <span>Documents</span>
+              </button>
+            )}
+
+            {onOpenMemory && (
+              <button
+                onClick={onOpenMemory}
+                className="py-2 px-3 rounded-xl bg-purple-950/40 hover:bg-purple-900/60 border border-purple-500/30 text-purple-200 hover:text-white text-xs font-semibold flex items-center justify-center gap-2 transition-all shadow-sm"
+                title="Open Long-Term Memory Console"
+              >
+                <Brain className="w-4 h-4 text-purple-400" />
+                <span>Memory</span>
+              </button>
+            )}
+          </div>
+
+          {/* Search Input Bar */}
+          <div className="flex items-center gap-2.5 px-3.5 py-2 rounded-2xl bg-black/70 border border-white/15 focus-within:border-purple-500 focus-within:shadow-[0_0_20px_rgba(168,85,247,0.4)] transition-all">
             <div className="flex items-center gap-1.5 text-purple-400 select-none flex-shrink-0">
               <Search className="w-4 h-4 text-purple-400" />
               <span className="font-mono text-purple-400 font-bold text-sm">:</span>
@@ -140,50 +168,46 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
             )}
           </div>
 
-          {/* Category Tabs: All vs Starred (Exact Image 3 Tab Style) */}
-          <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-black/60 border border-white/10 text-sm mt-4">
+          {/* Category Tabs: All vs Starred */}
+          <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-black/60 border border-white/10 text-sm">
             <button
               onClick={() => setFilterMode('all')}
-              className={`flex-1 py-2.5 rounded-xl flex items-center justify-center gap-2 font-display text-xs md:text-sm transition-all cursor-pointer ${
+              className={`flex-1 py-2 rounded-xl flex items-center justify-center gap-2 font-display text-xs md:text-sm transition-all cursor-pointer ${
                 filterMode === 'all'
                   ? 'pml-tab-active font-bold'
                   : 'pml-tab-default text-slate-300 hover:text-white font-semibold'
               }`}
             >
-              <MessageSquare className="w-4 h-4" />
+              <Sparkles className="w-3.5 h-3.5" />
               <span>All ({conversations.length})</span>
             </button>
             <button
               onClick={() => setFilterMode('starred')}
-              className={`flex-1 py-2.5 rounded-xl flex items-center justify-center gap-2 font-display text-xs md:text-sm transition-all cursor-pointer ${
+              className={`flex-1 py-2 rounded-xl flex items-center justify-center gap-2 font-display text-xs md:text-sm transition-all cursor-pointer ${
                 filterMode === 'starred'
                   ? 'pml-tab-active font-bold'
                   : 'pml-tab-default text-slate-300 hover:text-white font-semibold'
               }`}
             >
-              <Star className="w-4 h-4" />
-              <span>Saved</span>
+              <Star className="w-3.5 h-3.5" />
+              <span>Starred</span>
             </button>
           </div>
         </div>
 
-        {/* Conversation List Stream (Separated with Border & Padding) */}
-        <div className="flex-1 overflow-y-auto cosmic-scroll px-4 pt-3 pb-2 space-y-3 border-t border-white/10">
-          <div className="px-1 text-xs font-mono uppercase tracking-widest text-purple-300 font-bold mb-1">
-            History Logs
-          </div>
+        {/* Conversation List */}
+        <div className="flex-1 overflow-y-auto px-4 py-2 space-y-1.5 cosmic-scroll">
           {filteredConversations.length === 0 ? (
-            <div className="py-8 text-center px-4">
-              <Sparkles className="w-8 h-8 mx-auto text-purple-400/50 mb-2" />
-              <p className="text-sm text-slate-100 font-semibold">No sessions found</p>
-              <p className="text-xs text-slate-300 mt-1">
-                {searchQuery ? 'Try another search keyword' : 'Start a new chat session with PML'}
+            <div className="text-center py-12 px-4">
+              <MessageSquare className="w-8 h-8 text-purple-400/40 mx-auto mb-3" />
+              <p className="text-sm font-semibold text-white">No Sessions Found</p>
+              <p className="text-xs text-purple-300/80 mt-1">
+                {searchQuery ? 'No conversations match search query.' : 'Initialize a new thread to begin.'}
               </p>
             </div>
           ) : (
             filteredConversations.map(conv => {
               const isActive = conv.id === activeConversationId;
-
               return (
                 <div
                   key={conv.id}
@@ -191,10 +215,10 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
                     onSelectConversation(conv.id);
                     if (window.innerWidth < 768) onToggle();
                   }}
-                  className={`group relative p-3.5 rounded-2xl cursor-pointer flex items-center justify-between transition-all duration-200 pml-neon-card ${
+                  className={`group relative flex items-center justify-between p-3 rounded-2xl cursor-pointer transition-all duration-200 ${
                     isActive
-                      ? 'pml-tab-active font-bold text-white'
-                      : 'hover:border-white/30 text-slate-200'
+                      ? 'bg-gradient-to-r from-violet-600/30 to-purple-600/30 border border-violet-500/50 shadow-[0_0_20px_rgba(139,92,246,0.3)]'
+                      : 'hover:bg-white/5 border border-transparent text-slate-300 hover:text-white'
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0 pr-2">
@@ -248,6 +272,16 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
             </div>
           </button>
 
+          {onOpenDocuments && (
+            <button
+              onClick={onOpenDocuments}
+              className="p-2 rounded-xl hover:bg-white/10 text-slate-300 hover:text-violet-400 transition-colors cursor-pointer"
+              title="PML Document Intelligence & RAG"
+            >
+              <BookOpen className="w-4.5 h-4.5" />
+            </button>
+          )}
+
           {onOpenMemory && (
             <button
               onClick={onOpenMemory}
@@ -280,4 +314,3 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
     </>
   );
 };
-

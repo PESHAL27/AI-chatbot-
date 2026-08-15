@@ -12,6 +12,13 @@ export interface Attachment {
   content?: string;
 }
 
+export interface DocumentSourceCitation {
+  file_name: string;
+  page_number?: number;
+  excerpt?: string;
+  score?: number;
+}
+
 export interface Message {
   id: string;
   role: Role;
@@ -22,6 +29,7 @@ export interface Message {
   isStreaming?: boolean;
   error?: boolean;
   memoriesUsed?: string[];
+  sources?: DocumentSourceCitation[];
 }
 
 export interface Conversation {
@@ -84,10 +92,38 @@ export interface MemoryItem {
   last_used_at?: string;
 }
 
+export type DocumentStatus = 'uploading' | 'processing' | 'ready' | 'failed';
+
+export interface DocumentItem {
+  id: string;
+  user_id: string;
+  file_name: string;
+  file_type: string;
+  file_size: number;
+  storage_path?: string;
+  status: DocumentStatus;
+  error_message?: string;
+  chunk_count: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface DocumentChunk {
+  id: string;
+  document_id: string;
+  user_id: string;
+  content: string;
+  chunk_index: number;
+  page_number?: number;
+  score?: number;
+  file_name?: string;
+}
+
 export interface FastApiChatRequest {
   conversation_id?: string;
   message: string;
   memory_enabled?: boolean;
+  document_id?: string;
   history?: {
     role: 'user' | 'assistant' | 'system';
     content: string;
@@ -100,4 +136,5 @@ export interface FastApiChatResponse {
   conversation_id: string;
   status: string;
   memories_used?: string[];
+  sources?: DocumentSourceCitation[];
 }

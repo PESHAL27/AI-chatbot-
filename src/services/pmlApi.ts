@@ -6,7 +6,7 @@ const DEFAULT_API_ENDPOINT = import.meta.env.VITE_API_URL || 'http://localhost:8
 
 export interface StreamCallbacks {
   onChunk: (chunk: string, fullText: string) => void;
-  onComplete: (fullText: string) => void;
+  onComplete: (fullText: string, metadata?: { memoriesUsed?: string[]; sources?: import('../types/pml').DocumentSourceCitation[] }) => void;
   onError: (error: Error) => void;
 }
 
@@ -70,7 +70,8 @@ export class PMLApiService {
     conversationId: string,
     settings: PMLSettings,
     callbacks: StreamCallbacks,
-    history: { role: 'user' | 'assistant' | 'system'; content: string }[] = []
+    history: { role: 'user' | 'assistant' | 'system'; content: string }[] = [],
+    documentId?: string
   ): Promise<void> {
     const apiBase = this.endpoint || settings.apiEndpoint || DEFAULT_API_ENDPOINT;
 
@@ -79,6 +80,7 @@ export class PMLApiService {
         conversation_id: conversationId,
         message: userMessage,
         memory_enabled: settings.memoryEnabled !== false,
+        document_id: documentId,
         history: history,
         attachments: attachments.map(a => ({
           filename: a.name,
@@ -105,10 +107,13 @@ export class PMLApiService {
       }
 
       const data = await response.json();
-      const responseText = data.response || "PML received your message. The AI model will be connected in Phase 3.";
+      const responseText = data.response || "PML received your message.";
 
       // Stream the response text smoothly for visual excellence
-      await this.streamTextSmoothly(responseText, settings, callbacks);
+      await this.streamTextSmoothly(responseText, settings, callbacks, {
+        memoriesUsed: data.memories_used,
+        sources: data.sources,
+      });
     } catch (err: any) {
       console.warn('FastAPI backend connection issue:', err);
       
@@ -127,7 +132,8 @@ export class PMLApiService {
   private async streamTextSmoothly(
     text: string,
     settings: PMLSettings,
-    callbacks: StreamCallbacks
+    callbacks: StreamCallbacks,
+    metadata?: { memoriesUsed?: string[]; sources?: import('../types/pml').DocumentSourceCitation[] }
   ): Promise<void> {
     let currentText = '';
     const delay = Math.max(8, settings.streamSpeed || 15);
@@ -139,7 +145,7 @@ export class PMLApiService {
       await new Promise(resolve => setTimeout(resolve, delay));
     }
 
-    callbacks.onComplete(currentText);
+    callbacks.onComplete(currentText, metadata);
   }
 
   /**
@@ -385,6 +391,17 @@ How can I assist your exploration today? Feel free to ask a question, attach doc
     return true;
   }
 
+  async createConversation(title: string = 'New Cosmic Thread'): Promise<Conversation> {
+    const newConv: Conversation = {
+      id: `pml-conv-${Math.random().toString(36).substring(2, 11)}`,
+      title,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      messages: [],
+    };
+    return newConv;
+  }
+
   async saveConversations(conversations: Conversation[]): Promise<void> {
     localStorage.setItem('pml_conversations', JSON.stringify(conversations));
   }
@@ -476,6 +493,101 @@ How can I assist your exploration today? Feel free to ask a question, attach doc
       console.warn('[PML API] Error clearing all memories:', err);
       return false;
     }
+  }
+
+  // ==================== DOCUMENT INTELLIGENCE & RAG (PHASE 7) ====================
+
+  async uploadDocument(file: File): Promise<import('../types/pml').DocumentItem> {
+    const apiBase = this.endpoint || DEFAULT_API_ENDPOINT;
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const headers: Record<string, string> = {};
+    if (this.authToken) {
+      headers['Authorization'] = `Bearer ${this.authToken}`;
+    }
+
+    const res = await fetch(`${apiBase}/api/documents/upload`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+
+    if (!res.ok) {
+      let errDetail = 'Failed to upload document';
+      try {
+        const errJson = await res.json();
+        errDetail = errJson.detail || errJson.message || errDetail;
+      } catch {
+        errDetail = res.statusText;
+      }
+      throw new Error(errDetail);
+    }
+
+    return await res.json();
+  }
+
+  async fetchDocuments(): Promise<import('../types/pml').DocumentItem[]> {
+    try {
+      const apiBase = this.endpoint || DEFAULT_API_ENDPOINT;
+      const res = await fetch(`${apiBase}/api/documents`, {
+        method: 'GET',
+        headers: this.getHeaders(),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return data.documents || [];
+      }
+    } catch (err) {
+      console.warn('[PML API] Error fetching documents:', err);
+    }
+    return [];
+  }
+
+  async getDocument(documentId: string): Promise<import('../types/pml').DocumentItem | null> {
+    try {
+      const apiBase = this.endpoint || DEFAULT_API_ENDPOINT;
+      const res = await fetch(`${apiBase}/api/documents/${documentId}`, {
+        method: 'GET',
+        headers: this.getHeaders(),
+      });
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (err) {
+      console.warn('[PML API] Error fetching document:', err);
+    }
+    return null;
+  }
+
+  async deleteDocument(documentId: string): Promise<boolean> {
+    try {
+      const apiBase = this.endpoint || DEFAULT_API_ENDPOINT;
+      const res = await fetch(`${apiBase}/api/documents/${documentId}`, {
+        method: 'DELETE',
+        headers: this.getHeaders(),
+      });
+      return res.ok;
+    } catch (err) {
+      console.warn('[PML API] Error deleting document:', err);
+      return false;
+    }
+  }
+
+  async retryDocument(documentId: string): Promise<import('../types/pml').DocumentItem | null> {
+    try {
+      const apiBase = this.endpoint || DEFAULT_API_ENDPOINT;
+      const res = await fetch(`${apiBase}/api/documents/${documentId}/retry`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+      });
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (err) {
+      console.warn('[PML API] Error retrying document processing:', err);
+    }
+    return null;
   }
 }
 

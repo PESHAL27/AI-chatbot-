@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
-import type { Conversation, PMLCoreState, QuickAction } from '../types/pml';
+import type { Conversation, PMLCoreState, QuickAction, DocumentItem, Attachment } from '../types/pml';
 import { MessageItem } from './MessageItem';
 import { WelcomeExperience } from './WelcomeExperience';
 import { PMLCore } from './PMLCore';
@@ -11,7 +11,11 @@ interface ConversationWorkspaceProps {
   onSelectQuickAction: (action: QuickAction) => void;
   onRegenerateResponse: () => void;
   onFeedback: (messageId: string, feedback: 'like' | 'dislike') => void;
-  onSendMessage?: (text: string, attachments?: any[]) => void;
+  onSendMessage?: (text: string, attachments?: Attachment[]) => void;
+  selectedDocument?: DocumentItem | null;
+  onClearDocumentScope?: () => void;
+  onOpenDocumentLibrary?: () => void;
+  onUploadDocument?: (file: File) => Promise<void>;
 }
 
 export const ConversationWorkspace: React.FC<ConversationWorkspaceProps> = ({
@@ -21,6 +25,10 @@ export const ConversationWorkspace: React.FC<ConversationWorkspaceProps> = ({
   onRegenerateResponse,
   onFeedback,
   onSendMessage,
+  selectedDocument,
+  onClearDocumentScope,
+  onOpenDocumentLibrary,
+  onUploadDocument,
 }) => {
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -52,6 +60,10 @@ export const ConversationWorkspace: React.FC<ConversationWorkspaceProps> = ({
         <WelcomeExperience
           onSelectQuickAction={onSelectQuickAction}
           onSendMessage={onSendMessage}
+          selectedDocument={selectedDocument}
+          onClearDocumentScope={onClearDocumentScope}
+          onOpenDocumentLibrary={onOpenDocumentLibrary}
+          onUploadDocument={onUploadDocument}
         />
       </div>
     );
@@ -86,7 +98,7 @@ export const ConversationWorkspace: React.FC<ConversationWorkspaceProps> = ({
           <PMLCore size="small" state="thinking" />
           <div>
             <p className="text-xs font-mono text-purple-300 font-bold uppercase tracking-wider">PML core synthesizing response...</p>
-            <p className="text-[10px] text-slate-400">Processing neural queries & space knowledge graph</p>
+            <p className="text-[10px] text-slate-400">Retrieving neural memory & document knowledge</p>
           </div>
         </div>
       )}

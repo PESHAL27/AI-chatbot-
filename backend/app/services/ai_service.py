@@ -47,11 +47,12 @@ class AIService:
         user_message: str,
         history: Optional[List[Dict[str, str]]] = None,
         relevant_memories: Optional[List[str]] = None,
+        document_context: Optional[List[Dict[str, Any]]] = None,
         model_override: Optional[str] = None
     ) -> str:
         """
         Communicates with the AI provider (OpenAI) to generate a chat response.
-        Appends system prompt instructions, long-term memory context, and multi-turn history.
+        Appends system prompt instructions, long-term memory context, document RAG excerpts, and multi-turn history.
         """
         client = cls.get_client()
         model_name = model_override or settings.AI_MODEL
@@ -59,7 +60,7 @@ class AIService:
         # Base system prompt
         system_content = PML_SYSTEM_PROMPT
 
-        # Inject Long-Term Memory Context if relevant memories exist (Phase 6)
+        # 1. Inject Long-Term Memory Context if relevant memories exist (Phase 6)
         if relevant_memories and len(relevant_memories) > 0:
             memory_block = "\n".join([f"- {m}" for m in relevant_memories])
             system_content += f"""
@@ -74,6 +75,34 @@ DIRECTIVES FOR USING LONG-TERM MEMORY:
 1. When the user asks about their background, project, learning goals, preferences, or personal context (e.g., "What project am I working on?", "What am I building?", "What do I like?"), USE THE LONG-TERM MEMORY ABOVE to answer directly, accurately, and confidently.
 2. NEVER say "I cannot recall specific past conversations or projects" or "I don't have access to past chats" when the relevant facts are provided in the memory above.
 3. Incorporate these facts naturally and helpfully in your personalized response.
+==================================================
+"""
+
+        # 2. Inject Document Intelligence (RAG) Context (Phase 7)
+        if document_context and len(document_context) > 0:
+            doc_snippets = []
+            for doc in document_context:
+                fn = doc.get("file_name", "Document")
+                pn = doc.get("page_number")
+                page_str = f" (Page {pn})" if pn else ""
+                snippet = doc.get("content", "").strip()
+                doc_snippets.append(f"📄 Source: {fn}{page_str}\n{snippet}")
+
+            rag_block = "\n\n---\n\n".join(doc_snippets)
+            system_content += f"""
+
+==================================================
+DOCUMENT INTELLIGENCE & VERIFIED SOURCES (RAG)
+==================================================
+The user has uploaded documents. The most relevant extracted excerpts are provided below:
+
+{rag_block}
+
+DIRECTIVES FOR DOCUMENT RAG:
+1. Ground your answers directly in the provided document excerpts above.
+2. Cite the source document (and page number if available) when referencing information (e.g. "According to your {document_context[0].get('file_name', 'document')}, ...").
+3. When multiple documents are provided (e.g., Java and Python notes), synthesize and compare insights across them seamlessly.
+4. Do not invent page numbers or details that contradict the document excerpts.
 ==================================================
 """
 
@@ -94,14 +123,14 @@ DIRECTIVES FOR USING LONG-TERM MEMORY:
         messages.append({"role": "user", "content": user_message})
 
         try:
-            logger.info(f"Sending prompt to model '{model_name}' (messages count: {len(messages)})")
+            logger.info(f"Sending prompt to model '{model_name}' (messages count: {len(messages)}, RAG chunks: {len(document_context) if document_context else 0})")
             
             completion = await client.chat.completions.create(
                 model=model_name,
                 messages=messages,
                 temperature=settings.AI_TEMPERATURE,
                 max_tokens=settings.AI_MAX_TOKENS,
-                timeout=30.0  # 30 seconds timeout limit
+                timeout=35.0  # 35 seconds timeout limit
             )
 
             if not completion.choices or not completion.choices[0].message.content:

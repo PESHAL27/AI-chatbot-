@@ -14,7 +14,8 @@ import {
   FileText, 
   User, 
   Sparkles,
-  Brain
+  Brain,
+  BookOpen
 } from 'lucide-react';
 import type { Message, Attachment } from '../types/pml';
 import { PMLCore } from './PMLCore';
@@ -34,6 +35,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
   const [copiedCodeId, setCopiedCodeId] = useState<string | null>(null);
   const [speaking, setSpeaking] = useState(false);
   const [userFeedback, setUserFeedback] = useState<'like' | 'dislike' | null>(message.feedback || null);
+  const [activeExcerptIndex, setActiveExcerptIndex] = useState<number | null>(null);
 
   const isUser = message.role === 'user';
 
@@ -165,6 +167,50 @@ export const MessageItem: React.FC<MessageItemProps> = ({
             </ReactMarkdown>
           </div>
 
+          {/* Grounded Document Sources (Phase 7 RAG) */}
+          {!isUser && message.sources && message.sources.length > 0 && (
+            <div className="mt-4 pt-3 border-t border-violet-500/20">
+              <div className="text-[11px] font-semibold text-violet-300/90 mb-2 flex items-center gap-1.5">
+                <BookOpen className="w-3.5 h-3.5 text-violet-400" />
+                <span>Grounded Document Sources (RAG):</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {message.sources.map((src, idx) => (
+                  <div key={idx} className="relative">
+                    <button
+                      onClick={() => setActiveExcerptIndex(activeExcerptIndex === idx ? null : idx)}
+                      className="px-2.5 py-1 rounded-lg bg-violet-950/60 border border-violet-500/40 hover:border-violet-400/80 hover:bg-violet-900/40 text-xs text-violet-200 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+                      title="Click to view extracted excerpt snippet"
+                    >
+                      <span>📄</span>
+                      <span className="font-semibold">{src.file_name}</span>
+                      {src.page_number && (
+                        <span className="text-[10px] text-violet-300 px-1.5 py-0.5 rounded bg-violet-500/20 border border-violet-500/30">
+                          Page {src.page_number}
+                        </span>
+                      )}
+                      <span className="text-[10px] text-violet-400">
+                        {activeExcerptIndex === idx ? '▲' : '▼'}
+                      </span>
+                    </button>
+
+                    {activeExcerptIndex === idx && src.excerpt && (
+                      <div className="absolute bottom-full left-0 mb-2 w-80 p-3 rounded-xl bg-[#140e2b]/95 border border-violet-500/60 shadow-2xl shadow-violet-950/90 text-xs text-violet-100 z-50 backdrop-blur-md animate-fadeIn">
+                        <div className="flex items-center justify-between font-bold text-violet-300 mb-1 border-b border-violet-500/30 pb-1">
+                          <span>Extracted Document Context</span>
+                          <span className="text-[10px] text-violet-400">{src.file_name}</span>
+                        </div>
+                        <div className="italic text-violet-200/90 leading-relaxed text-[11px] max-h-36 overflow-y-auto custom-scrollbar">
+                          "{src.excerpt}"
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Action Bar for PML Response */}
           {!isUser && !message.isStreaming && (
             <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs text-slate-400 flex-wrap gap-2">
@@ -242,4 +288,3 @@ export const MessageItem: React.FC<MessageItemProps> = ({
     </div>
   );
 };
-

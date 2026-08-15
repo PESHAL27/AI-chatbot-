@@ -109,6 +109,14 @@ class CosmicAudioSynth {
       // Ignore audio context errors
     }
   }
+
+  playInitiateSound(enabled: boolean = true) {
+    this.playSendSound(enabled);
+  }
+
+  playNodeSound(enabled: boolean = true) {
+    this.playClickSound(enabled);
+  }
 }
 
 export const cosmicAudio = new CosmicAudioSynth();

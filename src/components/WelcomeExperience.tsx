@@ -7,13 +7,17 @@ import {
   Sparkles,
   ArrowRight
 } from 'lucide-react';
-import type { QuickAction, Attachment } from '../types/pml';
+import type { QuickAction, Attachment, DocumentItem } from '../types/pml';
 import { PMLCore } from './PMLCore';
 import { MessageComposer } from './MessageComposer';
 
 interface WelcomeExperienceProps {
   onSelectQuickAction: (action: QuickAction) => void;
   onSendMessage?: (text: string, attachments?: Attachment[]) => void;
+  selectedDocument?: DocumentItem | null;
+  onClearDocumentScope?: () => void;
+  onOpenDocumentLibrary?: () => void;
+  onUploadDocument?: (file: File) => Promise<void>;
 }
 
 const QUICK_ACTIONS: QuickAction[] = [
@@ -58,6 +62,10 @@ const QUICK_ACTIONS: QuickAction[] = [
 export const WelcomeExperience: React.FC<WelcomeExperienceProps> = ({ 
   onSelectQuickAction,
   onSendMessage,
+  selectedDocument,
+  onClearDocumentScope,
+  onOpenDocumentLibrary,
+  onUploadDocument,
 }) => {
   const getIcon = (name: string) => {
     switch (name) {
@@ -89,16 +97,33 @@ export const WelcomeExperience: React.FC<WelcomeExperienceProps> = ({
 
       {/* SECTION 2: PROMINENT SEPARATED SEARCH ENGINE */}
       <div className="w-full my-8 md:my-10 max-w-4xl py-2">
-        <div className="text-left mb-3 flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_10px_rgba(6,182,212,0.9)]" />
-          <span className="font-mono text-xs md:text-sm text-cyan-300 uppercase tracking-widest font-semibold">
-            Neural Command & Search
-          </span>
+        <div className="text-left mb-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_10px_rgba(6,182,212,0.9)]" />
+            <span className="font-mono text-xs md:text-sm text-cyan-300 uppercase tracking-widest font-semibold">
+              Neural Command & Search
+            </span>
+          </div>
+
+          {onOpenDocumentLibrary && (
+            <button
+              onClick={onOpenDocumentLibrary}
+              className="text-xs text-violet-300 hover:text-white flex items-center gap-1.5 px-3 py-1 rounded-lg bg-violet-950/40 border border-violet-500/30 hover:bg-violet-900/40 transition-all font-mono"
+            >
+              <span>📚</span>
+              <span>Document Library (RAG)</span>
+            </button>
+          )}
         </div>
+
         {onSendMessage ? (
           <MessageComposer
             onSendMessage={onSendMessage}
             isStreaming={false}
+            selectedDocument={selectedDocument}
+            onClearDocumentScope={onClearDocumentScope}
+            onOpenDocumentLibrary={onOpenDocumentLibrary}
+            onUploadDocument={onUploadDocument}
           />
         ) : (
           <div className="w-full p-4 rounded-2xl pml-neon-card text-slate-300 text-base">
@@ -133,21 +158,22 @@ export const WelcomeExperience: React.FC<WelcomeExperienceProps> = ({
                   <span className="text-[10px] font-mono uppercase tracking-wider text-purple-200 bg-purple-950/70 px-2.5 py-0.5 rounded-full border border-purple-500/30 font-semibold shadow-sm">
                     {action.category}
                   </span>
-                  <div className="p-2 rounded-xl bg-black/60 border border-white/10 group-hover:scale-110 group-hover:border-purple-400 transition-all shadow-[0_0_12px_rgba(168,85,247,0.25)]">
+                  <div className="p-2 rounded-xl bg-purple-950/50 border border-purple-500/30 group-hover:border-purple-400/60 transition-colors">
                     {getIcon(action.iconName)}
                   </div>
                 </div>
-                <h3 className="font-display font-bold text-sm md:text-base text-white group-hover:text-purple-300 transition-colors mb-1.5 truncate">
+
+                <h3 className="font-bold text-base text-white group-hover:text-purple-300 transition-colors mb-1.5">
                   {action.title}
                 </h3>
-                <p className="text-xs text-slate-300 group-hover:text-slate-100 transition-colors line-clamp-2 leading-relaxed">
+                <p className="text-xs text-slate-400 leading-relaxed font-sans">
                   {action.description}
                 </p>
               </div>
 
-              <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs text-purple-300 font-bold uppercase tracking-wider font-display group-hover:text-white transition-colors">
-                <span>Try prompt</span>
-                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform text-purple-400" />
+              <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-[11px] font-mono text-purple-400 group-hover:text-purple-200">
+                <span>EXECUTE</span>
+                <ArrowRight className="w-3.5 h-3.5 transform group-hover:translate-x-1 transition-transform" />
               </div>
             </div>
           ))}
