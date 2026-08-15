@@ -12,6 +12,7 @@ export interface StreamCallbacks {
 
 export class PMLApiService {
   private endpoint: string;
+  private authToken: string | null = null;
 
   constructor(endpoint: string = DEFAULT_API_ENDPOINT) {
     this.endpoint = endpoint;
@@ -23,6 +24,25 @@ export class PMLApiService {
 
   getEndpoint() {
     return this.endpoint;
+  }
+
+  setAuthToken(token: string | null) {
+    this.authToken = token;
+  }
+
+  getAuthToken(): string | null {
+    return this.authToken;
+  }
+
+  private getHeaders(custom: Record<string, string> = {}): Record<string, string> {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...custom,
+    };
+    if (this.authToken) {
+      headers['Authorization'] = `Bearer ${this.authToken}`;
+    }
+    return headers;
   }
 
   /**
@@ -68,7 +88,7 @@ export class PMLApiService {
 
       const response = await fetch(`${apiBase}/api/chat`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: this.getHeaders(),
         body: JSON.stringify(payload),
       });
 
@@ -291,7 +311,9 @@ How can I assist your exploration today? Feel free to ask a question, attach doc
   async fetchConversations(): Promise<Conversation[]> {
     try {
       const apiBase = this.endpoint || DEFAULT_API_ENDPOINT;
-      const res = await fetch(`${apiBase}/api/conversations`);
+      const res = await fetch(`${apiBase}/api/conversations`, {
+        headers: this.getHeaders(),
+      });
       if (res.ok) {
         const data = await res.json();
         return data.map((c: any) => ({
@@ -318,7 +340,9 @@ How can I assist your exploration today? Feel free to ask a question, attach doc
   async fetchConversationDetails(id: string): Promise<Conversation | null> {
     try {
       const apiBase = this.endpoint || DEFAULT_API_ENDPOINT;
-      const res = await fetch(`${apiBase}/api/conversations/${id}`);
+      const res = await fetch(`${apiBase}/api/conversations/${id}`, {
+        headers: this.getHeaders(),
+      });
       if (res.ok) {
         const data = await res.json();
         return {
@@ -345,7 +369,7 @@ How can I assist your exploration today? Feel free to ask a question, attach doc
       const apiBase = this.endpoint || DEFAULT_API_ENDPOINT;
       const res = await fetch(`${apiBase}/api/conversations/${id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: this.getHeaders(),
         body: JSON.stringify({ title: newTitle }),
       });
       if (res.ok) return true;
@@ -367,7 +391,10 @@ How can I assist your exploration today? Feel free to ask a question, attach doc
   async deleteConversation(id: string): Promise<void> {
     try {
       const apiBase = this.endpoint || DEFAULT_API_ENDPOINT;
-      await fetch(`${apiBase}/api/conversations/${id}`, { method: 'DELETE' });
+      await fetch(`${apiBase}/api/conversations/${id}`, {
+        method: 'DELETE',
+        headers: this.getHeaders(),
+      });
     } catch (err) {
       console.warn('[PML API] Error deleting conversation from backend:', err);
     }

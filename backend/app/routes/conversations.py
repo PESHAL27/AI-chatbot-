@@ -1,24 +1,26 @@
-from typing import Optional, List
-from fastapi import APIRouter, HTTPException, status
+from typing import Optional, List, Dict, Any
+from fastapi import APIRouter, HTTPException, status, Depends
 from pydantic import BaseModel, Field
 from app.services.database_service import DatabaseService
+from app.auth.dependencies import get_current_user
 
 router = APIRouter(prefix="/api/conversations", tags=["Conversations"])
 
 class CreateConversationRequest(BaseModel):
     title: Optional[str] = Field("New Conversation", description="Initial conversation title")
-    user_id: Optional[str] = Field("guest_user", description="User identifier")
 
 class RenameConversationRequest(BaseModel):
     title: str = Field(..., min_length=1, description="New conversation title")
 
 @router.get("", summary="Get User Conversations List")
-async def list_conversations(user_id: str = "guest_user"):
+async def list_conversations(current_user: Dict[str, Any] = Depends(get_current_user)):
     """
-    Returns list of saved conversations for a user ordered by updated_at DESC.
+    Returns list of saved conversations for the authenticated user ordered by updated_at DESC.
     """
     try:
-        conversations = await DatabaseService.get_conversations(user_id=user_id)
+        user_id = current_user["id"]
+        token = current_user.get("token")
+        conversations = await DatabaseService.get_conversations(user_id=user_id, user_token=token)
         return conversations
     except Exception as err:
         raise HTTPException(
@@ -27,12 +29,17 @@ async def list_conversations(user_id: str = "guest_user"):
         )
 
 @router.post("", summary="Create New Conversation")
-async def create_conversation(req: CreateConversationRequest):
+async def create_conversation(
+    req: CreateConversationRequest,
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
     """
-    Creates a new conversation record.
+    Creates a new conversation record tied to the authenticated user.
     """
     try:
-        conv = await DatabaseService.create_conversation(title=req.title, user_id=req.user_id)
+        user_id = current_user["id"]
+        token = current_user.get("token")
+        conv = await DatabaseService.create_conversation(title=req.title, user_id=user_id, user_token=token)
         return conv
     except Exception as err:
         raise HTTPException(
@@ -41,16 +48,21 @@ async def create_conversation(req: CreateConversationRequest):
         )
 
 @router.get("/{conversation_id}", summary="Get Conversation Details & Messages History")
-async def get_conversation(conversation_id: str):
+async def get_conversation(
+    conversation_id: str,
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
     """
-    Returns conversation information along with full message history logs.
+    Returns conversation information and messages, verifying user ownership.
     """
     try:
-        conv = await DatabaseService.get_conversation_with_messages(conversation_id)
+        user_id = current_user["id"]
+        token = current_user.get("token")
+        conv = await DatabaseService.get_conversation_with_messages(conversation_id, user_id=user_id, user_token=token)
         if not conv:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Conversation not found"
+                detail="Conversation not found or access denied."
             )
         return conv
     except HTTPException:
@@ -58,20 +70,26 @@ async def get_conversation(conversation_id: str):
     except Exception as err:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"PML couldn't load this conversation. Please try again."
+            detail="PML couldn't load this conversation. Please try again."
         )
 
 @router.patch("/{conversation_id}", summary="Rename Conversation Title")
-async def rename_conversation(conversation_id: str, req: RenameConversationRequest):
+async def rename_conversation(
+    conversation_id: str,
+    req: RenameConversationRequest,
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
     """
-    Renames a conversation title.
+    Renames a conversation title with user ownership check.
     """
     try:
-        updated = await DatabaseService.rename_conversation(conversation_id, req.title)
+        user_id = current_user["id"]
+        token = current_user.get("token")
+        updated = await DatabaseService.rename_conversation(conversation_id, req.title, user_id=user_id, user_token=token)
         if not updated:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Conversation not found"
+                detail="Conversation not found or access denied."
             )
         return updated
     except HTTPException:
@@ -83,16 +101,21 @@ async def rename_conversation(conversation_id: str, req: RenameConversationReque
         )
 
 @router.delete("/{conversation_id}", summary="Delete Conversation")
-async def delete_conversation(conversation_id: str):
+async def delete_conversation(
+    conversation_id: str,
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
     """
-    Deletes a conversation and all its stored messages.
+    Deletes a conversation and all its stored messages with user ownership check.
     """
     try:
-        success = await DatabaseService.delete_conversation(conversation_id)
+        user_id = current_user["id"]
+        token = current_user.get("token")
+        success = await DatabaseService.delete_conversation(conversation_id, user_id=user_id, user_token=token)
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Conversation not found"
+                detail="Conversation not found or access denied."
             )
         return {"message": "Conversation deleted successfully", "id": conversation_id}
     except HTTPException:

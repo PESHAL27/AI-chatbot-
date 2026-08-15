@@ -10,6 +10,7 @@ import type {
 } from './types/pml';
 import { pmlApi } from './services/pmlApi';
 import { cosmicAudio } from './utils/audioSynth';
+import { AuthProvider, useAuth } from './context/AuthContext';
 
 import { CosmicBackground } from './components/CosmicBackground';
 import { NavigationPanel } from './components/NavigationPanel';
@@ -18,6 +19,8 @@ import { ConversationWorkspace } from './components/ConversationWorkspace';
 import { MessageComposer } from './components/MessageComposer';
 import { SettingsModal } from './components/SettingsModal';
 import { UserProfileModal } from './components/UserProfileModal';
+import { AuthExperience } from './components/AuthExperience';
+import { PMLCore } from './components/PMLCore';
 
 const DEFAULT_SETTINGS: PMLSettings = {
   theme: 'dark',
@@ -38,7 +41,9 @@ const DEFAULT_USER_PROFILE: UserProfile = {
   joinedDate: 'August 2026',
 };
 
-export const App: React.FC = () => {
+const PMLAppContent: React.FC = () => {
+  const { user, loading } = useAuth();
+
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [coreState, setCoreState] = useState<PMLCoreState>('idle');
@@ -53,15 +58,29 @@ export const App: React.FC = () => {
     return saved ? JSON.parse(saved) : DEFAULT_SETTINGS;
   });
 
-  const [userProfile, setUserProfile] = useState<UserProfile>(DEFAULT_USER_PROFILE);
   const abortControllerRef = useRef<boolean>(false);
 
-  // Load conversations from local storage on mount
+  // Dynamic user profile from authenticated session
+  const userProfile: UserProfile = {
+    ...DEFAULT_USER_PROFILE,
+    name: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Cosmic Explorer',
+    email: user?.email || 'explorer@pml.universe',
+    joinedDate: user?.created_at
+      ? new Date(user.created_at).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })
+      : 'August 2026',
+  };
+
+  // Load conversations when user authenticates
   useEffect(() => {
-    pmlApi.fetchConversations().then(data => {
-      setConversations(data);
-    });
-  }, []);
+    if (user) {
+      pmlApi.fetchConversations().then(data => {
+        setConversations(data);
+      });
+    } else {
+      setConversations([]);
+      setActiveConversationId(null);
+    }
+  }, [user]);
 
   // Sync settings & theme attribute
   useEffect(() => {
@@ -108,195 +127,177 @@ export const App: React.FC = () => {
     await pmlApi.deleteConversation(id);
   };
 
-  // Toggle star conversation
+  // Toggle star/bookmark on conversation
   const handleToggleStarConversation = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     cosmicAudio.playClickSound(settings.soundEffects);
-    const updated = conversations.map(c => 
+    const updated = conversations.map(c =>
       c.id === id ? { ...c, isStarred: !c.isStarred } : c
     );
     saveConversationsState(updated);
   };
 
-  // Rename active conversation
+  // Rename conversation
   const handleRenameConversation = async (id: string, newTitle: string) => {
-    const updated = conversations.map(c => 
+    const updated = conversations.map(c =>
       c.id === id ? { ...c, title: newTitle } : c
     );
     saveConversationsState(updated);
     await pmlApi.renameConversation(id, newTitle);
   };
 
-  // Send message flow
+  // Send message flow (Streaming + DB persistence)
   const handleSendMessage = async (text: string, attachments: Attachment[] = []) => {
-    if (isStreaming) return;
+    if (!text.trim() && attachments.length === 0) return;
+
+    abortControllerRef.current = false;
     cosmicAudio.playSendSound(settings.soundEffects);
 
-    let targetConvId = activeConversationId;
-    let updatedConvs = [...conversations];
+    let currentConvId = activeConversationId;
+    let updatedConversations = [...conversations];
 
-    // Create user message
+    // Auto-create new conversation if currently in welcome screen
+    if (!currentConvId) {
+      const generatedTitle = text.slice(0, 32) + (text.length > 32 ? '...' : '');
+      const newConv: Conversation = {
+        id: `conv_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+        title: generatedTitle,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        messages: [],
+      };
+      updatedConversations = [newConv, ...updatedConversations];
+      currentConvId = newConv.id;
+      setActiveConversationId(currentConvId);
+    }
+
+    // 1. Append User Message
     const userMsg: Message = {
-      id: Math.random().toString(36).substring(2, 9),
+      id: `msg_user_${Date.now()}`,
       role: 'user',
       content: text,
       timestamp: new Date().toISOString(),
-      attachments,
+      attachments: attachments.length > 0 ? attachments : undefined,
     };
 
-    // If no active conversation, create one
-    if (!targetConvId) {
-      const title = text.slice(0, 32) + (text.length > 32 ? '...' : '');
-      const newConv: Conversation = {
-        id: `conv_${Date.now()}`,
-        title,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        messages: [userMsg],
-      };
-      targetConvId = newConv.id;
-      updatedConvs = [newConv, ...updatedConvs];
-      setActiveConversationId(targetConvId);
-    } else {
-      updatedConvs = updatedConvs.map(c => {
-        if (c.id === targetConvId) {
-          return {
-            ...c,
-            updatedAt: new Date().toISOString(),
-            messages: [...c.messages, userMsg],
-          };
-        }
-        return c;
-      });
-    }
-
-    saveConversationsState(updatedConvs);
-
-    // Prepare PML response message item
-    const pmlMsgId = Math.random().toString(36).substring(2, 9);
-    const initialPmlMsg: Message = {
-      id: pmlMsgId,
+    // 2. Prepare Assistant Message Placeholder
+    const assistantMsgId = `msg_pml_${Date.now()}`;
+    const initialAssistantMsg: Message = {
+      id: assistantMsgId,
       role: 'pml',
       content: '',
       timestamp: new Date().toISOString(),
       isStreaming: true,
     };
 
-    // Add empty streaming PML message
-    updatedConvs = updatedConvs.map(c => {
-      if (c.id === targetConvId) {
-        return { ...c, messages: [...c.messages, initialPmlMsg] };
-      }
-      return c;
-    });
-    saveConversationsState(updatedConvs);
+    // Update conversation state with user + blank assistant message
+    const convIndex = updatedConversations.findIndex(c => c.id === currentConvId);
+    if (convIndex !== -1) {
+      updatedConversations[convIndex] = {
+        ...updatedConversations[convIndex],
+        updatedAt: new Date().toISOString(),
+        messages: [...updatedConversations[convIndex].messages, userMsg, initialAssistantMsg],
+      };
+      saveConversationsState(updatedConversations);
+    }
 
-    setCoreState('thinking');
+    // Set UI streaming and core animation state
     setIsStreaming(true);
-    abortControllerRef.current = false;
+    setCoreState('thinking');
 
-    // Extract historical messages context for multi-turn memory
-    const activeConvObj = updatedConvs.find(c => c.id === targetConvId);
-    const historyPayload = activeConvObj
-      ? activeConvObj.messages
-          .filter(m => m.id !== pmlMsgId && m.id !== userMsg.id && m.content)
-          .map(m => ({
-            role: (m.role === 'pml' ? 'assistant' : 'user') as 'assistant' | 'user',
-            content: m.content,
-          }))
+    // Build context history
+    const contextHistory = convIndex !== -1 
+      ? updatedConversations[convIndex].messages.slice(0, -2).map(m => ({
+          role: m.role === 'pml' ? 'assistant' : ('user' as 'user' | 'assistant'),
+          content: m.content
+        }))
       : [];
 
-    // Stream PML response from API service
-    try {
-      await pmlApi.sendMessageStream(
-        text,
-        attachments,
-        targetConvId,
-        settings,
-        {
-          onChunk: (_chunk, fullText) => {
-            if (abortControllerRef.current) return;
-            setCoreState('responding');
-            setConversations(prev =>
-              prev.map(c => {
-                if (c.id === targetConvId) {
-                  return {
-                    ...c,
-                    messages: c.messages.map(m =>
-                      m.id === pmlMsgId ? { ...m, content: fullText } : m
-                    ),
-                  };
-                }
-                return c;
-              })
-            );
-          },
-          onComplete: fullText => {
-            setIsStreaming(false);
-            setCoreState('idle');
-            cosmicAudio.playReceiveSound(settings.soundEffects);
+    let accumulatedContent = '';
 
-            setConversations(prev => {
-              const final = prev.map(c => {
-                if (c.id === targetConvId) {
-                  return {
-                    ...c,
-                    messages: c.messages.map(m =>
-                      m.id === pmlMsgId
-                        ? { ...m, content: fullText, isStreaming: false }
-                        : m
-                    ),
-                  };
-                }
-                return c;
-              });
-              pmlApi.saveConversations(final);
-              return final;
-            });
+    await pmlApi.sendMessageStream(
+      text,
+      attachments,
+      currentConvId,
+      settings,
+      {
+        onChunk: (_chunk, fullText) => {
+          if (abortControllerRef.current) return;
+          accumulatedContent = fullText;
+          setCoreState('responding');
 
-            // Update user profile query counts
-            setUserProfile(prev => ({
-              ...prev,
-              queriesCount: prev.queriesCount + 1,
-              docsAnalyzedCount: attachments.length > 0 ? prev.docsAnalyzedCount + attachments.length : prev.docsAnalyzedCount,
-            }));
-          },
-          onError: () => {
-            setIsStreaming(false);
-            setCoreState('idle');
-            setConversations(prev => {
-              const final = prev.map(c => {
-                if (c.id === targetConvId) {
-                  return {
-                    ...c,
-                    messages: c.messages.map(m =>
-                      m.id === pmlMsgId
-                        ? {
-                            ...m,
-                            content: 'Unable to connect to PML. Please try again.',
-                            isStreaming: false,
-                            error: true,
-                          }
-                        : m
-                    ),
-                  };
-                }
-                return c;
-              });
-              pmlApi.saveConversations(final);
-              return final;
-            });
-          },
+          setConversations(prev =>
+            prev.map(c => {
+              if (c.id === currentConvId) {
+                return {
+                  ...c,
+                  messages: c.messages.map(m =>
+                    m.id === assistantMsgId
+                      ? { ...m, content: fullText, isStreaming: true }
+                      : m
+                  ),
+                };
+              }
+              return c;
+            })
+          );
         },
-        historyPayload
-      );
-    } catch {
-      setIsStreaming(false);
-      setCoreState('idle');
-    }
+        onComplete: fullText => {
+          cosmicAudio.playReceiveSound(settings.soundEffects);
+          setIsStreaming(false);
+          setCoreState('idle');
+
+          setConversations(prev => {
+            const finalState = prev.map(c => {
+              if (c.id === currentConvId) {
+                return {
+                  ...c,
+                  messages: c.messages.map(m =>
+                    m.id === assistantMsgId
+                      ? { ...m, content: fullText, isStreaming: false }
+                      : m
+                  ),
+                };
+              }
+              return c;
+            });
+            pmlApi.saveConversations(finalState);
+            return finalState;
+          });
+        },
+        onError: err => {
+          console.error('[PML] Stream error:', err);
+          setIsStreaming(false);
+          setCoreState('idle');
+
+          setConversations(prev =>
+            prev.map(c => {
+              if (c.id === currentConvId) {
+                return {
+                  ...c,
+                  messages: c.messages.map(m =>
+                    m.id === assistantMsgId
+                      ? {
+                          ...m,
+                          content:
+                            accumulatedContent ||
+                            'Neural connection interrupted. Please verify backend is running on port 8000.',
+                          isStreaming: false,
+                        }
+                      : m
+                  ),
+                };
+              }
+              return c;
+            })
+          );
+        },
+      },
+      contextHistory
+    );
   };
 
-  // Stop current streaming generation
+  // Stop Generation
   const handleStopGeneration = () => {
     abortControllerRef.current = true;
     setIsStreaming(false);
@@ -322,6 +323,32 @@ export const App: React.FC = () => {
     pmlApi.sendFeedback(messageId, feedback);
   };
 
+  // 1. Checking Session Loading State
+  if (loading) {
+    return (
+      <div className="relative w-screen h-screen overflow-hidden flex flex-col items-center justify-center bg-black">
+        <CosmicBackground density={settings.particleDensity} theme={settings.theme} />
+        <div className="relative z-10 flex flex-col items-center gap-4 text-center">
+          <PMLCore size="medium" state="thinking" />
+          <p className="font-mono text-sm uppercase tracking-widest text-red-400 font-semibold animate-pulse">
+            Authenticating Neural Session...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // 2. Unauthenticated -> Show Cosmic Auth Experience
+  if (!user) {
+    return (
+      <div className="relative w-screen h-screen overflow-hidden flex flex-col">
+        <CosmicBackground density={settings.particleDensity} theme={settings.theme} />
+        <AuthExperience />
+      </div>
+    );
+  }
+
+  // 3. Authenticated -> Show PML Workspace
   return (
     <div className="relative w-screen h-screen overflow-hidden flex flex-col">
       {/* Dynamic Deep Space Canvas Background */}
@@ -398,6 +425,14 @@ export const App: React.FC = () => {
         profile={userProfile}
       />
     </div>
+  );
+};
+
+export const App: React.FC = () => {
+  return (
+    <AuthProvider>
+      <PMLAppContent />
+    </AuthProvider>
   );
 };
 

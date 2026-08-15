@@ -1,17 +1,21 @@
 import uuid
-from typing import List, Dict
+from typing import List, Dict, Optional, Any
 from app.schemas.chat import ChatRequest, ChatResponse
 from app.services.ai_service import AIService
 from app.services.database_service import DatabaseService
 
 class ChatService:
     @staticmethod
-    async def process_chat(request: ChatRequest) -> ChatResponse:
+    async def process_chat(
+        request: ChatRequest, 
+        user_id: str,
+        user_token: Optional[str] = None
+    ) -> ChatResponse:
         """
-        Processes chat requests (Phase 4):
-        1. Ensures conversation record exists in Supabase/database.
-        2. Saves user prompt message.
-        3. Retrieves stored history context.
+        Processes authenticated chat requests (Phase 5):
+        1. Ensures conversation record exists and is owned by user_id.
+        2. Saves user prompt message with ownership.
+        3. Retrieves stored history context for that user.
         4. Calls AIService for LLM response.
         5. Saves AI response to database.
         6. Returns structured response.
@@ -22,15 +26,22 @@ class ChatService:
         await DatabaseService.save_message(
             conversation_id=conv_id,
             role="user",
-            content=request.message
+            content=request.message,
+            user_id=user_id,
+            user_token=user_token
         )
 
-        # 2. Retrieve history context from Database (or request fallback)
-        db_messages = await DatabaseService.get_messages(conversation_id=conv_id, limit=30)
+        # 2. Retrieve history context from Database (strictly for this user)
+        db_messages = await DatabaseService.get_messages(
+            conversation_id=conv_id, 
+            user_id=user_id, 
+            limit=30,
+            user_token=user_token
+        )
         
         formatted_history: List[Dict[str, str]] = []
         if db_messages:
-            # Exclude the very last user message we just inserted to avoid duplication
+            # Exclude the very last user message we just inserted to avoid duplicate prompt in LLM prompt
             for m in db_messages[:-1]:
                 formatted_history.append({
                     "role": m.get("role", "user"),
@@ -50,7 +61,9 @@ class ChatService:
         await DatabaseService.save_message(
             conversation_id=conv_id,
             role="assistant",
-            content=ai_reply
+            content=ai_reply,
+            user_id=user_id,
+            user_token=user_token
         )
 
         return ChatResponse(

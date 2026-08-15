@@ -219,20 +219,20 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
         <div className="p-4 border-t border-red-500/25 flex items-center justify-between bg-black/70 rounded-b-2xl">
           <button
             onClick={onOpenProfile}
-            className="flex items-center gap-3 p-1.5 rounded-xl hover:bg-red-950/50 text-left transition-colors flex-1 min-w-0 mr-2"
+            className="flex items-center gap-3 p-1.5 rounded-xl hover:bg-red-950/50 text-left transition-colors flex-1 min-w-0 mr-2 cursor-pointer"
           >
             <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-red-600 via-rose-600 to-red-800 flex items-center justify-center text-white font-bold text-sm shadow-[0_0_12px_rgba(255,0,60,0.5)]">
-              {userProfile.name.charAt(0)}
+              {(userProfile.name || 'P').charAt(0).toUpperCase()}
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-bold text-white truncate">{userProfile.name}</p>
-              <p className="text-xs text-red-400 font-mono truncate">{userProfile.tier}</p>
+              <p className="text-sm font-bold text-white truncate">{userProfile.name || 'Cosmic Explorer'}</p>
+              <p className="text-xs text-red-400 font-mono truncate">{userProfile.email || 'Online'}</p>
             </div>
           </button>
 
           <button
             onClick={onOpenSettings}
-            className="p-2.5 rounded-xl hover:bg-red-950/50 text-slate-300 hover:text-red-400 transition-colors"
+            className="p-2.5 rounded-xl hover:bg-red-950/50 text-slate-300 hover:text-red-400 transition-colors cursor-pointer"
             title="PML Settings"
           >
             <Settings className="w-5 h-5" />
