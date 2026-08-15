@@ -120,13 +120,13 @@ export const WelcomeExperience: React.FC<WelcomeExperienceProps> = ({
               className={`group p-5 rounded-2xl glitter-glass-panel bg-gradient-to-br ${action.gradient} cursor-pointer flex flex-col justify-between transition-all duration-300 transform hover:-translate-y-1.5`}
             >
               <div>
-                <div className="flex items-center justify-between mb-2.5">
-                  <div className="p-2 rounded-xl bg-black/80 border border-red-500/40 group-hover:scale-105 group-hover:border-red-500 transition-all shadow-[0_0_10px_rgba(255,0,60,0.25)]">
-                    {getIcon(action.iconName)}
-                  </div>
-                  <span className="text-xs font-mono uppercase tracking-wider text-red-200 bg-red-950/90 px-2 py-0.5 rounded-md border border-red-500/40 font-semibold">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-mono uppercase tracking-wider text-red-200 bg-red-950/90 px-2.5 py-0.5 rounded-md border border-red-500/40 font-semibold">
                     {action.category}
                   </span>
+                  <div className="p-2 rounded-xl bg-black/80 border border-red-500/40 group-hover:scale-110 group-hover:border-red-500 transition-all shadow-[0_0_10px_rgba(255,0,60,0.25)]">
+                    {getIcon(action.iconName)}
+                  </div>
                 </div>
                 <h3 className="font-display font-bold text-sm md:text-base text-white group-hover:text-red-400 transition-colors mb-1.5 truncate">
                   {action.title}

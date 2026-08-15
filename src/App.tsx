@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Sparkles, X } from 'lucide-react';
 import type { 
   Conversation, 
   Message, 
@@ -52,6 +53,8 @@ const PMLAppContent: React.FC = () => {
 
   const [settingsModalOpen, setSettingsModalOpen] = useState<boolean>(false);
   const [profileModalOpen, setProfileModalOpen] = useState<boolean>(false);
+  const [authModalOpen, setAuthModalOpen] = useState<boolean>(false);
+  const [showGuestBanner, setShowGuestBanner] = useState<boolean>(true);
 
   const [settings, setSettings] = useState<PMLSettings>(() => {
     const saved = localStorage.getItem('pml_settings');
@@ -63,23 +66,18 @@ const PMLAppContent: React.FC = () => {
   // Dynamic user profile from authenticated session
   const userProfile: UserProfile = {
     ...DEFAULT_USER_PROFILE,
-    name: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Cosmic Explorer',
-    email: user?.email || 'explorer@pml.universe',
+    name: user?.user_metadata?.full_name || (user ? user.email?.split('@')[0] : 'Guest Explorer'),
+    email: user ? (user.email || 'explorer@pml.universe') : 'Guest Session',
     joinedDate: user?.created_at
       ? new Date(user.created_at).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })
       : 'August 2026',
   };
 
-  // Load conversations when user authenticates
+  // Load conversations when user state initializes
   useEffect(() => {
-    if (user) {
-      pmlApi.fetchConversations().then(data => {
-        setConversations(data);
-      });
-    } else {
-      setConversations([]);
-      setActiveConversationId(null);
-    }
+    pmlApi.fetchConversations().then(data => {
+      setConversations(data);
+    });
   }, [user]);
 
   // Sync settings & theme attribute
@@ -146,7 +144,7 @@ const PMLAppContent: React.FC = () => {
     await pmlApi.renameConversation(id, newTitle);
   };
 
-  // Send message flow (Streaming + DB persistence)
+  // Send message flow (Streaming + DB persistence for guests & users)
   const handleSendMessage = async (text: string, attachments: Attachment[] = []) => {
     if (!text.trim() && attachments.length === 0) return;
 
@@ -323,7 +321,7 @@ const PMLAppContent: React.FC = () => {
     pmlApi.sendFeedback(messageId, feedback);
   };
 
-  // 1. Checking Session Loading State
+  // 1. Initial Checking Session Loading Animation
   if (loading) {
     return (
       <div className="relative w-screen h-screen overflow-hidden flex flex-col items-center justify-center bg-black">
@@ -331,24 +329,14 @@ const PMLAppContent: React.FC = () => {
         <div className="relative z-10 flex flex-col items-center gap-4 text-center">
           <PMLCore size="medium" state="thinking" />
           <p className="font-mono text-sm uppercase tracking-widest text-red-400 font-semibold animate-pulse">
-            Authenticating Neural Session...
+            Connecting to PML Universe...
           </p>
         </div>
       </div>
     );
   }
 
-  // 2. Unauthenticated -> Show Cosmic Auth Experience
-  if (!user) {
-    return (
-      <div className="relative w-screen h-screen overflow-hidden flex flex-col">
-        <CosmicBackground density={settings.particleDensity} theme={settings.theme} />
-        <AuthExperience />
-      </div>
-    );
-  }
-
-  // 3. Authenticated -> Show PML Workspace
+  // 2. Main Interface (Open to both Guests and Authenticated Users)
   return (
     <div className="relative w-screen h-screen overflow-hidden flex flex-col">
       {/* Dynamic Deep Space Canvas Background */}
@@ -365,8 +353,10 @@ const PMLAppContent: React.FC = () => {
         onDeleteConversation={handleDeleteConversation}
         onToggleStarConversation={handleToggleStarConversation}
         onOpenSettings={() => setSettingsModalOpen(true)}
-        onOpenProfile={() => setProfileModalOpen(true)}
+        onOpenProfile={() => (user ? setProfileModalOpen(true) : setAuthModalOpen(true))}
         userProfile={userProfile}
+        isAuthenticated={Boolean(user)}
+        onOpenAuth={() => setAuthModalOpen(true)}
       />
 
       {/* Main Workspace Layout Wrapper */}
@@ -389,7 +379,30 @@ const PMLAppContent: React.FC = () => {
               ? () => handleToggleStarConversation(activeConversationId, { stopPropagation: () => {} } as any)
               : undefined
           }
+          isAuthenticated={Boolean(user)}
+          onOpenAuth={() => setAuthModalOpen(true)}
         />
+
+        {/* Guest Session Top Notice Pill (Subtle & Non-Intrusive) */}
+        {!user && showGuestBanner && (
+          <div className="mx-auto mt-2 px-4 py-1.5 rounded-full bg-red-950/70 border border-red-500/40 text-red-200 text-xs font-mono flex items-center gap-2 shadow-[0_0_15px_rgba(255,0,60,0.2)] z-20 backdrop-blur-md">
+            <Sparkles className="w-3.5 h-3.5 text-red-400 animate-pulse" />
+            <span>Guest Mode active. </span>
+            <button
+              onClick={() => setAuthModalOpen(true)}
+              className="text-white font-bold underline hover:text-red-300 transition-colors cursor-pointer"
+            >
+              Sign in to sync & save chat history
+            </button>
+            <button
+              onClick={() => setShowGuestBanner(false)}
+              className="ml-1 text-slate-400 hover:text-white p-0.5 cursor-pointer"
+              title="Dismiss notice"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
 
         {/* Central Workspace Stream */}
         <ConversationWorkspace
@@ -419,11 +432,18 @@ const PMLAppContent: React.FC = () => {
         onUpdateSettings={newS => setSettings(prev => ({ ...prev, ...newS }))}
       />
 
-      <UserProfileModal
-        isOpen={profileModalOpen}
-        onClose={() => setProfileModalOpen(false)}
-        profile={userProfile}
-      />
+      {user && (
+        <UserProfileModal
+          isOpen={profileModalOpen}
+          onClose={() => setProfileModalOpen(false)}
+          profile={userProfile}
+        />
+      )}
+
+      {/* Auth Modal (Triggerable by user anytime or dismissible) */}
+      {authModalOpen && (
+        <AuthExperience onClose={() => setAuthModalOpen(false)} />
+      )}
     </div>
   );
 };

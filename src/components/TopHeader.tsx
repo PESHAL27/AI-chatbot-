@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Menu, Sun, Moon, Settings, Edit2, Check, Star, RefreshCw } from 'lucide-react';
+import { Menu, Sun, Moon, Settings, Edit2, Check, Star, RefreshCw, LogIn } from 'lucide-react';
 import type { Conversation, PMLCoreState, ThemeMode } from '../types/pml';
 import { PMLCore } from './PMLCore';
 
@@ -14,6 +14,8 @@ interface TopHeaderProps {
   onOpenSettings: () => void;
   onClearChat?: () => void;
   onToggleStar?: () => void;
+  isAuthenticated?: boolean;
+  onOpenAuth?: () => void;
 }
 
 export const TopHeader: React.FC<TopHeaderProps> = ({
@@ -27,6 +29,8 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   onOpenSettings,
   onClearChat,
   onToggleStar,
+  isAuthenticated = false,
+  onOpenAuth,
 }) => {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState(activeConversation?.title || '');
@@ -105,8 +109,18 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
         </div>
       </div>
 
-      {/* Right: Actions (Theme, Star, Clear, Settings) */}
+      {/* Right: Actions (Theme, Star, Clear, Settings, Sign In) */}
       <div className="flex items-center gap-2">
+        {!isAuthenticated && onOpenAuth && (
+          <button
+            onClick={onOpenAuth}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-red-600 via-rose-600 to-red-700 hover:from-red-500 hover:to-rose-500 text-white font-display text-xs font-bold uppercase tracking-wider shadow-[0_0_15px_rgba(255,0,60,0.45)] hover:shadow-[0_0_25px_rgba(255,23,68,0.7)] transition-all cursor-pointer mr-1"
+          >
+            <LogIn className="w-3.5 h-3.5" />
+            <span>Sign In</span>
+          </button>
+        )}
+
         {activeConversation && onToggleStar && (
           <button
             onClick={onToggleStar}

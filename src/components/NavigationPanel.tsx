@@ -25,6 +25,8 @@ interface NavigationPanelProps {
   onOpenSettings: () => void;
   onOpenProfile: () => void;
   userProfile: UserProfileType;
+  isAuthenticated?: boolean;
+  onOpenAuth?: () => void;
 }
 
 export const NavigationPanel: React.FC<NavigationPanelProps> = ({
@@ -39,6 +41,8 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
   onOpenSettings,
   onOpenProfile,
   userProfile,
+  isAuthenticated = false,
+  onOpenAuth,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterMode, setFilterMode] = useState<'all' | 'starred'>('all');
@@ -218,15 +222,19 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
         {/* Footer Settings & Profile */}
         <div className="p-4 border-t border-red-500/25 flex items-center justify-between bg-black/70 rounded-b-2xl">
           <button
-            onClick={onOpenProfile}
-            className="flex items-center gap-3 p-1.5 rounded-xl hover:bg-red-950/50 text-left transition-colors flex-1 min-w-0 mr-2 cursor-pointer"
+            onClick={!isAuthenticated && onOpenAuth ? onOpenAuth : onOpenProfile}
+            className="flex items-center gap-3 p-1.5 rounded-xl hover:bg-red-950/50 text-left transition-colors flex-1 min-w-0 mr-2 cursor-pointer group"
           >
             <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-red-600 via-rose-600 to-red-800 flex items-center justify-center text-white font-bold text-sm shadow-[0_0_12px_rgba(255,0,60,0.5)]">
               {(userProfile.name || 'P').charAt(0).toUpperCase()}
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-bold text-white truncate">{userProfile.name || 'Cosmic Explorer'}</p>
-              <p className="text-xs text-red-400 font-mono truncate">{userProfile.email || 'Online'}</p>
+              <p className="text-sm font-bold text-white truncate group-hover:text-red-300 transition-colors">
+                {isAuthenticated ? (userProfile.name || 'Cosmic Explorer') : 'Guest Explorer'}
+              </p>
+              <p className="text-xs text-red-400 font-mono truncate">
+                {isAuthenticated ? (userProfile.email || 'Online') : 'Click to Sign In'}
+              </p>
             </div>
           </button>
 

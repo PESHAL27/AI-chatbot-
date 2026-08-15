@@ -14,19 +14,18 @@ async def get_current_user(
 ) -> Dict[str, Any]:
     """
     Verifies the Supabase Auth access token passed in the Authorization header.
-    Extracts and returns the verified user identity ({id, email, full_name}).
-    Rejects unauthenticated or invalid token requests with HTTP 401.
+    If no token is provided, returns a Guest Explorer user identity so visitors
+    can freely explore and chat with PML without mandatory login.
     """
     if not credentials or not credentials.credentials:
-        # If running in local dev without auth enabled, allow guest fallback only if explicitly set
-        if settings.APP_ENV == "development" and not settings.SUPABASE_KEY:
-            return {"id": "guest_user", "email": "explorer@pml.universe", "full_name": "Guest Explorer"}
-        
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required. Please sign in to PML.",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        # Seamless Guest Access Mode
+        return {
+            "id": "guest_user",
+            "email": "guest@pml.universe",
+            "full_name": "Guest Explorer",
+            "is_guest": True,
+            "token": None
+        }
 
     token = credentials.credentials
 
@@ -54,21 +53,25 @@ async def get_current_user(
                     "id": user_id,
                     "email": email,
                     "full_name": full_name,
+                    "is_guest": False,
                     "token": token
                 }
             else:
                 logger.warn(f"Supabase Auth token verification failed with status {res.status_code}: {res.text}")
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid or expired session. Please sign in again.",
-                    headers={"WWW-Authenticate": "Bearer"},
-                )
-    except HTTPException:
-        raise
+                # Fallback to guest if token expired, so user can still chat without hard crash
+                return {
+                    "id": "guest_user",
+                    "email": "guest@pml.universe",
+                    "full_name": "Guest Explorer",
+                    "is_guest": True,
+                    "token": None
+                }
     except Exception as e:
         logger.error(f"Error during authentication token verification: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Unable to verify authentication credentials.",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        return {
+            "id": "guest_user",
+            "email": "guest@pml.universe",
+            "full_name": "Guest Explorer",
+            "is_guest": True,
+            "token": None
+        }

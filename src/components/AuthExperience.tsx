@@ -6,22 +6,36 @@ import {
   ArrowRight, 
   AlertCircle,
   CheckCircle2,
-  KeyRound
+  KeyRound,
+  Eye,
+  EyeOff,
+  X
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { PMLCore } from './PMLCore';
 
 type AuthMode = 'login' | 'register' | 'forgot';
 
-export const AuthExperience: React.FC = () => {
+interface AuthExperienceProps {
+  onClose?: () => void;
+  initialMode?: AuthMode;
+}
+
+export const AuthExperience: React.FC<AuthExperienceProps> = ({ 
+  onClose,
+  initialMode = 'login'
+}) => {
   const { signIn, signUp, resetPassword } = useAuth();
   
-  const [mode, setMode] = useState<AuthMode>('login');
+  const [mode, setMode] = useState<AuthMode>(initialMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [fullName, setFullName] = useState('');
   
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -64,13 +78,18 @@ export const AuthExperience: React.FC = () => {
         const { error } = await signIn(email, password);
         if (error) {
           setErrorMsg(error.message || 'Incorrect email or password. Please try again.');
+        } else if (onClose) {
+          onClose();
         }
       } else if (mode === 'register') {
         const { error } = await signUp(email, password, fullName);
         if (error) {
           setErrorMsg(error.message || 'Unable to create account. Please check your credentials.');
         } else {
-          setSuccessMsg('Account created successfully! Check your email if verification is required or sign in.');
+          setSuccessMsg('Account created successfully! Check your email or sign in.');
+          if (onClose) {
+            setTimeout(onClose, 1200);
+          }
         }
       } else if (mode === 'forgot') {
         const { error } = await resetPassword(email);
@@ -88,8 +107,19 @@ export const AuthExperience: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center p-4 md:p-6 relative z-10">
-      <div className="w-full max-w-md glitter-glass-panel bg-black/90 p-8 md:p-10 rounded-3xl border border-red-500/40 shadow-[0_0_50px_rgba(255,0,60,0.25)] flex flex-col items-center text-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 bg-black/80 backdrop-blur-md">
+      <div className="w-full max-w-md glitter-glass-panel bg-black/95 p-8 md:p-10 rounded-3xl border border-red-500/40 shadow-[0_0_60px_rgba(255,0,60,0.3)] flex flex-col items-center text-center relative">
+        {/* Close Button if dismissible modal */}
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 p-2 rounded-xl hover:bg-red-950/50 text-slate-400 hover:text-white transition-colors cursor-pointer"
+            title="Close / Continue as Guest"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        )}
+
         {/* Core Orb Logo */}
         <div className="mb-4 animate-float">
           <PMLCore size="medium" state={submitting ? 'thinking' : 'idle'} />
@@ -168,7 +198,7 @@ export const AuthExperience: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => { setMode('forgot'); setErrorMsg(null); setSuccessMsg(null); }}
-                    className="text-xs font-mono text-red-400 hover:text-red-300 transition-colors"
+                    className="text-xs font-mono text-red-400 hover:text-red-300 transition-colors cursor-pointer"
                   >
                     Forgot key?
                   </button>
@@ -177,13 +207,21 @@ export const AuthExperience: React.FC = () => {
               <div className="relative">
                 <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-red-400/80" />
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-black/80 border border-red-500/40 focus:border-red-500 text-white placeholder-slate-500 text-sm focus:outline-none transition-colors"
+                  className="w-full pl-10 pr-11 py-3 rounded-xl bg-black/80 border border-red-500/40 focus:border-red-500 text-white placeholder-slate-500 text-sm focus:outline-none transition-colors"
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-red-300 transition-colors p-1 cursor-pointer"
+                  title={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
           )}
@@ -196,13 +234,21 @@ export const AuthExperience: React.FC = () => {
               <div className="relative">
                 <KeyRound className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-red-400/80" />
                 <input
-                  type="password"
+                  type={showConfirmPassword ? 'text' : 'password'}
                   value={confirmPassword}
                   onChange={e => setConfirmPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-black/80 border border-red-500/40 focus:border-red-500 text-white placeholder-slate-500 text-sm focus:outline-none transition-colors"
+                  className="w-full pl-10 pr-11 py-3 rounded-xl bg-black/80 border border-red-500/40 focus:border-red-500 text-white placeholder-slate-500 text-sm focus:outline-none transition-colors"
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-red-300 transition-colors p-1 cursor-pointer"
+                  title={showConfirmPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
           )}
@@ -224,14 +270,14 @@ export const AuthExperience: React.FC = () => {
         </form>
 
         {/* Mode Switchers */}
-        <div className="mt-6 pt-6 border-t border-red-500/20 w-full text-center text-xs font-mono text-slate-400">
+        <div className="mt-5 pt-5 border-t border-red-500/20 w-full text-center text-xs font-mono text-slate-400 space-y-2">
           {mode === 'login' && (
             <p>
               New to PML Universe?{' '}
               <button
                 type="button"
                 onClick={() => { setMode('register'); setErrorMsg(null); setSuccessMsg(null); }}
-                className="text-red-400 hover:text-red-300 font-bold underline underline-offset-4 transition-colors"
+                className="text-red-400 hover:text-red-300 font-bold underline underline-offset-4 transition-colors cursor-pointer"
               >
                 Create an account
               </button>
@@ -244,7 +290,7 @@ export const AuthExperience: React.FC = () => {
               <button
                 type="button"
                 onClick={() => { setMode('login'); setErrorMsg(null); setSuccessMsg(null); }}
-                className="text-red-400 hover:text-red-300 font-bold underline underline-offset-4 transition-colors"
+                className="text-red-400 hover:text-red-300 font-bold underline underline-offset-4 transition-colors cursor-pointer"
               >
                 Sign In
               </button>
@@ -257,11 +303,23 @@ export const AuthExperience: React.FC = () => {
               <button
                 type="button"
                 onClick={() => { setMode('login'); setErrorMsg(null); setSuccessMsg(null); }}
-                className="text-red-400 hover:text-red-300 font-bold underline underline-offset-4 transition-colors"
+                className="text-red-400 hover:text-red-300 font-bold underline underline-offset-4 transition-colors cursor-pointer"
               >
                 Back to Sign In
               </button>
             </p>
+          )}
+
+          {onClose && (
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="text-slate-400 hover:text-white transition-colors cursor-pointer underline text-[11px]"
+              >
+                Continue chatting as guest →
+              </button>
+            </div>
           )}
         </div>
       </div>
