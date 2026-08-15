@@ -110,20 +110,24 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
             <span>New Chat</span>
           </button>
 
-          {/* Search Input Bar */}
-          <div className="relative my-4">
-            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-red-400/80" />
+          {/* Search Input Bar with Left Icon + Colon Separator */}
+          <div className="flex items-center gap-2.5 px-3.5 py-1 rounded-xl bg-black/80 border border-red-500/40 focus-within:border-red-500 focus-within:shadow-[0_0_15px_rgba(255,0,60,0.3)] transition-all my-4">
+            <div className="flex items-center gap-1.5 text-red-400 select-none flex-shrink-0">
+              <Search className="w-4 h-4 text-red-400/90" />
+              <span className="font-mono text-red-400/90 font-bold text-sm">:</span>
+            </div>
             <input
               type="text"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder="Search conversations..."
-              className="w-full pl-10 pr-8 py-3 text-sm rounded-xl bg-black/70 border border-red-500/40 focus:border-red-500 text-white placeholder-slate-400 focus:outline-none transition-colors"
+              className="flex-1 bg-transparent py-2.5 text-sm text-white placeholder-slate-400 focus:outline-none"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                className="text-slate-400 hover:text-white p-1 cursor-pointer"
+                title="Clear search"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -131,13 +135,13 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
           </div>
 
           {/* Category Tabs: All vs Starred */}
-          <div className="flex items-center gap-2 p-1.5 rounded-xl bg-black/60 border border-red-500/30 text-sm mt-4">
+          <div className="flex items-center gap-2 p-1.5 rounded-xl bg-black/70 border border-red-500/30 text-sm mt-4">
             <button
               onClick={() => setFilterMode('all')}
-              className={`flex-1 py-2.5 rounded-lg flex items-center justify-center gap-2 font-display text-xs md:text-sm transition-all ${
+              className={`flex-1 py-2.5 rounded-lg flex items-center justify-center gap-2 font-display text-xs md:text-sm transition-all cursor-pointer ${
                 filterMode === 'all'
-                  ? 'bg-red-600/40 border border-red-500 text-red-200 font-bold shadow-[0_0_12px_rgba(255,0,60,0.3)]'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-red-600/40 border border-red-500 text-white font-bold shadow-[0_0_12px_rgba(255,0,60,0.3)]'
+                  : 'text-slate-200 hover:text-white font-semibold'
               }`}
             >
               <MessageSquare className="w-4 h-4" />
@@ -145,10 +149,10 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
             </button>
             <button
               onClick={() => setFilterMode('starred')}
-              className={`flex-1 py-2.5 rounded-lg flex items-center justify-center gap-2 font-display text-xs md:text-sm transition-all ${
+              className={`flex-1 py-2.5 rounded-lg flex items-center justify-center gap-2 font-display text-xs md:text-sm transition-all cursor-pointer ${
                 filterMode === 'starred'
-                  ? 'bg-red-600/40 border border-red-500 text-red-200 font-bold shadow-[0_0_12px_rgba(255,0,60,0.3)]'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-red-600/40 border border-red-500 text-white font-bold shadow-[0_0_12px_rgba(255,0,60,0.3)]'
+                  : 'text-slate-200 hover:text-white font-semibold'
               }`}
             >
               <Star className="w-4 h-4" />
@@ -159,14 +163,14 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
 
         {/* Conversation List Stream (Separated with Border & Padding) */}
         <div className="flex-1 overflow-y-auto cosmic-scroll px-4 pt-3 pb-2 space-y-3 border-t border-red-500/25">
-          <div className="px-1 text-[11px] font-mono uppercase tracking-widest text-slate-400 font-semibold mb-1">
+          <div className="px-1 text-xs font-mono uppercase tracking-widest text-red-300 font-bold mb-1">
             History Logs
           </div>
           {filteredConversations.length === 0 ? (
             <div className="py-8 text-center px-4">
               <Sparkles className="w-8 h-8 mx-auto text-red-500/50 mb-2" />
-              <p className="text-sm text-slate-300 font-medium">No sessions found</p>
-              <p className="text-xs text-slate-400 mt-1">
+              <p className="text-sm text-slate-100 font-semibold">No sessions found</p>
+              <p className="text-xs text-slate-300 mt-1">
                 {searchQuery ? 'Try another search keyword' : 'Start a new chat session with PML'}
               </p>
             </div>
@@ -183,13 +187,13 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
                   }}
                   className={`group relative p-3.5 rounded-xl cursor-pointer flex items-center justify-between transition-all duration-200 ${
                     isActive
-                      ? 'bg-gradient-to-r from-red-950/80 to-black/90 border border-red-500/70 text-white shadow-[0_0_20px_rgba(255,0,60,0.25)]'
-                      : 'hover:bg-red-950/30 border border-transparent text-slate-200 hover:text-white'
+                      ? 'bg-gradient-to-r from-red-950/90 to-black/95 border border-red-500/80 text-white shadow-[0_0_20px_rgba(255,0,60,0.35)] font-bold'
+                      : 'hover:bg-red-950/40 bg-black/40 border border-red-500/20 text-white hover:border-red-500/50'
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0 pr-2">
-                    <MessageSquare className={`w-4.5 h-4.5 flex-shrink-0 ${isActive ? 'text-red-400' : 'text-slate-400'}`} />
-                    <span className="text-sm truncate font-semibold">
+                    <MessageSquare className={`w-4.5 h-4.5 flex-shrink-0 ${isActive ? 'text-red-400' : 'text-red-400/80'}`} />
+                    <span className="text-sm truncate font-bold text-white group-hover:text-red-200 transition-colors">
                       {conv.title || 'Untitled Session'}
                     </span>
                   </div>
