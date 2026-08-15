@@ -9,7 +9,8 @@ import {
   Trash2, 
   Sparkles,
   X,
-  LogOut
+  LogOut,
+  Brain
 } from 'lucide-react';
 import type { Conversation, UserProfile as UserProfileType } from '../types/pml';
 import { PMLCore } from './PMLCore';
@@ -25,6 +26,7 @@ interface NavigationPanelProps {
   onToggleStarConversation: (id: string, e: React.MouseEvent) => void;
   onOpenSettings: () => void;
   onOpenProfile: () => void;
+  onOpenMemory?: () => void;
   userProfile: UserProfileType;
   isAuthenticated?: boolean;
   onOpenAuth?: () => void;
@@ -42,6 +44,7 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
   onToggleStarConversation,
   onOpenSettings,
   onOpenProfile,
+  onOpenMemory,
   userProfile,
   isAuthenticated = false,
   onOpenAuth,
@@ -244,6 +247,16 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
               </p>
             </div>
           </button>
+
+          {onOpenMemory && (
+            <button
+              onClick={onOpenMemory}
+              className="p-2 rounded-xl hover:bg-red-950/70 text-slate-300 hover:text-red-400 transition-colors cursor-pointer"
+              title="PML Long-Term Memory Console"
+            >
+              <Brain className="w-4.5 h-4.5" />
+            </button>
+          )}
 
           {isAuthenticated && onSignOut && (
             <button

@@ -1,12 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
-from app.routes import health, chat, conversations
+from app.routes import health, chat, conversations, memories
 
 app = FastAPI(
     title=settings.APP_NAME,
-    description="PML — Advanced Space AI Assistant FastAPI Backend (Phase 4: Supabase Integration)",
-    version="4.0.0",
+    description="PML — Advanced Space AI Assistant FastAPI Backend (Phase 6: Long-Term AI Memory)",
+    version="6.0.0",
     docs_url="/docs",
     redoc_url="/redoc"
 )
@@ -24,6 +24,7 @@ app.add_middleware(
 app.include_router(health.router)
 app.include_router(chat.router)
 app.include_router(conversations.router)
+app.include_router(memories.router)
 
 @app.get("/", include_in_schema=False)
 async def root():

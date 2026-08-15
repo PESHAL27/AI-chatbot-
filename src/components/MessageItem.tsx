@@ -13,7 +13,8 @@ import {
   VolumeX, 
   FileText, 
   User, 
-  Sparkles 
+  Sparkles,
+  Brain
 } from 'lucide-react';
 import type { Message, Attachment } from '../types/pml';
 import { PMLCore } from './PMLCore';
@@ -166,10 +167,21 @@ export const MessageItem: React.FC<MessageItemProps> = ({
 
           {/* Action Bar for PML Response */}
           {!isUser && !message.isStreaming && (
-            <div className="mt-4 pt-3 border-t border-red-500/20 flex items-center justify-between text-xs text-slate-400">
-              <div className="flex items-center gap-1 font-mono text-[10px] text-red-400/90 tracking-wider">
-                <Sparkles className="w-3 h-3 text-red-500 animate-pulse" />
-                <span>PML ADVANCED NEURAL INTELLIGENCE</span>
+            <div className="mt-4 pt-3 border-t border-red-500/20 flex items-center justify-between text-xs text-slate-400 flex-wrap gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-1 font-mono text-[10px] text-red-400/90 tracking-wider">
+                  <Sparkles className="w-3 h-3 text-red-500 animate-pulse" />
+                  <span>PML ADVANCED NEURAL INTELLIGENCE</span>
+                </div>
+                {message.memoriesUsed && message.memoriesUsed.length > 0 && (
+                  <div
+                    className="flex items-center gap-1 text-[10px] font-mono text-red-300 bg-red-950/60 px-2 py-0.5 rounded-full border border-red-500/40 shadow-sm"
+                    title={`Memories used:\n${message.memoriesUsed.map(m => `• ${m}`).join('\n')}`}
+                  >
+                    <Brain className="w-3 h-3 text-red-400 animate-pulse" />
+                    <span>{message.memoriesUsed.length} {message.memoriesUsed.length === 1 ? 'memory' : 'memories'} active</span>
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center gap-1.5">

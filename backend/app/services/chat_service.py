@@ -1,8 +1,13 @@
 import uuid
+import asyncio
+import logging
 from typing import List, Dict, Optional, Any
 from app.schemas.chat import ChatRequest, ChatResponse
 from app.services.ai_service import AIService
 from app.services.database_service import DatabaseService
+from app.services.memory_service import MemoryService
+
+logger = logging.getLogger("pml.chat_service")
 
 class ChatService:
     @staticmethod
@@ -12,17 +17,52 @@ class ChatService:
         user_token: Optional[str] = None
     ) -> ChatResponse:
         """
-        Processes authenticated chat requests (Phase 5):
-        1. Ensures conversation record exists and is owned by user_id.
-        2. Saves user prompt message with ownership.
-        3. Retrieves stored history context for that user.
-        4. Calls AIService for LLM response.
-        5. Saves AI response to database.
-        6. Returns structured response.
+        Processes authenticated chat requests (Phase 6):
+        1. Checks for explicit memory commands ("Remember that...", "Forget that...").
+        2. Ensures conversation record exists and is owned by user_id.
+        3. Saves user prompt message with ownership.
+        4. Retrieves relevant long-term memories if memory_enabled is True.
+        5. Retrieves stored history context for that user.
+        6. Calls AIService for LLM response with injected memory context.
+        7. Saves AI response to database.
+        8. Analyzes conversation in background to extract new stable memories.
+        9. Returns structured response with memory indicators.
         """
         conv_id = request.conversation_id or f"pml-conv-{uuid.uuid4().hex[:12]}"
         
-        # 1. Save user prompt message to Database
+        # 1. Check for explicit memory commands
+        if request.memory_enabled and user_id != "guest_user":
+            explicit_reply = await MemoryService.handle_explicit_commands(
+                user_message=request.message,
+                user_id=user_id,
+                conversation_id=conv_id,
+                user_token=user_token
+            )
+            if explicit_reply:
+                # Save user prompt
+                await DatabaseService.save_message(
+                    conversation_id=conv_id,
+                    role="user",
+                    content=request.message,
+                    user_id=user_id,
+                    user_token=user_token
+                )
+                # Save assistant confirmation
+                await DatabaseService.save_message(
+                    conversation_id=conv_id,
+                    role="assistant",
+                    content=explicit_reply,
+                    user_id=user_id,
+                    user_token=user_token
+                )
+                return ChatResponse(
+                    response=explicit_reply,
+                    conversation_id=conv_id,
+                    status="success",
+                    memories_used=["Explicit Memory Operation"]
+                )
+
+        # 2. Save user prompt message to Database
         await DatabaseService.save_message(
             conversation_id=conv_id,
             role="user",
@@ -31,7 +71,18 @@ class ChatService:
             user_token=user_token
         )
 
-        # 2. Retrieve history context from Database (strictly for this user)
+        # 3. Retrieve relevant long-term memories (Phase 6)
+        relevant_memories_list: List[str] = []
+        if request.memory_enabled and user_id != "guest_user":
+            matched_memories = await MemoryService.retrieve_relevant_memories(
+                user_id=user_id,
+                query=request.message,
+                user_token=user_token,
+                max_memories=4
+            )
+            relevant_memories_list = [m["memory"] for m in matched_memories if m.get("memory")]
+
+        # 4. Retrieve history context from Database (strictly for this user)
         db_messages = await DatabaseService.get_messages(
             conversation_id=conv_id, 
             user_id=user_id, 
@@ -51,13 +102,14 @@ class ChatService:
             raw = request.history or request.messages or []
             formatted_history = [{"role": m.role, "content": m.content} for m in raw]
 
-        # 3. Generate response from AI Service
+        # 5. Generate response from AI Service with memory injection
         ai_reply = await AIService.generate_response(
             user_message=request.message,
-            history=formatted_history
+            history=formatted_history,
+            relevant_memories=relevant_memories_list if relevant_memories_list else None
         )
 
-        # 4. Save assistant response to Database
+        # 6. Save assistant response to Database
         await DatabaseService.save_message(
             conversation_id=conv_id,
             role="assistant",
@@ -66,8 +118,21 @@ class ChatService:
             user_token=user_token
         )
 
+        # 7. Asynchronously analyze exchange to extract durable long-term memory
+        if request.memory_enabled and user_id != "guest_user":
+            asyncio.create_task(
+                MemoryService.analyze_and_extract_memory(
+                    user_message=request.message,
+                    assistant_response=ai_reply,
+                    user_id=user_id,
+                    conversation_id=conv_id,
+                    user_token=user_token
+                )
+            )
+
         return ChatResponse(
             response=ai_reply,
             conversation_id=conv_id,
-            status="success"
+            status="success",
+            memories_used=relevant_memories_list if relevant_memories_list else None
         )

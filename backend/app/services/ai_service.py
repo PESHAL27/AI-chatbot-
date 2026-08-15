@@ -46,18 +46,27 @@ class AIService:
         cls,
         user_message: str,
         history: Optional[List[Dict[str, str]]] = None,
+        relevant_memories: Optional[List[str]] = None,
         model_override: Optional[str] = None
     ) -> str:
         """
         Communicates with the AI provider (OpenAI) to generate a chat response.
-        Appends system prompt instructions and multi-turn conversation history.
+        Appends system prompt instructions, long-term memory context, and multi-turn history.
         """
         client = cls.get_client()
         model_name = model_override or settings.AI_MODEL
 
+        # Base system prompt
+        system_content = PML_SYSTEM_PROMPT
+
+        # Inject Long-Term Memory Context if relevant memories exist
+        if relevant_memories and len(relevant_memories) > 0:
+            memory_block = "\n".join([f"- {m}" for m in relevant_memories])
+            system_content += f"\n\n[RELEVANT USER LONG-TERM MEMORY]\nYou have access to the following relevant verified long-term facts/preferences about the user:\n{memory_block}\nIncorporate this context naturally and seamlessly into your response without explicitly saying 'According to my database'."
+
         # Construct message payload with system instruction
         messages: List[Dict[str, str]] = [
-            {"role": "system", "content": PML_SYSTEM_PROMPT}
+            {"role": "system", "content": system_content}
         ]
 
         # Add historical conversation context if provided

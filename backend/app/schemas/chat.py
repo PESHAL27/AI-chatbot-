@@ -10,6 +10,7 @@ class ChatRequest(BaseModel):
     conversation_id: Optional[str] = Field(None, description="Optional conversation ID for tracking sessions")
     messages: Optional[List[ChatMessage]] = Field(None, description="Optional conversation history context")
     history: Optional[List[ChatMessage]] = Field(None, description="Alias for conversation history")
+    memory_enabled: Optional[bool] = Field(True, description="Whether long-term memory retrieval and extraction are enabled")
 
     @field_validator('message')
     @classmethod
@@ -23,6 +24,7 @@ class ChatResponse(BaseModel):
     response: str = Field(..., description="The AI assistant response message")
     conversation_id: str = Field(..., description="The active or generated conversation ID")
     status: str = Field("success", description="Status code string")
+    memories_used: Optional[List[str]] = Field(None, description="List of relevant memory statements utilized")
 
 class HealthCheckResponse(BaseModel):
     status: str = Field("ok", description="Service status")

@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Sun, Moon, Volume2, VolumeX, Sliders, Server, RotateCcw } from 'lucide-react';
+import { X, Sun, Moon, Volume2, VolumeX, Sliders, Server, RotateCcw, Brain, ExternalLink } from 'lucide-react';
 import type { PMLSettings, ParticleDensity } from '../types/pml';
 
 interface SettingsModalProps {
@@ -7,6 +7,7 @@ interface SettingsModalProps {
   onClose: () => void;
   settings: PMLSettings;
   onUpdateSettings: (newSettings: Partial<PMLSettings>) => void;
+  onOpenMemory?: () => void;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -14,8 +15,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onClose,
   settings,
   onUpdateSettings,
+  onOpenMemory,
 }) => {
   if (!isOpen) return null;
+
+  const memoryEnabled = settings.memoryEnabled !== false;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
@@ -35,6 +39,42 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </div>
 
         <div className="space-y-6 max-h-[70vh] overflow-y-auto cosmic-scroll pr-1">
+          {/* Long-Term Memory Master Control (Phase 6) */}
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-red-950/60 to-black/60 border border-red-500/30">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2.5">
+                <Brain className="w-5 h-5 text-red-400" />
+                <div>
+                  <p className="text-xs font-bold text-white font-display">Long-Term AI Memory</p>
+                  <p className="text-[10px] text-slate-400">Remember preferences & goals across chats</p>
+                </div>
+              </div>
+              <button
+                onClick={() => onUpdateSettings({ memoryEnabled: !memoryEnabled })}
+                className={`w-12 h-6 rounded-full transition-colors relative p-1 ${
+                  memoryEnabled ? 'bg-red-600' : 'bg-slate-800'
+                }`}
+              >
+                <div
+                  className={`w-4 h-4 rounded-full bg-white transition-transform ${
+                    memoryEnabled ? 'translate-x-6' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+            {onOpenMemory && (
+              <button
+                onClick={() => {
+                  onClose();
+                  onOpenMemory();
+                }}
+                className="mt-2 w-full py-1.5 px-3 rounded-xl bg-red-900/30 hover:bg-red-900/50 border border-red-500/30 text-red-200 text-xs font-mono flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <span>Open Memory Management Console</span>
+                <ExternalLink className="w-3 h-3" />
+              </button>
+            )}
+          </div>
           {/* Theme Selection */}
           <div>
             <label className="text-xs font-mono uppercase tracking-wider text-red-300 mb-2.5 block font-semibold">

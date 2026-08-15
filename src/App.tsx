@@ -20,6 +20,7 @@ import { ConversationWorkspace } from './components/ConversationWorkspace';
 import { MessageComposer } from './components/MessageComposer';
 import { SettingsModal } from './components/SettingsModal';
 import { UserProfileModal } from './components/UserProfileModal';
+import { MemoryManagementModal } from './components/MemoryManagementModal';
 import { AuthExperience } from './components/AuthExperience';
 import { PMLCore } from './components/PMLCore';
 
@@ -30,6 +31,7 @@ const DEFAULT_SETTINGS: PMLSettings = {
   streamSpeed: 18,
   apiEndpoint: 'http://localhost:8000',
   autoReadAloud: false,
+  memoryEnabled: true,
 };
 
 const DEFAULT_USER_PROFILE: UserProfile = {
@@ -53,6 +55,7 @@ const PMLAppContent: React.FC = () => {
 
   const [settingsModalOpen, setSettingsModalOpen] = useState<boolean>(false);
   const [profileModalOpen, setProfileModalOpen] = useState<boolean>(false);
+  const [memoryModalOpen, setMemoryModalOpen] = useState<boolean>(false);
   const [authModalOpen, setAuthModalOpen] = useState<boolean>(false);
   const [showGuestBanner, setShowGuestBanner] = useState<boolean>(true);
 
@@ -113,6 +116,7 @@ const PMLAppContent: React.FC = () => {
     setConversations([]);
     setActiveConversationId(null);
     setProfileModalOpen(false);
+    setMemoryModalOpen(false);
   };
 
   // Start new conversation
@@ -165,7 +169,7 @@ const PMLAppContent: React.FC = () => {
     await pmlApi.renameConversation(id, newTitle);
   };
 
-  // Send message flow (Streaming + DB persistence for guests & users)
+  // Send message flow (Streaming + DB persistence for guests & users + Long-Term Memory)
   const handleSendMessage = async (text: string, attachments: Attachment[] = []) => {
     if (!text.trim() && attachments.length === 0) return;
 
@@ -375,6 +379,7 @@ const PMLAppContent: React.FC = () => {
         onToggleStarConversation={handleToggleStarConversation}
         onOpenSettings={() => setSettingsModalOpen(true)}
         onOpenProfile={() => (user ? setProfileModalOpen(true) : setAuthModalOpen(true))}
+        onOpenMemory={() => (user ? setMemoryModalOpen(true) : setAuthModalOpen(true))}
         userProfile={userProfile}
         isAuthenticated={Boolean(user)}
         onOpenAuth={() => setAuthModalOpen(true)}
@@ -452,6 +457,7 @@ const PMLAppContent: React.FC = () => {
         onClose={() => setSettingsModalOpen(false)}
         settings={settings}
         onUpdateSettings={newS => setSettings(prev => ({ ...prev, ...newS }))}
+        onOpenMemory={() => (user ? setMemoryModalOpen(true) : setAuthModalOpen(true))}
       />
 
       {user && (
@@ -459,8 +465,19 @@ const PMLAppContent: React.FC = () => {
           isOpen={profileModalOpen}
           onClose={() => setProfileModalOpen(false)}
           profile={userProfile}
+          onOpenMemory={() => setMemoryModalOpen(true)}
         />
       )}
+
+      {/* Memory Management Console (Phase 6) */}
+      <MemoryManagementModal
+        isOpen={memoryModalOpen}
+        onClose={() => setMemoryModalOpen(false)}
+        settings={settings}
+        onUpdateSettings={newS => setSettings(prev => ({ ...prev, ...newS }))}
+        isAuthenticated={Boolean(user)}
+        onOpenAuth={() => setAuthModalOpen(true)}
+      />
 
       {/* Auth Modal (Triggerable by user anytime or dismissible) */}
       {authModalOpen && (

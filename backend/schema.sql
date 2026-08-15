@@ -1,4 +1,4 @@
--- PML Phase 5: Supabase PostgreSQL Database Schema with Authentication & Strict RLS
+-- PML Phase 6: Supabase PostgreSQL Database Schema with Authentication, Strict RLS & Long-Term Memory
 -- Run this in Supabase SQL Editor: https://supabase.com/dashboard/project/axvbjoaqkanowkjoftxc/sql
 
 -- 1. Create Profiles Table linked to Supabase Auth
@@ -28,18 +28,35 @@ CREATE TABLE IF NOT EXISTS messages (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 4. Create Performance Indexes
+-- 4. Create Long-Term Memories Table (Phase 6)
+CREATE TABLE IF NOT EXISTS memories (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    memory TEXT NOT NULL,
+    category TEXT NOT NULL DEFAULT 'context' CHECK (category IN ('preference', 'goal', 'project', 'communication', 'context')),
+    importance INTEGER NOT NULL DEFAULT 3 CHECK (importance BETWEEN 1 AND 5),
+    source_conversation_id TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    last_used_at TIMESTAMPTZ
+);
+
+-- 5. Create Performance Indexes
 CREATE INDEX IF NOT EXISTS idx_conversations_user_id ON conversations(user_id);
 CREATE INDEX IF NOT EXISTS idx_conversations_updated_at ON conversations(updated_at DESC);
 CREATE INDEX IF NOT EXISTS idx_messages_conversation_id ON messages(conversation_id);
 CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at ASC);
+CREATE INDEX IF NOT EXISTS idx_memories_user_id ON memories(user_id);
+CREATE INDEX IF NOT EXISTS idx_memories_category ON memories(category);
+CREATE INDEX IF NOT EXISTS idx_memories_updated_at ON memories(updated_at DESC);
 
--- 5. Enable Row Level Security (RLS)
+-- 6. Enable Row Level Security (RLS)
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE conversations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE memories ENABLE ROW LEVEL SECURITY;
 
--- 6. User Isolated RLS Policies
+-- 7. User Isolated RLS Policies
 DROP POLICY IF EXISTS "Users can view their own profile" ON profiles;
 CREATE POLICY "Users can view their own profile" ON profiles FOR SELECT USING (auth.uid() = id);
 
@@ -59,3 +76,7 @@ CREATE POLICY "Users can manage messages for their own conversations" ON message
             AND (conversations.user_id = auth.uid()::text OR conversations.user_id = 'guest_user')
         )
     );
+
+DROP POLICY IF EXISTS "Users can manage their own memories" ON memories;
+CREATE POLICY "Users can manage their own memories" ON memories 
+    FOR ALL USING (auth.uid()::text = user_id OR user_id = 'guest_user');

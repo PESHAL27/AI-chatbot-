@@ -78,6 +78,7 @@ export class PMLApiService {
       const payload: FastApiChatRequest = {
         conversation_id: conversationId,
         message: userMessage,
+        memory_enabled: settings.memoryEnabled !== false,
         history: history,
         attachments: attachments.map(a => ({
           filename: a.name,
@@ -407,6 +408,74 @@ How can I assist your exploration today? Feel free to ask a question, attach doc
   async sendFeedback(messageId: string, feedback: 'like' | 'dislike'): Promise<boolean> {
     console.log(`[PML API] Feedback registered for message ${messageId}: ${feedback}`);
     return true;
+  }
+
+  // ==================== LONG-TERM MEMORY API (PHASE 6) ====================
+
+  async fetchMemories(): Promise<import('../types/pml').MemoryItem[]> {
+    try {
+      const apiBase = this.endpoint || DEFAULT_API_ENDPOINT;
+      const res = await fetch(`${apiBase}/api/memories`, {
+        method: 'GET',
+        headers: this.getHeaders(),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return data.memories || [];
+      }
+    } catch (err) {
+      console.warn('[PML API] Error fetching long-term memories:', err);
+    }
+    return [];
+  }
+
+  async createMemory(
+    memory: string,
+    category: import('../types/pml').MemoryCategory = 'context',
+    importance: number = 3
+  ): Promise<import('../types/pml').MemoryItem | null> {
+    try {
+      const apiBase = this.endpoint || DEFAULT_API_ENDPOINT;
+      const res = await fetch(`${apiBase}/api/memories`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify({ memory, category, importance }),
+      });
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (err) {
+      console.warn('[PML API] Error creating memory:', err);
+    }
+    return null;
+  }
+
+  async deleteMemory(memoryId: string): Promise<boolean> {
+    try {
+      const apiBase = this.endpoint || DEFAULT_API_ENDPOINT;
+      const res = await fetch(`${apiBase}/api/memories/${memoryId}`, {
+        method: 'DELETE',
+        headers: this.getHeaders(),
+      });
+      return res.ok;
+    } catch (err) {
+      console.warn('[PML API] Error deleting memory:', err);
+      return false;
+    }
+  }
+
+  async clearAllMemories(): Promise<boolean> {
+    try {
+      const apiBase = this.endpoint || DEFAULT_API_ENDPOINT;
+      const res = await fetch(`${apiBase}/api/memories`, {
+        method: 'DELETE',
+        headers: this.getHeaders(),
+      });
+      return res.ok;
+    } catch (err) {
+      console.warn('[PML API] Error clearing all memories:', err);
+      return false;
+    }
   }
 }
 

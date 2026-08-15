@@ -21,6 +21,7 @@ export interface Message {
   feedback?: 'like' | 'dislike' | null;
   isStreaming?: boolean;
   error?: boolean;
+  memoriesUsed?: string[];
 }
 
 export interface Conversation {
@@ -45,6 +46,7 @@ export interface PMLSettings {
   streamSpeed: number; // ms per chunk
   apiEndpoint: string;
   autoReadAloud: boolean;
+  memoryEnabled: boolean; // Phase 6: Long-term AI memory master switch
 }
 
 export interface UserProfile {
@@ -68,23 +70,34 @@ export interface QuickAction {
   gradient: string;
 }
 
+export type MemoryCategory = 'preference' | 'goal' | 'project' | 'communication' | 'context';
+
+export interface MemoryItem {
+  id: string;
+  user_id: string;
+  memory: string;
+  category: MemoryCategory;
+  importance: number;
+  source_conversation_id?: string;
+  created_at?: string;
+  updated_at?: string;
+  last_used_at?: string;
+}
+
 export interface FastApiChatRequest {
   conversation_id?: string;
   message: string;
+  memory_enabled?: boolean;
   history?: {
     role: 'user' | 'assistant' | 'system';
     content: string;
   }[];
-  attachments?: {
-    filename: string;
-    content_type: string;
-    file_id?: string;
-  }[];
+  attachments?: any[];
 }
 
 export interface FastApiChatResponse {
-  conversation_id: string;
-  message_id: string;
   response: string;
-  timestamp: string;
+  conversation_id: string;
+  status: string;
+  memories_used?: string[];
 }

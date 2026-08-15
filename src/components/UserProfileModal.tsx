@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Shield, Award, Sparkles, FileCheck, MessageSquare, LogOut } from 'lucide-react';
+import { X, Shield, Award, Sparkles, FileCheck, MessageSquare, LogOut, Brain, ExternalLink } from 'lucide-react';
 import type { UserProfile } from '../types/pml';
 import { useAuth } from '../context/AuthContext';
 
@@ -7,12 +7,14 @@ interface UserProfileModalProps {
   isOpen: boolean;
   onClose: () => void;
   profile: UserProfile;
+  onOpenMemory?: () => void;
 }
 
 export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   isOpen,
   onClose,
   profile,
+  onOpenMemory,
 }) => {
   const { user, signOut } = useAuth();
 
@@ -73,7 +75,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
         )}
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-3 gap-3 mb-6">
+        <div className="grid grid-cols-3 gap-3 mb-4">
           <div className="p-3 rounded-2xl bg-black/50 border border-red-500/20 text-center">
             <MessageSquare className="w-4 h-4 mx-auto text-red-400 mb-1" />
             <p className="font-display font-bold text-lg text-white">{profile.queriesCount}</p>
@@ -92,6 +94,28 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
             <p className="text-[10px] text-slate-400 uppercase tracking-wider font-mono">Status</p>
           </div>
         </div>
+
+        {/* Long-Term Memory Console Quick Access */}
+        {onOpenMemory && (
+          <button
+            onClick={() => {
+              onClose();
+              onOpenMemory();
+            }}
+            className="w-full mb-4 p-3 rounded-2xl bg-gradient-to-r from-red-950/60 to-black/60 border border-red-500/30 hover:border-red-500/60 flex items-center justify-between text-left transition-colors cursor-pointer group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-red-900/40 text-red-400">
+                <Brain className="w-4.5 h-4.5 group-hover:animate-pulse" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-white font-display">Long-Term Memory Console</p>
+                <p className="text-[10px] text-slate-400">View, edit, or clear stored preferences</p>
+              </div>
+            </div>
+            <ExternalLink className="w-4 h-4 text-slate-500 group-hover:text-red-300" />
+          </button>
+        )}
 
         {/* Joined Metadata */}
         <div className="p-3 mb-6 rounded-xl bg-black/50 border border-red-500/20 flex items-center justify-between text-xs text-slate-400 font-mono">
