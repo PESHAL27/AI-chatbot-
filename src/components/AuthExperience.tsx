@@ -154,17 +154,20 @@ export const AuthExperience: React.FC<AuthExperienceProps> = ({
         <form onSubmit={handleSubmit} className="w-full space-y-4 text-left">
           {mode === 'register' && (
             <div>
-              <label className="block text-xs font-mono uppercase text-slate-300 mb-1 font-semibold">
+              <label className="block text-xs font-mono uppercase text-slate-300 mb-1.5 font-semibold">
                 Full Name
               </label>
-              <div className="relative">
-                <UserIcon className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-red-400/80" />
+              <div className="flex items-center gap-2.5 px-3.5 py-1 rounded-xl bg-black/80 border border-red-500/40 focus-within:border-red-500 focus-within:shadow-[0_0_15px_rgba(255,0,60,0.3)] transition-all">
+                <div className="flex items-center gap-1.5 text-red-400 select-none flex-shrink-0">
+                  <UserIcon className="w-4 h-4 text-red-400" />
+                  <span className="font-mono text-red-400/90 font-bold text-sm">:</span>
+                </div>
                 <input
                   type="text"
                   value={fullName}
                   onChange={e => setFullName(e.target.value)}
-                  placeholder="e.g. Alex Mercer"
-                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-black/80 border border-red-500/40 focus:border-red-500 text-white placeholder-slate-500 text-sm focus:outline-none transition-colors"
+                  placeholder="Alex Mercer"
+                  className="flex-1 bg-transparent py-2.5 text-white placeholder-slate-500 text-sm focus:outline-none"
                   required
                 />
               </div>
@@ -172,17 +175,20 @@ export const AuthExperience: React.FC<AuthExperienceProps> = ({
           )}
 
           <div>
-            <label className="block text-xs font-mono uppercase text-slate-300 mb-1 font-semibold">
+            <label className="block text-xs font-mono uppercase text-slate-300 mb-1.5 font-semibold">
               Email Address
             </label>
-            <div className="relative">
-              <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-red-400/80" />
+            <div className="flex items-center gap-2.5 px-3.5 py-1 rounded-xl bg-black/80 border border-red-500/40 focus-within:border-red-500 focus-within:shadow-[0_0_15px_rgba(255,0,60,0.3)] transition-all">
+              <div className="flex items-center gap-1.5 text-red-400 select-none flex-shrink-0">
+                <Mail className="w-4 h-4 text-red-400" />
+                <span className="font-mono text-red-400/90 font-bold text-sm">:</span>
+              </div>
               <input
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 placeholder="explorer@universe.ai"
-                className="w-full pl-10 pr-4 py-3 rounded-xl bg-black/80 border border-red-500/40 focus:border-red-500 text-white placeholder-slate-500 text-sm focus:outline-none transition-colors"
+                className="flex-1 bg-transparent py-2.5 text-white placeholder-slate-500 text-sm focus:outline-none"
                 required
               />
             </div>
@@ -190,7 +196,7 @@ export const AuthExperience: React.FC<AuthExperienceProps> = ({
 
           {mode !== 'forgot' && (
             <div>
-              <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center justify-between mb-1.5">
                 <label className="text-xs font-mono uppercase text-slate-300 font-semibold">
                   Password
                 </label>
@@ -204,20 +210,23 @@ export const AuthExperience: React.FC<AuthExperienceProps> = ({
                   </button>
                 )}
               </div>
-              <div className="relative">
-                <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-red-400/80" />
+              <div className="flex items-center gap-2.5 px-3.5 py-1 rounded-xl bg-black/80 border border-red-500/40 focus-within:border-red-500 focus-within:shadow-[0_0_15px_rgba(255,0,60,0.3)] transition-all">
+                <div className="flex items-center gap-1.5 text-red-400 select-none flex-shrink-0">
+                  <Lock className="w-4 h-4 text-red-400" />
+                  <span className="font-mono text-red-400/90 font-bold text-sm">:</span>
+                </div>
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-11 py-3 rounded-xl bg-black/80 border border-red-500/40 focus:border-red-500 text-white placeholder-slate-500 text-sm focus:outline-none transition-colors"
+                  className="flex-1 bg-transparent py-2.5 text-white placeholder-slate-500 text-sm focus:outline-none"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-red-300 transition-colors p-1 cursor-pointer"
+                  className="text-slate-400 hover:text-red-300 transition-colors p-1 cursor-pointer flex-shrink-0"
                   title={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -228,23 +237,26 @@ export const AuthExperience: React.FC<AuthExperienceProps> = ({
 
           {mode === 'register' && (
             <div>
-              <label className="block text-xs font-mono uppercase text-slate-300 mb-1 font-semibold">
+              <label className="block text-xs font-mono uppercase text-slate-300 mb-1.5 font-semibold">
                 Confirm Password
               </label>
-              <div className="relative">
-                <KeyRound className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-red-400/80" />
+              <div className="flex items-center gap-2.5 px-3.5 py-1 rounded-xl bg-black/80 border border-red-500/40 focus-within:border-red-500 focus-within:shadow-[0_0_15px_rgba(255,0,60,0.3)] transition-all">
+                <div className="flex items-center gap-1.5 text-red-400 select-none flex-shrink-0">
+                  <KeyRound className="w-4 h-4 text-red-400" />
+                  <span className="font-mono text-red-400/90 font-bold text-sm">:</span>
+                </div>
                 <input
                   type={showConfirmPassword ? 'text' : 'password'}
                   value={confirmPassword}
                   onChange={e => setConfirmPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-11 py-3 rounded-xl bg-black/80 border border-red-500/40 focus:border-red-500 text-white placeholder-slate-500 text-sm focus:outline-none transition-colors"
+                  className="flex-1 bg-transparent py-2.5 text-white placeholder-slate-500 text-sm focus:outline-none"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-red-300 transition-colors p-1 cursor-pointer"
+                  className="text-slate-400 hover:text-red-300 transition-colors p-1 cursor-pointer flex-shrink-0"
                   title={showConfirmPassword ? 'Hide password' : 'Show password'}
                 >
                   {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
