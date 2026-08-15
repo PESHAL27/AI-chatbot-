@@ -78,7 +78,7 @@ export const WelcomeExperience: React.FC<WelcomeExperienceProps> = ({
         </div>
 
         <h1 className="font-display font-black text-5xl md:text-7xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-300 to-pink-500 mb-3 drop-shadow-[0_0_35px_rgba(168,85,247,0.5)]">
-          PLM AI
+          PML AI
         </h1>
 
         <p className="font-heading font-bold text-xs md:text-sm tracking-widest text-purple-200 uppercase bg-black/60 px-6 py-2 rounded-full border border-purple-500/40 inline-flex items-center gap-2 shadow-[0_0_20px_rgba(147,51,234,0.3)] backdrop-blur-md">
@@ -101,13 +101,13 @@ export const WelcomeExperience: React.FC<WelcomeExperienceProps> = ({
             isStreaming={false}
           />
         ) : (
-          <div className="w-full p-4 rounded-2xl plm-neon-card text-slate-300 text-base">
-            Search or ask PLM AI anything...
+          <div className="w-full p-4 rounded-2xl pml-neon-card text-slate-300 text-base">
+            Search or ask PML AI anything...
           </div>
         )}
       </div>
 
-      {/* SECTION 3: SEPARATED 4 NEON GLOWING ACTION BOXES (IMAGE 3 UI DESIGN) */}
+      {/* SECTION 3: SEPARATED 4 NEON GLOWING ACTION BOXES (EXACT IMAGE 3 TAB DESIGN) */}
       <div className="w-full max-w-4xl mt-10 md:mt-12 pt-8 border-t border-white/10">
         <div className="text-left mb-5 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -126,7 +126,7 @@ export const WelcomeExperience: React.FC<WelcomeExperienceProps> = ({
             <div
               key={action.id}
               onClick={() => onSelectQuickAction(action)}
-              className="group p-5 rounded-2xl plm-neon-card cursor-pointer flex flex-col justify-between transition-all duration-300 transform hover:-translate-y-1.5"
+              className="group p-5 rounded-2xl pml-neon-card cursor-pointer flex flex-col justify-between transition-all duration-300 transform hover:-translate-y-1.5"
             >
               <div>
                 <div className="flex items-center justify-between mb-3.5">

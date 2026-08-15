@@ -23,26 +23,26 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-      <div className="w-full max-w-lg glass-panel rounded-3xl p-6 border border-red-500/40 shadow-[0_0_60px_rgba(255,0,60,0.25)] relative animate-float">
+      <div className="w-full max-w-lg glass-panel rounded-3xl p-6 border border-white/15 shadow-[0_0_60px_rgba(139,92,246,0.25)] relative animate-float">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-5">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-xl bg-black/60 border border-purple-500/30">
-              <img src="/assets/plm_symbol.png" alt="PLM" className="w-6 h-6 rounded-full animate-spin duration-20000 object-cover" />
+              <img src="/assets/plm_symbol.png" alt="PML" className="w-6 h-6 rounded-full animate-spin duration-20000 object-cover" />
             </div>
-            <h2 className="font-display font-bold text-xl text-white">PLM Settings</h2>
+            <h2 className="font-display font-bold text-xl text-white">PML Settings</h2>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-xl hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+            className="p-1.5 rounded-xl hover:bg-white/10 text-slate-400 hover:text-white transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="space-y-6 max-h-[70vh] overflow-y-auto cosmic-scroll pr-1">
-          {/* Long-Term Memory Master Control (Phase 6) */}
-          <div className="p-4 rounded-2xl plm-neon-card">
+          {/* Long-Term Memory Master Control */}
+          <div className="p-4 rounded-2xl pml-neon-card">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2.5">
                 <Brain className="w-5 h-5 text-purple-400" />
@@ -53,7 +53,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </div>
               <button
                 onClick={() => onUpdateSettings({ memoryEnabled: !memoryEnabled })}
-                className={`w-12 h-6 rounded-full transition-colors relative p-1 ${
+                className={`w-12 h-6 rounded-full transition-colors relative p-1 cursor-pointer ${
                   memoryEnabled ? 'bg-purple-600' : 'bg-slate-800'
                 }`}
               >
@@ -77,7 +77,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </button>
             )}
           </div>
-          {/* Theme Selection */}
+
+          {/* Theme Selection (Exact Image 3 Tabs) */}
           <div>
             <label className="text-xs font-mono uppercase tracking-wider text-purple-300 mb-2.5 block font-semibold">
               Visual Space Experience
@@ -85,31 +86,31 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => onUpdateSettings({ theme: 'dark' })}
-                className={`p-3.5 rounded-2xl border flex items-center gap-3 transition-all ${
+                className={`p-3.5 rounded-2xl border flex items-center gap-3 transition-all cursor-pointer ${
                   settings.theme === 'dark'
-                    ? 'plm-tab-active font-bold'
-                    : 'plm-tab text-slate-400 hover:text-white'
+                    ? 'pml-tab-active font-bold'
+                    : 'pml-tab-default text-slate-400 hover:text-white'
                 }`}
               >
                 <Moon className="w-5 h-5 text-purple-400" />
                 <div className="text-left">
                   <p className="text-xs font-bold text-white font-display">Deep Cosmos</p>
-                  <p className="text-[10px] text-slate-400">Obsidian & Crimson</p>
+                  <p className="text-[10px] text-slate-400">Obsidian & Violet</p>
                 </div>
               </button>
 
               <button
                 onClick={() => onUpdateSettings({ theme: 'light' })}
-                className={`p-3.5 rounded-2xl border flex items-center gap-3 transition-all ${
+                className={`p-3.5 rounded-2xl border flex items-center gap-3 transition-all cursor-pointer ${
                   settings.theme === 'light'
-                    ? 'bg-gradient-to-r from-red-900/50 to-rose-950/50 border-red-500 text-white shadow-sm'
-                    : 'bg-black/40 border-red-500/20 text-slate-400 hover:text-white'
+                    ? 'pml-tab-active font-bold text-white'
+                    : 'pml-tab-default text-slate-400 hover:text-white'
                 }`}
               >
-                <Sun className="w-5 h-5 text-rose-400" />
+                <Sun className="w-5 h-5 text-purple-400" />
                 <div className="text-left">
-                  <p className="text-xs font-bold font-display">Celestial Crimson</p>
-                  <p className="text-[10px] text-slate-400">Light ruby nebula glow</p>
+                  <p className="text-xs font-bold font-display">Celestial Bright</p>
+                  <p className="text-[10px] text-slate-400">Light violet nebula glow</p>
                 </div>
               </button>
             </div>
@@ -117,19 +118,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
           {/* Background Particle Density */}
           <div>
-            <label className="text-xs font-mono uppercase tracking-wider text-red-300 mb-2.5 flex items-center justify-between font-semibold">
+            <label className="text-xs font-mono uppercase tracking-wider text-purple-300 mb-2.5 flex items-center justify-between font-semibold">
               <span>Glittering Star Density</span>
-              <span className="text-red-400 font-bold">{settings.particleDensity.toUpperCase()}</span>
+              <span className="text-purple-400 font-bold">{settings.particleDensity.toUpperCase()}</span>
             </label>
             <div className="grid grid-cols-4 gap-2">
               {(['high', 'medium', 'low', 'off'] as ParticleDensity[]).map(level => (
                 <button
                   key={level}
                   onClick={() => onUpdateSettings({ particleDensity: level })}
-                  className={`py-2 rounded-xl text-xs font-display font-semibold capitalize border transition-all ${
+                  className={`py-2 rounded-xl text-xs font-display font-semibold capitalize border transition-all cursor-pointer ${
                     settings.particleDensity === level
-                      ? 'bg-red-600/30 border-red-500 text-red-300 shadow-[0_0_10px_rgba(255,0,60,0.3)]'
-                      : 'bg-black/40 border-red-500/20 text-slate-400 hover:text-white'
+                      ? 'pml-tab-active font-bold text-white'
+                      : 'pml-tab-default text-slate-400 hover:text-white'
                   }`}
                 >
                   {level}
@@ -139,10 +140,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </div>
 
           {/* Sound FX Toggle */}
-          <div className="flex items-center justify-between p-3.5 rounded-2xl bg-black/40 border border-red-500/20">
+          <div className="flex items-center justify-between p-3.5 rounded-2xl bg-black/40 border border-white/10">
             <div className="flex items-center gap-3">
               {settings.soundEffects ? (
-                <Volume2 className="w-5 h-5 text-red-400" />
+                <Volume2 className="w-5 h-5 text-purple-400" />
               ) : (
                 <VolumeX className="w-5 h-5 text-slate-500" />
               )}
@@ -153,8 +154,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
             <button
               onClick={() => onUpdateSettings({ soundEffects: !settings.soundEffects })}
-              className={`w-12 h-6 rounded-full transition-colors relative p-1 ${
-                settings.soundEffects ? 'bg-red-600' : 'bg-slate-800'
+              className={`w-12 h-6 rounded-full transition-colors relative p-1 cursor-pointer ${
+                settings.soundEffects ? 'bg-purple-600' : 'bg-slate-800'
               }`}
             >
               <div
@@ -165,10 +166,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </button>
           </div>
 
-          {/* FastAPI Backend URL (Future API Integration) */}
+          {/* FastAPI Backend URL */}
           <div>
-            <label className="text-xs font-mono uppercase tracking-wider text-red-300 mb-2 flex items-center gap-1.5 font-semibold">
-              <Server className="w-3.5 h-3.5 text-red-400" />
+            <label className="text-xs font-mono uppercase tracking-wider text-purple-300 mb-2 flex items-center gap-1.5 font-semibold">
+              <Server className="w-3.5 h-3.5 text-purple-400" />
               <span>FastAPI Backend Endpoint</span>
             </label>
             <input
@@ -176,16 +177,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               value={settings.apiEndpoint}
               onChange={e => onUpdateSettings({ apiEndpoint: e.target.value })}
               placeholder="http://localhost:8000"
-              className="w-full px-3.5 py-2.5 text-xs font-mono rounded-xl bg-black/60 border border-red-500/30 text-red-200 focus:border-red-500 focus:outline-none"
+              className="w-full px-3.5 py-2.5 text-xs font-mono rounded-xl bg-black/60 border border-white/15 text-purple-200 focus:border-purple-500 focus:outline-none"
             />
-            <p className="text-[10px] text-slate-500 mt-1">
-              Configures future Python FastAPI integration (`POST /api/chat`, `GET /api/conversations`).
+            <p className="text-[10px] text-slate-400 mt-1 font-mono">
+              FastAPI integration (`POST /api/chat`, `GET /api/memories`).
             </p>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="mt-6 pt-4 border-t border-red-500/20 flex justify-between items-center">
+        <div className="mt-6 pt-4 border-t border-white/10 flex justify-between items-center">
           <button
             onClick={() =>
               onUpdateSettings({
@@ -196,7 +197,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 apiEndpoint: 'http://localhost:8000',
               })
             }
-            className="text-xs text-slate-400 hover:text-red-400 flex items-center gap-1 transition-colors font-mono"
+            className="text-xs text-slate-400 hover:text-purple-400 flex items-center gap-1 transition-colors font-mono cursor-pointer"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             <span>Reset Defaults</span>
@@ -204,7 +205,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
           <button
             onClick={onClose}
-            className="px-5 py-2 rounded-xl bg-gradient-to-r from-red-600 via-rose-600 to-red-700 hover:from-red-500 hover:to-rose-500 text-white font-display font-bold text-xs uppercase tracking-wider shadow-[0_0_20px_rgba(255,0,60,0.4)] transition-all"
+            className="px-5 py-2 rounded-xl bg-gradient-to-r from-violet-600 via-indigo-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-display font-bold text-xs uppercase tracking-wider shadow-[0_0_20px_rgba(139,92,246,0.5)] transition-all cursor-pointer border border-white/20"
           >
             Save & Close
           </button>
@@ -213,4 +214,3 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     </div>
   );
 };
-

@@ -67,38 +67,35 @@ export const CosmicBackground: React.FC<CosmicBackgroundProps> = ({
     // Dynamic Star Palette based on Dark vs Bright Celestial Mode
     const starColors = isLight
       ? [
-          '#e11d48', // Crimson Rose
-          '#be123c', // Deep Ruby
-          '#9f1239', // Dark Crimson
-          '#fb7185', // Soft Rose Pink
-          '#f43f5e', // Neon Rose
-          '#cbd5e1', // Soft Celestial Silver
-          '#d97706', // Warm Amber
+          '#6d28d9',
+          '#7c3aed',
+          '#8b5cf6',
+          '#a855f7',
+          '#0284c7',
         ]
       : [
-          '#ffffff', // Pure bright starlight
           '#ffffff',
           '#ffffff',
-          '#ffccd5', // Light ruby tint
-          '#ff4d6d', // Neon red glow
-          '#ff003c', // Electric crimson dot
-          '#ffe5ec', // Soft silver pink
+          '#e9d5ff', // Light violet tint
+          '#c084fc', // Neon purple glow
+          '#a855f7', // Electric violet dot
+          '#38bdf8', // Cyan sparkle
         ];
 
     const particleColors = isLight
       ? [
-          '#e11d48',
-          '#f43f5e',
-          '#be123c',
-          '#fb7185',
-          '#d97706',
+          '#7c3aed',
+          '#8b5cf6',
+          '#9333ea',
+          '#c084fc',
+          '#0284c7',
         ]
       : [
-          '#ff003c',
-          '#ff4d6d',
-          '#dc2626',
+          '#8b5cf6',
+          '#a855f7',
+          '#c084fc',
           '#ffffff',
-          '#ff8fa3',
+          '#38bdf8',
         ];
 
     // Generate stars with twinkling parameters
@@ -172,10 +169,6 @@ export const CosmicBackground: React.FC<CosmicBackgroundProps> = ({
     const render = () => {
       tick += 1;
       ctx.clearRect(0, 0, width, height);
-
-      // Space Canvas Base Color (Obsidian in Dark vs Pearlescent White in Light)
-      ctx.fillStyle = isLight ? '#f8fafc' : '#020204';
-      ctx.fillRect(0, 0, width, height);
 
       // Draw background cosmic nebula radial gradients
       if (isLight) {
@@ -286,9 +279,9 @@ export const CosmicBackground: React.FC<CosmicBackgroundProps> = ({
         const tailY = s.y - Math.sin(s.angle) * s.length;
 
         const grad = ctx.createLinearGradient(s.x, s.y, tailX, tailY);
-        grad.addColorStop(0, isLight ? '#be123c' : '#ffffff');
-        grad.addColorStop(0.3, isLight ? '#f43f5e' : '#ff003c');
-        grad.addColorStop(1, isLight ? 'rgba(225, 29, 72, 0)' : 'rgba(255, 0, 60, 0)');
+        grad.addColorStop(0, isLight ? '#7c3aed' : '#ffffff');
+        grad.addColorStop(0.3, isLight ? '#a855f7' : '#c084fc');
+        grad.addColorStop(1, isLight ? 'rgba(124, 58, 237, 0)' : 'rgba(168, 85, 247, 0)');
 
         ctx.strokeStyle = grad;
         ctx.lineWidth = s.size;

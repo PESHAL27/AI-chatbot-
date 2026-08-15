@@ -95,13 +95,13 @@ export const PMLCore: React.FC<PMLCoreProps> = ({
           <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-purple-300 shadow-[0_0_12px_#c084fc]" />
         </div>
 
-        {/* PLM Core Symbol Sphere (Vortex Image) */}
+        {/* PML Core Symbol Sphere (Vortex Image) */}
         <div
           className={`relative rounded-full overflow-hidden transition-all duration-700 flex items-center justify-center bg-black ${currentSize.orb} ${getOrbStateClasses()}`}
         >
           <img
             src="/assets/plm_symbol.png"
-            alt="PLM Core Symbol"
+            alt="PML Core Symbol"
             className={`w-full h-full object-cover rounded-full ${getVortexSpinSpeed()} transition-all`}
             style={{
               filter: state === 'thinking' 
@@ -116,16 +116,16 @@ export const PMLCore: React.FC<PMLCoreProps> = ({
         </div>
       </div>
 
-      {/* Optional PLM State Label */}
+      {/* Optional PML State Label */}
       {showLabel && (
         <div className="mt-3 flex items-center gap-2 text-xs font-mono text-purple-300 tracking-wider">
           <span className="w-2 h-2 rounded-full bg-purple-500 animate-ping" />
           <span>
             {state === 'thinking'
-              ? 'PLM IS PROCESSING...'
+              ? 'PML IS PROCESSING...'
               : state === 'responding'
-              ? 'PLM GENERATING INTELLIGENCE...'
-              : 'PLM CORE ONLINE'}
+              ? 'PML GENERATING INTELLIGENCE...'
+              : 'PML CORE ONLINE'}
           </span>
         </div>
       )}

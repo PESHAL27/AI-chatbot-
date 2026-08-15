@@ -165,20 +165,20 @@ export const MessageItem: React.FC<MessageItemProps> = ({
             </ReactMarkdown>
           </div>
 
-          {/* Action Bar for PLM Response */}
+          {/* Action Bar for PML Response */}
           {!isUser && !message.isStreaming && (
             <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs text-slate-400 flex-wrap gap-2">
               <div className="flex items-center gap-2 flex-wrap">
                 <div className="flex items-center gap-1 font-mono text-[10px] text-purple-300 tracking-wider">
                   <Sparkles className="w-3 h-3 text-purple-400 animate-pulse" />
-                  <span>PLM ADVANCED NEURAL INTELLIGENCE</span>
+                  <span>PML ADVANCED NEURAL INTELLIGENCE</span>
                 </div>
                 {message.memoriesUsed && message.memoriesUsed.length > 0 && (
                   <div
-                    className="flex items-center gap-1 text-[10px] font-mono text-purple-200 bg-purple-950/60 px-2 py-0.5 rounded-full border border-purple-500/40 shadow-sm"
+                    className="flex items-center gap-1 text-[10px] font-mono text-purple-200 bg-purple-950/60 px-2.5 py-0.5 rounded-full border border-purple-500/40 shadow-sm"
                     title={`Memories used:\n${message.memoriesUsed.map(m => `• ${m}`).join('\n')}`}
                   >
-                    <Brain className="w-3 h-3 text-red-400 animate-pulse" />
+                    <Brain className="w-3 h-3 text-purple-400 animate-pulse" />
                     <span>{message.memoriesUsed.length} {message.memoriesUsed.length === 1 ? 'memory' : 'memories'} active</span>
                   </div>
                 )}
@@ -187,16 +187,16 @@ export const MessageItem: React.FC<MessageItemProps> = ({
               <div className="flex items-center gap-1.5">
                 <button
                   onClick={() => handleCopyText(message.content)}
-                  className="p-1.5 rounded-lg hover:bg-red-950/40 hover:text-white transition-colors"
+                  className="p-1.5 rounded-lg hover:bg-white/10 hover:text-white transition-colors"
                   title="Copy response"
                 >
-                  {copied ? <Check className="w-3.5 h-3.5 text-red-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copied ? <Check className="w-3.5 h-3.5 text-purple-400" /> : <Copy className="w-3.5 h-3.5" />}
                 </button>
 
                 <button
                   onClick={handleToggleSpeak}
                   className={`p-1.5 rounded-lg transition-colors ${
-                    speaking ? 'bg-red-600/30 text-red-400 border border-red-500/40' : 'hover:bg-red-950/40 hover:text-white'
+                    speaking ? 'bg-purple-600/30 text-purple-300 border border-purple-500/40' : 'hover:bg-white/10 hover:text-white'
                   }`}
                   title={speaking ? 'Stop Voice' : 'Read Aloud'}
                 >
@@ -206,19 +206,19 @@ export const MessageItem: React.FC<MessageItemProps> = ({
                 {onRegenerate && (
                   <button
                     onClick={onRegenerate}
-                    className="p-1.5 rounded-lg hover:bg-red-950/40 hover:text-white transition-colors"
+                    className="p-1.5 rounded-lg hover:bg-white/10 hover:text-white transition-colors"
                     title="Regenerate response"
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
                   </button>
                 )}
 
-                <div className="w-[1px] h-3 bg-red-500/20 mx-1" />
+                <div className="w-[1px] h-3 bg-white/15 mx-1" />
 
                 <button
                   onClick={() => handleFeedbackClick('like')}
                   className={`p-1.5 rounded-lg transition-colors ${
-                    userFeedback === 'like' ? 'text-red-400 bg-red-600/30 border border-red-500/40' : 'hover:bg-red-950/40 hover:text-white'
+                    userFeedback === 'like' ? 'text-purple-300 bg-purple-600/30 border border-purple-500/40' : 'hover:bg-white/10 hover:text-white'
                   }`}
                   title="Helpful"
                 >
@@ -228,7 +228,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
                 <button
                   onClick={() => handleFeedbackClick('dislike')}
                   className={`p-1.5 rounded-lg transition-colors ${
-                    userFeedback === 'dislike' ? 'text-rose-400 bg-red-950/60 border border-red-500/40' : 'hover:bg-red-950/40 hover:text-white'
+                    userFeedback === 'dislike' ? 'text-rose-400 bg-rose-950/60 border border-rose-500/40' : 'hover:bg-white/10 hover:text-white'
                   }`}
                   title="Not helpful"
                 >

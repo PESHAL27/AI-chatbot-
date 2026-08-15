@@ -354,7 +354,7 @@ const PMLAppContent: React.FC = () => {
         <div className="relative z-10 flex flex-col items-center gap-4 text-center">
           <PMLCore size="medium" state="thinking" />
           <p className="font-mono text-sm uppercase tracking-widest text-purple-300 font-semibold animate-pulse">
-            Connecting to PLM Universe...
+            Connecting to PML Universe...
           </p>
         </div>
       </div>

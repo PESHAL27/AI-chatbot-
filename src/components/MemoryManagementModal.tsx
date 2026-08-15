@@ -33,16 +33,16 @@ export const MemoryManagementModal: React.FC<MemoryManagementModalProps> = ({
   isAuthenticated,
   onOpenAuth,
 }) => {
-  const [memories, setMemories] = useState<MemoryItem[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState<string>('all');
-  const [newMemoryText, setNewMemoryText] = useState<string>('');
-  const [newMemoryCategory, setNewMemoryCategory] = useState<MemoryCategory>('preference');
-  const [isAdding, setIsAdding] = useState<boolean>(false);
-  const [showClearConfirm, setShowClearConfirm] = useState<boolean>(false);
-  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
-
   const memoryEnabled = settings.memoryEnabled !== false;
+
+  const [memories, setMemories] = useState<MemoryItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>('all');
+  const [newMemoryText, setNewMemoryText] = useState('');
+  const [newMemoryCategory, setNewMemoryCategory] = useState<MemoryCategory>('preference');
+  const [isAdding, setIsAdding] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen && isAuthenticated) {
@@ -52,30 +52,38 @@ export const MemoryManagementModal: React.FC<MemoryManagementModalProps> = ({
 
   const loadMemories = async () => {
     setLoading(true);
-    const data = await pmlApi.fetchMemories();
-    setMemories(data);
-    setLoading(false);
+    try {
+      const data = await pmlApi.fetchMemories();
+      setMemories(data);
+    } catch (err) {
+      console.error('Failed to load memories:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleToggleMemory = (enabled: boolean) => {
-    onUpdateSettings({ memoryEnabled: enabled });
-    showNotification(enabled ? 'Long-Term Memory Activated' : 'Long-Term Memory Paused');
-  };
-
-  const handleDeleteMemory = async (id: string) => {
-    const success = await pmlApi.deleteMemory(id);
-    if (success) {
-      setMemories(prev => prev.filter(m => m.id !== id));
-      showNotification('Memory removed');
+  const handleDeleteMemory = async (memoryId: string) => {
+    try {
+      const ok = await pmlApi.deleteMemory(memoryId);
+      if (ok) {
+        setMemories(prev => prev.filter(m => m.id !== memoryId));
+        showSuccessBanner('Memory purged');
+      }
+    } catch (err) {
+      console.error('Failed to delete memory:', err);
     }
   };
 
   const handleClearAll = async () => {
-    const success = await pmlApi.clearAllMemories();
-    if (success) {
-      setMemories([]);
-      setShowClearConfirm(false);
-      showNotification('All long-term memories cleared');
+    try {
+      const ok = await pmlApi.clearAllMemories();
+      if (ok) {
+        setMemories([]);
+        setShowClearConfirm(false);
+        showSuccessBanner('All memories purged');
+      }
+    } catch (err) {
+      console.error('Failed to clear memories:', err);
     }
   };
 
@@ -84,70 +92,69 @@ export const MemoryManagementModal: React.FC<MemoryManagementModalProps> = ({
     if (!newMemoryText.trim()) return;
 
     setIsAdding(true);
-    const created = await pmlApi.createMemory(newMemoryText.trim(), newMemoryCategory, 3);
-    if (created) {
-      setMemories(prev => [created, ...prev]);
-      setNewMemoryText('');
-      showNotification('New memory added');
+    try {
+      const created = await pmlApi.createMemory(newMemoryText.trim(), newMemoryCategory);
+      if (created) {
+        setMemories(prev => [created, ...prev]);
+        setNewMemoryText('');
+        showSuccessBanner('Memory stored');
+      }
+    } catch (err) {
+      console.error('Failed to create manual memory:', err);
+    } finally {
+      setIsAdding(false);
     }
-    setIsAdding(false);
   };
 
-  const showNotification = (msg: string) => {
+  const handleToggleMemory = async (newState: boolean) => {
+    onUpdateSettings({ memoryEnabled: newState });
+    showSuccessBanner(newState ? 'Memory active' : 'Memory paused');
+  };
+
+  const showSuccessBanner = (msg: string) => {
     setActionSuccess(msg);
-    setTimeout(() => setActionSuccess(null), 2500);
+    setTimeout(() => setActionSuccess(null), 3000);
   };
 
   if (!isOpen) return null;
 
   const filteredMemories = memories.filter(m => {
     if (activeTab === 'all') return true;
-    if (activeTab === 'preferences') return m.category === 'preference' || m.category === 'communication';
-    if (activeTab === 'goals') return m.category === 'goal';
-    if (activeTab === 'projects') return m.category === 'project';
-    return true;
+    return m.category === activeTab;
   });
 
-  const getCategoryIcon = (category: MemoryCategory) => {
-    switch (category) {
-      case 'goal':
-        return <Target className="w-3.5 h-3.5 text-amber-400" />;
-      case 'project':
-        return <FolderGit2 className="w-3.5 h-3.5 text-blue-400" />;
-      case 'communication':
-        return <MessageSquareQuote className="w-3.5 h-3.5 text-purple-400" />;
-      case 'preference':
-      default:
-        return <Lightbulb className="w-3.5 h-3.5 text-red-400" />;
+  const getCategoryIcon = (cat: MemoryCategory) => {
+    switch (cat) {
+      case 'preference': return <Lightbulb className="w-4 h-4 text-amber-400" />;
+      case 'goal': return <Target className="w-4 h-4 text-purple-400" />;
+      case 'project': return <FolderGit2 className="w-4 h-4 text-cyan-400" />;
+      case 'communication': return <MessageSquareQuote className="w-4 h-4 text-violet-400" />;
+      default: return <Lightbulb className="w-4 h-4 text-slate-400" />;
     }
   };
 
-  const getCategoryBadgeStyle = (category: MemoryCategory) => {
-    switch (category) {
-      case 'goal':
-        return 'bg-amber-950/60 border-amber-500/40 text-amber-300';
-      case 'project':
-        return 'bg-blue-950/60 border-blue-500/40 text-blue-300';
-      case 'communication':
-        return 'bg-purple-950/60 border-purple-500/40 text-purple-300';
-      case 'preference':
-      default:
-        return 'bg-red-950/60 border-red-500/40 text-red-300';
+  const getCategoryBadgeStyle = (cat: MemoryCategory) => {
+    switch (cat) {
+      case 'preference': return 'bg-amber-950/60 border-amber-500/40 text-amber-300';
+      case 'goal': return 'bg-purple-950/60 border-purple-500/40 text-purple-300';
+      case 'project': return 'bg-cyan-950/60 border-cyan-500/40 text-cyan-300';
+      case 'communication': return 'bg-violet-950/60 border-violet-500/40 text-violet-300';
+      default: return 'bg-slate-900 border-slate-700 text-slate-300';
     }
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 bg-black/80 backdrop-blur-md">
-      <div className="w-full max-w-2xl glass-panel rounded-3xl p-6 md:p-8 border border-red-500/40 shadow-[0_0_60px_rgba(255,0,60,0.25)] relative animate-float flex flex-col max-h-[88vh]">
+      <div className="w-full max-w-2xl glass-panel rounded-3xl p-6 md:p-8 border border-white/15 shadow-[0_0_60px_rgba(139,92,246,0.25)] relative animate-float flex flex-col max-h-[88vh]">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-4">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-2xl bg-black/60 border border-purple-500/40 shadow-[0_0_15px_rgba(168,85,247,0.3)]">
-              <img src="/assets/plm_symbol.png" alt="PLM" className="w-7 h-7 rounded-full animate-spin duration-20000 object-cover" />
+              <img src="/assets/plm_symbol.png" alt="PML" className="w-7 h-7 rounded-full animate-spin duration-20000 object-cover" />
             </div>
             <div>
               <h2 className="font-display font-bold text-xl text-white flex items-center gap-2">
-                PLM Long-Term Memory
+                PML Long-Term Memory
                 <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-purple-900/40 border border-purple-500/30 text-purple-300 font-bold">
                   Phase 6
                 </span>
@@ -159,22 +166,22 @@ export const MemoryManagementModal: React.FC<MemoryManagementModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-xl hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+            className="p-1.5 rounded-xl hover:bg-white/10 text-slate-400 hover:text-white transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Master Memory Switch Card */}
-        <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-950/40 via-black/80 to-blue-950/40 border border-white/15 mb-4 flex items-center justify-between shadow-sm plm-neon-card">
+        <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-950/40 via-black/80 to-blue-950/40 border border-white/15 mb-4 flex items-center justify-between shadow-sm pml-neon-card">
           <div className="flex items-center gap-3">
             <Sparkles className="w-5 h-5 text-purple-400" />
             <div>
               <p className="text-sm font-bold text-white font-display">Long-Term Memory Intelligence</p>
               <p className="text-xs text-slate-400">
                 {memoryEnabled 
-                  ? 'Active: PLM adapts responses using verified preferences and learning goals.'
-                  : 'Paused: PLM will not retrieve or store long-term memories.'}
+                  ? 'Active: PML adapts responses using verified preferences and learning goals.'
+                  : 'Paused: PML will not retrieve or store long-term memories.'}
               </p>
             </div>
           </div>
@@ -197,14 +204,14 @@ export const MemoryManagementModal: React.FC<MemoryManagementModalProps> = ({
             <ShieldCheck className="w-10 h-10 text-purple-400" />
             <h3 className="text-base font-bold text-white font-display">Account Required for Long-Term Memory</h3>
             <p className="text-xs text-slate-300 max-w-md">
-              Long-term memory is securely encrypted and isolated to authenticated user accounts. Sign in or create a PLM account to enable cross-conversation memory.
+              Long-term memory is securely encrypted and isolated to authenticated user accounts. Sign in or create a PML account to enable cross-conversation memory.
             </p>
             <button
               onClick={() => {
                 onClose();
                 onOpenAuth();
               }}
-              className="mt-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white font-bold text-xs uppercase tracking-wider shadow-[0_0_20px_rgba(147,51,234,0.4)] hover:brightness-110 transition-all cursor-pointer"
+              className="mt-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 via-indigo-600 to-purple-600 text-white font-bold text-xs uppercase tracking-wider shadow-[0_0_20px_rgba(147,51,234,0.4)] hover:brightness-110 transition-all cursor-pointer border border-white/20"
             >
               Sign In / Create Account
             </button>
@@ -216,17 +223,17 @@ export const MemoryManagementModal: React.FC<MemoryManagementModalProps> = ({
               <div className="flex gap-2 overflow-x-auto cosmic-scroll py-1">
                 {[
                   { id: 'all', label: `All (${memories.length})` },
-                  { id: 'preferences', label: '💡 Preferences' },
-                  { id: 'goals', label: '🧠 Goals' },
-                  { id: 'projects', label: '🚀 Projects' },
+                  { id: 'preference', label: '💡 Preferences' },
+                  { id: 'goal', label: '🧠 Goals' },
+                  { id: 'project', label: '🚀 Projects' },
                 ].map(tab => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
                     className={`px-3.5 py-1.5 rounded-xl text-xs font-mono font-semibold transition-all cursor-pointer ${
                       activeTab === tab.id
-                        ? 'plm-tab-active shadow-md'
-                        : 'plm-tab text-slate-300 hover:text-white'
+                        ? 'pml-tab-active shadow-md'
+                        : 'pml-tab-default text-slate-300 hover:text-white'
                     }`}
                   >
                     {tab.label}
@@ -237,7 +244,7 @@ export const MemoryManagementModal: React.FC<MemoryManagementModalProps> = ({
               {memories.length > 0 && (
                 <button
                   onClick={() => setShowClearConfirm(true)}
-                  className="text-[11px] font-mono text-red-400 hover:text-red-300 hover:underline flex items-center gap-1 cursor-pointer whitespace-nowrap"
+                  className="text-[11px] font-mono text-rose-400 hover:text-rose-300 hover:underline flex items-center gap-1 cursor-pointer whitespace-nowrap"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                   <span>Clear All</span>
@@ -247,16 +254,16 @@ export const MemoryManagementModal: React.FC<MemoryManagementModalProps> = ({
 
             {/* Notification Banner */}
             {actionSuccess && (
-              <div className="p-2 rounded-xl bg-red-950/80 border border-red-500/40 text-red-200 text-xs font-mono text-center mb-3 animate-fade-in">
+              <div className="p-2 rounded-xl bg-purple-950/80 border border-purple-500/40 text-purple-200 text-xs font-mono text-center mb-3 animate-fade-in">
                 ✓ {actionSuccess}
               </div>
             )}
 
             {/* Clear All Confirmation Modal Overlay */}
             {showClearConfirm && (
-              <div className="p-4 rounded-2xl bg-red-950/95 border border-red-500 shadow-xl mb-3 flex flex-col gap-2">
-                <div className="flex items-center gap-2 text-red-300 font-bold text-xs">
-                  <AlertTriangle className="w-4 h-4 text-red-400" />
+              <div className="p-4 rounded-2xl bg-purple-950/95 border border-rose-500 shadow-xl mb-3 flex flex-col gap-2">
+                <div className="flex items-center gap-2 text-rose-300 font-bold text-xs">
+                  <AlertTriangle className="w-4 h-4 text-rose-400" />
                   <span>Are you sure you want to delete all long-term memories?</span>
                 </div>
                 <p className="text-[11px] text-slate-300">
@@ -271,7 +278,7 @@ export const MemoryManagementModal: React.FC<MemoryManagementModalProps> = ({
                   </button>
                   <button
                     onClick={handleClearAll}
-                    className="px-3 py-1 rounded-lg bg-red-600 hover:bg-red-500 text-white font-bold text-xs cursor-pointer"
+                    className="px-3 py-1 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs cursor-pointer"
                   >
                     Yes, Clear All
                   </button>
@@ -282,26 +289,26 @@ export const MemoryManagementModal: React.FC<MemoryManagementModalProps> = ({
             {/* Memories List */}
             <div className="flex-1 overflow-y-auto cosmic-scroll space-y-2.5 pr-1">
               {loading ? (
-                <div className="py-12 text-center text-red-400 font-mono text-xs animate-pulse">
+                <div className="py-12 text-center text-purple-400 font-mono text-xs animate-pulse">
                   Retrieving neural memories...
                 </div>
               ) : filteredMemories.length === 0 ? (
                 <div className="py-10 text-center text-slate-400 text-xs flex flex-col items-center gap-2">
                   <Lightbulb className="w-8 h-8 text-slate-600" />
                   <p className="font-semibold text-white">No memories stored in this category yet.</p>
-                  <p className="text-[11px] text-slate-500 max-w-sm">
+                  <p className="text-[11px] text-slate-400 max-w-sm">
                     PML automatically extracts durable facts during conversations, or you can say:
-                    <span className="block mt-1 font-mono text-red-300">"Remember that I prefer simple Python examples"</span>
+                    <span className="block mt-1 font-mono text-purple-300">"Remember that I prefer simple Python examples"</span>
                   </p>
                 </div>
               ) : (
                 filteredMemories.map(item => (
                   <div
                     key={item.id}
-                    className="p-3.5 rounded-2xl bg-black/40 border border-red-500/20 hover:border-red-500/50 transition-all flex items-start justify-between gap-3 group"
+                    className="p-3.5 rounded-2xl bg-black/40 border border-white/10 hover:border-purple-500/50 transition-all flex items-start justify-between gap-3 group pml-neon-card"
                   >
                     <div className="flex items-start gap-3 flex-1 min-w-0">
-                      <div className="mt-0.5 p-1.5 rounded-xl bg-red-950/60 border border-red-500/30 shrink-0">
+                      <div className="mt-0.5 p-1.5 rounded-xl bg-purple-950/60 border border-purple-500/30 shrink-0">
                         {getCategoryIcon(item.category)}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -327,7 +334,7 @@ export const MemoryManagementModal: React.FC<MemoryManagementModalProps> = ({
 
                     <button
                       onClick={() => handleDeleteMemory(item.id)}
-                      className="p-1.5 rounded-xl hover:bg-red-950/80 text-slate-500 hover:text-red-400 transition-colors opacity-80 group-hover:opacity-100 cursor-pointer"
+                      className="p-1.5 rounded-xl hover:bg-rose-950/80 text-slate-500 hover:text-rose-400 transition-colors opacity-80 group-hover:opacity-100 cursor-pointer"
                       title="Delete this memory"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -338,11 +345,11 @@ export const MemoryManagementModal: React.FC<MemoryManagementModalProps> = ({
             </div>
 
             {/* Manual Memory Creator Form */}
-            <form onSubmit={handleAddManualMemory} className="mt-4 pt-3 border-t border-red-500/20 flex gap-2">
+            <form onSubmit={handleAddManualMemory} className="mt-4 pt-3 border-t border-white/10 flex gap-2">
               <select
                 value={newMemoryCategory}
                 onChange={e => setNewMemoryCategory(e.target.value as MemoryCategory)}
-                className="px-2.5 py-1.5 rounded-xl bg-black/60 border border-red-500/30 text-xs font-mono text-red-300 focus:outline-none"
+                className="px-2.5 py-1.5 rounded-xl bg-black/60 border border-white/15 text-xs font-mono text-purple-300 focus:outline-none"
               >
                 <option value="preference">💡 Preference</option>
                 <option value="goal">🧠 Goal</option>
@@ -354,12 +361,12 @@ export const MemoryManagementModal: React.FC<MemoryManagementModalProps> = ({
                 value={newMemoryText}
                 onChange={e => setNewMemoryText(e.target.value)}
                 placeholder="Explicitly add a memory (e.g. 'Prefers dark mode code snippets')..."
-                className="flex-1 px-3 py-1.5 rounded-xl bg-black/60 border border-red-500/30 text-xs font-mono text-slate-200 placeholder-slate-500 focus:border-red-500 focus:outline-none"
+                className="flex-1 px-3 py-1.5 rounded-xl bg-black/60 border border-white/15 text-xs font-mono text-slate-200 placeholder-slate-500 focus:border-purple-500 focus:outline-none"
               />
               <button
                 type="submit"
                 disabled={isAdding || !newMemoryText.trim()}
-                className="px-3.5 py-1.5 rounded-xl bg-red-600 hover:bg-red-500 disabled:opacity-40 text-white font-bold text-xs flex items-center gap-1 cursor-pointer transition-colors"
+                className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 disabled:opacity-40 text-white font-bold text-xs flex items-center gap-1 cursor-pointer transition-colors border border-white/20"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Add</span>
@@ -369,11 +376,11 @@ export const MemoryManagementModal: React.FC<MemoryManagementModalProps> = ({
         )}
 
         {/* Footer info */}
-        <div className="mt-4 pt-3 border-t border-red-500/20 flex justify-between items-center text-[10px] font-mono text-slate-500">
+        <div className="mt-4 pt-3 border-t border-white/10 flex justify-between items-center text-[10px] font-mono text-slate-500">
           <span>🔒 End-to-end user data isolation</span>
           <button
             onClick={onClose}
-            className="px-4 py-1.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs cursor-pointer transition-colors"
+            className="px-4 py-1.5 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-bold text-xs cursor-pointer transition-colors border border-white/20"
           >
             Done
           </button>

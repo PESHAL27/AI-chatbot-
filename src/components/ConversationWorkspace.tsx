@@ -64,8 +64,8 @@ export const ConversationWorkspace: React.FC<ConversationWorkspaceProps> = ({
       className="flex-1 min-h-0 overflow-y-auto cosmic-scroll p-4 md:p-6 space-y-4 max-w-5xl mx-auto w-full relative"
     >
       {/* Session Title Header Card */}
-      <div className="text-center my-4 py-2 border-b border-red-500/20">
-        <span className="text-[10px] font-mono text-red-400 tracking-widest uppercase bg-red-950/60 px-3.5 py-1.5 rounded-full border border-red-500/40 shadow-[0_0_12px_rgba(255,0,60,0.2)]">
+      <div className="text-center my-4 py-2 border-b border-white/10">
+        <span className="text-[10px] font-mono text-purple-300 tracking-widest uppercase bg-purple-950/60 px-3.5 py-1.5 rounded-full border border-purple-500/40 shadow-[0_0_12px_rgba(168,85,247,0.25)]">
           PML NEURAL SESSION • {new Date(activeConversation.createdAt).toLocaleDateString()}
         </span>
       </div>
@@ -82,10 +82,10 @@ export const ConversationWorkspace: React.FC<ConversationWorkspaceProps> = ({
 
       {/* Thinking State Animation Card */}
       {coreState === 'thinking' && (
-        <div className="flex items-center gap-3 p-4 rounded-2xl glass-panel cosmic-illuminated-edge bg-red-950/30 border-red-500/40 my-4 max-w-xl animate-pulse shadow-[0_0_20px_rgba(255,0,60,0.2)]">
+        <div className="flex items-center gap-3 p-4 rounded-2xl glass-panel cosmic-illuminated-edge bg-purple-950/30 border-purple-500/40 my-4 max-w-xl animate-pulse shadow-[0_0_20px_rgba(168,85,247,0.2)]">
           <PMLCore size="small" state="thinking" />
           <div>
-            <p className="text-xs font-mono text-red-300 font-bold uppercase tracking-wider">PML core synthesizing response...</p>
+            <p className="text-xs font-mono text-purple-300 font-bold uppercase tracking-wider">PML core synthesizing response...</p>
             <p className="text-[10px] text-slate-400">Processing neural queries & space knowledge graph</p>
           </div>
         </div>
@@ -97,7 +97,7 @@ export const ConversationWorkspace: React.FC<ConversationWorkspaceProps> = ({
       {showScrollBottom && (
         <button
           onClick={scrollToBottom}
-          className="fixed bottom-24 right-8 p-3 rounded-full glass-panel bg-red-600/30 border-red-500/50 text-red-300 hover:text-white shadow-[0_0_25px_rgba(255,0,60,0.4)] transition-all animate-bounce z-40"
+          className="fixed bottom-24 right-8 p-3 rounded-full glass-panel bg-purple-600/30 border border-purple-500/50 text-purple-300 hover:text-white shadow-[0_0_25px_rgba(168,85,247,0.4)] transition-all animate-bounce z-40"
           title="Scroll to bottom"
         >
           <ChevronDown className="w-5 h-5" />
@@ -106,4 +106,3 @@ export const ConversationWorkspace: React.FC<ConversationWorkspaceProps> = ({
     </div>
   );
 };
-

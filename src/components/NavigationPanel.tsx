@@ -72,20 +72,20 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
 
       {/* Floating Glass Navigation Drawer */}
       <aside
-        className={`fixed top-4 left-4 bottom-4 z-50 w-80 glass-floating-nav rounded-2xl flex flex-col transition-all duration-300 ease-out transform border border-red-500/30 shadow-[0_0_40px_rgba(255,0,60,0.15)] ${
-          isOpen ? 'translate-x-0 opacity-100' : '-translate-x-[calc(100%+2rem)] opacity-0 pointer-events-none'
+        className={`fixed top-4 left-4 bottom-4 z-50 w-80 glass-floating-nav rounded-2xl flex flex-col transition-all duration-300 ease-out transform border border-white/10 shadow-[0_0_40px_rgba(139,92,246,0.15)] ${
+          isOpen ? 'translate-x-0 opacity-100' : '-translate-x-[110%] opacity-0 pointer-events-none'
         }`}
       >
         {/* Header Branding */}
-        <div className="p-5 flex items-center justify-between border-b border-red-500/25">
+        <div className="p-5 flex items-center justify-between border-b border-white/10">
           <div 
             onClick={onNewConversation}
             className="flex items-center gap-3 cursor-pointer group"
           >
             <PMLCore size="small" state="idle" />
             <div>
-              <h1 className="font-display font-black text-2xl tracking-wider text-gradient-red group-hover:brightness-125 transition-all">
-                PLM
+              <h1 className="font-display font-black text-2xl tracking-wider text-gradient-violet group-hover:brightness-125 transition-all">
+                PML
               </h1>
               <p className="text-xs font-mono text-purple-300/90 tracking-widest uppercase font-semibold">
                 SPACE INTELLIGENCE
@@ -95,7 +95,7 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
 
           <button
             onClick={onToggle}
-            className="p-2 rounded-xl hover:bg-red-950/40 text-slate-400 hover:text-white transition-colors"
+            className="p-2 rounded-xl hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
             title="Collapse Navigation"
           >
             <ChevronLeft className="w-5 h-5" />
@@ -110,7 +110,7 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
               onNewConversation();
               if (window.innerWidth < 768) onToggle();
             }}
-            className="w-full py-4 px-4 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-display font-bold text-sm uppercase tracking-wider flex items-center justify-center gap-3 shadow-[0_0_25px_rgba(79,70,229,0.5)] hover:shadow-[0_0_35px_rgba(147,51,234,0.7)] transition-all duration-300 active:scale-98 my-2 border border-white/20"
+            className="w-full py-4 px-4 rounded-2xl bg-gradient-to-r from-violet-600 via-indigo-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-display font-bold text-sm uppercase tracking-wider flex items-center justify-center gap-3 shadow-[0_0_25px_rgba(139,92,246,0.5)] hover:shadow-[0_0_35px_rgba(168,85,247,0.7)] transition-all duration-300 active:scale-98 my-2 border border-white/20"
           >
             <Plus className="w-5 h-5 text-white" />
             <span>New Chat</span>
@@ -140,14 +140,14 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
             )}
           </div>
 
-          {/* Category Tabs: All vs Starred (Neon Tabs Design from Image 3) */}
+          {/* Category Tabs: All vs Starred (Exact Image 3 Tab Style) */}
           <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-black/60 border border-white/10 text-sm mt-4">
             <button
               onClick={() => setFilterMode('all')}
               className={`flex-1 py-2.5 rounded-xl flex items-center justify-center gap-2 font-display text-xs md:text-sm transition-all cursor-pointer ${
                 filterMode === 'all'
-                  ? 'plm-tab-active font-bold'
-                  : 'text-slate-300 hover:text-white hover:bg-white/5 font-semibold'
+                  ? 'pml-tab-active font-bold'
+                  : 'pml-tab-default text-slate-300 hover:text-white font-semibold'
               }`}
             >
               <MessageSquare className="w-4 h-4" />
@@ -157,8 +157,8 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
               onClick={() => setFilterMode('starred')}
               className={`flex-1 py-2.5 rounded-xl flex items-center justify-center gap-2 font-display text-xs md:text-sm transition-all cursor-pointer ${
                 filterMode === 'starred'
-                  ? 'plm-tab-active font-bold'
-                  : 'text-slate-300 hover:text-white hover:bg-white/5 font-semibold'
+                  ? 'pml-tab-active font-bold'
+                  : 'pml-tab-default text-slate-300 hover:text-white font-semibold'
               }`}
             >
               <Star className="w-4 h-4" />
@@ -177,7 +177,7 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
               <Sparkles className="w-8 h-8 mx-auto text-purple-400/50 mb-2" />
               <p className="text-sm text-slate-100 font-semibold">No sessions found</p>
               <p className="text-xs text-slate-300 mt-1">
-                {searchQuery ? 'Try another search keyword' : 'Start a new chat session with PLM'}
+                {searchQuery ? 'Try another search keyword' : 'Start a new chat session with PML'}
               </p>
             </div>
           ) : (
@@ -191,9 +191,9 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
                     onSelectConversation(conv.id);
                     if (window.innerWidth < 768) onToggle();
                   }}
-                  className={`group relative p-3.5 rounded-2xl cursor-pointer flex items-center justify-between transition-all duration-200 plm-neon-card ${
+                  className={`group relative p-3.5 rounded-2xl cursor-pointer flex items-center justify-between transition-all duration-200 pml-neon-card ${
                     isActive
-                      ? 'plm-tab-active font-bold text-white'
+                      ? 'pml-tab-active font-bold text-white'
                       : 'hover:border-white/30 text-slate-200'
                   }`}
                 >
@@ -209,7 +209,7 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
                     <button
                       onClick={e => onToggleStarConversation(conv.id, e)}
                       className={`p-1 rounded hover:bg-white/10 transition-colors ${
-                        conv.isStarred ? 'text-red-400' : 'text-slate-400 hover:text-red-300'
+                        conv.isStarred ? 'text-purple-400' : 'text-slate-400 hover:text-purple-300'
                       }`}
                       title={conv.isStarred ? 'Unstar session' : 'Star session'}
                     >
@@ -217,7 +217,7 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
                     </button>
                     <button
                       onClick={e => onDeleteConversation(conv.id, e)}
-                      className="p-1 rounded hover:bg-red-500/30 text-slate-400 hover:text-red-400 transition-colors"
+                      className="p-1 rounded hover:bg-rose-500/30 text-slate-400 hover:text-rose-400 transition-colors"
                       title="Delete session"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -230,19 +230,19 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
         </div>
 
         {/* Footer Settings & Profile */}
-        <div className="p-4 border-t border-red-500/25 flex items-center justify-between bg-black/70 rounded-b-2xl gap-1">
+        <div className="p-4 border-t border-white/10 flex items-center justify-between bg-black/70 rounded-b-2xl gap-1">
           <button
             onClick={isAuthenticated ? onOpenProfile : onOpenAuth}
-            className="flex items-center gap-3 p-1.5 rounded-xl hover:bg-red-950/50 text-left transition-colors flex-1 min-w-0 mr-1 cursor-pointer group"
+            className="flex items-center gap-3 p-1.5 rounded-xl hover:bg-white/10 text-left transition-colors flex-1 min-w-0 mr-1 cursor-pointer group"
           >
-            <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-red-600 via-rose-600 to-red-800 flex items-center justify-center text-white font-bold text-sm shadow-[0_0_12px_rgba(255,0,60,0.5)] flex-shrink-0">
+            <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-violet-600 via-indigo-600 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-[0_0_12px_rgba(139,92,246,0.5)] flex-shrink-0">
               {(userProfile.name || 'G').charAt(0).toUpperCase()}
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-bold text-white truncate group-hover:text-red-300 transition-colors">
+              <p className="text-sm font-bold text-white truncate group-hover:text-purple-300 transition-colors">
                 {isAuthenticated ? userProfile.name : 'Guest Explorer'}
               </p>
-              <p className="text-xs text-red-400 font-mono truncate">
+              <p className="text-xs text-purple-300 font-mono truncate">
                 {isAuthenticated ? userProfile.email : 'Click to Sign In'}
               </p>
             </div>
@@ -251,7 +251,7 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
           {onOpenMemory && (
             <button
               onClick={onOpenMemory}
-              className="p-2 rounded-xl hover:bg-red-950/70 text-slate-300 hover:text-red-400 transition-colors cursor-pointer"
+              className="p-2 rounded-xl hover:bg-white/10 text-slate-300 hover:text-purple-400 transition-colors cursor-pointer"
               title="PML Long-Term Memory Console"
             >
               <Brain className="w-4.5 h-4.5" />
@@ -261,7 +261,7 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
           {isAuthenticated && onSignOut && (
             <button
               onClick={onSignOut}
-              className="p-2 rounded-xl hover:bg-red-950/70 text-slate-400 hover:text-red-400 transition-colors cursor-pointer"
+              className="p-2 rounded-xl hover:bg-white/10 text-slate-400 hover:text-rose-400 transition-colors cursor-pointer"
               title="Sign Out / Disconnect"
             >
               <LogOut className="w-4.5 h-4.5" />
@@ -270,7 +270,7 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
 
           <button
             onClick={onOpenSettings}
-            className="p-2 rounded-xl hover:bg-red-950/50 text-slate-300 hover:text-red-400 transition-colors cursor-pointer"
+            className="p-2 rounded-xl hover:bg-white/10 text-slate-300 hover:text-purple-400 transition-colors cursor-pointer"
             title="PML Settings"
           >
             <Settings className="w-4.5 h-4.5" />
