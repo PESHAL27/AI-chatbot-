@@ -123,7 +123,7 @@ class DatabaseService:
         now_iso = datetime.now(timezone.utc).isoformat()
         clean_title = (title or "New Conversation")[:60]
 
-        if cls._is_supabase_configured():
+        if cls._is_supabase_configured() and cls._is_valid_uuid(user_id):
             try:
                 async with httpx.AsyncClient() as client:
                     payload = {
@@ -171,7 +171,7 @@ class DatabaseService:
         user_token: Optional[str] = None
     ) -> List[Dict[str, Any]]:
         """Retrieves all conversations for the authenticated user ordered by updated_at DESC."""
-        if cls._is_supabase_configured():
+        if cls._is_supabase_configured() and cls._is_valid_uuid(user_id):
             try:
                 async with httpx.AsyncClient() as client:
                     res = await client.get(
@@ -203,7 +203,7 @@ class DatabaseService:
         user_token: Optional[str] = None
     ) -> Optional[Dict[str, Any]]:
         """Fetches a single conversation ensuring it strictly belongs to the current user."""
-        if cls._is_supabase_configured():
+        if cls._is_supabase_configured() and cls._is_valid_uuid(user_id):
             try:
                 async with httpx.AsyncClient() as client:
                     # Get Conversation filtered by user_id
@@ -262,7 +262,7 @@ class DatabaseService:
         if not conv:
             return None
 
-        if cls._is_supabase_configured():
+        if cls._is_supabase_configured() and cls._is_valid_uuid(user_id):
             try:
                 async with httpx.AsyncClient() as client:
                     res = await client.patch(
@@ -302,7 +302,7 @@ class DatabaseService:
         if not conv:
             return False
 
-        if cls._is_supabase_configured():
+        if cls._is_supabase_configured() and cls._is_valid_uuid(user_id):
             try:
                 async with httpx.AsyncClient() as client:
                     # Cascade delete messages first
@@ -352,7 +352,7 @@ class DatabaseService:
             initial_title = content[:32] + ("..." if len(content) > 32 else "")
             await cls.create_conversation(title=initial_title, user_id=user_id, conversation_id=conversation_id, user_token=user_token)
 
-        if cls._is_supabase_configured():
+        if cls._is_supabase_configured() and cls._is_valid_uuid(user_id):
             try:
                 async with httpx.AsyncClient() as client:
                     payload = {
@@ -417,7 +417,7 @@ class DatabaseService:
         if not conv:
             return []
 
-        if cls._is_supabase_configured():
+        if cls._is_supabase_configured() and cls._is_valid_uuid(user_id):
             try:
                 async with httpx.AsyncClient() as client:
                     res = await client.get(

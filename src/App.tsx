@@ -92,12 +92,26 @@ const PMLAppContent: React.FC = () => {
   // Load conversations when user state initializes or changes
   useEffect(() => {
     if (user) {
-      pmlApi.fetchConversations().then(data => {
+      pmlApi.fetchConversations().then(async data => {
         setConversations(data);
+        if (data.length > 0) {
+          const mostRecent = data[0];
+          setActiveConversationId(mostRecent.id);
+          const fullDetails = await pmlApi.fetchConversationDetails(mostRecent.id);
+          if (fullDetails) {
+            setConversations(prev => prev.map(c => (c.id === mostRecent.id ? fullDetails : c)));
+          }
+        }
       });
     } else {
-      setConversations([]);
-      setActiveConversationId(null);
+      pmlApi.fetchConversations().then(data => {
+        setConversations(data);
+        if (data.length > 0) {
+          setActiveConversationId(data[0].id);
+        } else {
+          setActiveConversationId(null);
+        }
+      });
     }
   }, [user]);
 
@@ -136,9 +150,17 @@ const PMLAppContent: React.FC = () => {
   };
 
   // Select Existing Conversation
-  const handleSelectConversation = (id: string) => {
+  const handleSelectConversation = async (id: string) => {
     cosmicAudio.playNodeSound(settings.soundEffects);
     setActiveConversationId(id);
+
+    const currentConv = conversations.find(c => c.id === id);
+    if (!currentConv || currentConv.messages.length === 0) {
+      const fullDetails = await pmlApi.fetchConversationDetails(id);
+      if (fullDetails) {
+        setConversations(prev => prev.map(c => (c.id === id ? fullDetails : c)));
+      }
+    }
   };
 
   // Delete Conversation
