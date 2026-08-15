@@ -98,7 +98,7 @@ export const AuthExperience: React.FC<AuthExperienceProps> = ({
             setErrorMsg(error.message || 'Unable to create account. Please check your credentials.');
           }
         } else {
-          setSuccessMsg('Account created successfully! Connecting to PML Universe...');
+          setSuccessMsg('Account created successfully! Connecting to PLM Universe...');
           if (onClose) {
             setTimeout(onClose, 800);
           }
@@ -124,12 +124,12 @@ export const AuthExperience: React.FC<AuthExperienceProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 bg-black/80 backdrop-blur-md">
-      <div className="w-full max-w-md glitter-glass-panel bg-black/95 p-8 md:p-10 rounded-3xl border border-red-500/40 shadow-[0_0_60px_rgba(255,0,60,0.3)] flex flex-col items-center text-center relative">
+      <div className="w-full max-w-md glitter-glass-panel bg-black/95 p-8 md:p-10 rounded-3xl border border-purple-500/40 shadow-[0_0_60px_rgba(168,85,247,0.3)] flex flex-col items-center text-center relative plm-neon-card">
         {/* Close Button if dismissible modal */}
         {onClose && (
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-2 rounded-xl hover:bg-red-950/50 text-slate-400 hover:text-white transition-colors cursor-pointer"
+            className="absolute top-4 right-4 p-2 rounded-xl hover:bg-white/10 text-slate-400 hover:text-white transition-colors cursor-pointer"
             title="Close / Continue as Guest"
           >
             <X className="w-5 h-5" />
@@ -142,12 +142,12 @@ export const AuthExperience: React.FC<AuthExperienceProps> = ({
         </div>
 
         {/* Title */}
-        <h1 className="font-display font-black text-3xl md:text-4xl text-gradient-red tracking-wider mb-1 drop-shadow-[0_0_20px_rgba(255,0,60,0.4)]">
-          PML AI
+        <h1 className="font-display font-black text-3xl md:text-4xl text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-300 to-pink-500 tracking-wider mb-1 drop-shadow-[0_0_20px_rgba(168,85,247,0.4)]">
+          PLM AI
         </h1>
-        <p className="font-mono text-xs text-red-300 uppercase tracking-widest font-semibold mb-6">
+        <p className="font-mono text-xs text-purple-300 uppercase tracking-widest font-semibold mb-6">
           {mode === 'login' && 'Neural Space Authentication'}
-          {mode === 'register' && 'Initialize PML Account'}
+          {mode === 'register' && 'Initialize PLM Account'}
           {mode === 'forgot' && 'Reset Neural Access Key'}
         </p>
 

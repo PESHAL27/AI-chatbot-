@@ -83,7 +83,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
         {/* Avatar Icon */}
         <div className="flex-shrink-0 pt-1">
           {isUser ? (
-            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-red-600 via-rose-600 to-red-800 flex items-center justify-center text-white text-xs font-bold shadow-[0_0_12px_rgba(255,0,60,0.5)] border border-red-500/50">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 flex items-center justify-center text-white text-xs font-bold shadow-[0_0_12px_rgba(79,70,229,0.5)] border border-purple-500/50">
               <User className="w-4 h-4" />
             </div>
           ) : (
@@ -93,10 +93,10 @@ export const MessageItem: React.FC<MessageItemProps> = ({
 
         {/* Message Box Panel */}
         <div
-          className={`flex-1 rounded-2xl p-4 md:p-5 transition-all duration-300 ${
+          className={`flex-1 rounded-2xl p-4 md:p-5 transition-all duration-300 plm-neon-card ${
             isUser
-              ? 'bg-black/90 border border-red-500/40 text-white shadow-[0_4px_20px_rgba(255,0,60,0.15)] font-main'
-              : 'glass-panel cosmic-illuminated-edge bg-red-950/20 border border-red-500/30 text-white shadow-[0_8px_30px_rgba(0,0,0,0.8)] font-main'
+              ? 'bg-black/80 border-white/20 text-white shadow-[0_4px_20px_rgba(0,0,0,0.6)] font-main'
+              : 'bg-black/60 border-purple-500/30 text-white shadow-[0_8px_30px_rgba(0,0,0,0.8)] font-main'
           }`}
         >
           {/* User Attached File Cards */}
@@ -105,9 +105,9 @@ export const MessageItem: React.FC<MessageItemProps> = ({
               {message.attachments.map((att: Attachment) => (
                 <div
                   key={att.id}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-red-950/60 border border-red-500/40 text-xs text-red-200"
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-purple-950/60 border border-purple-500/40 text-xs text-purple-200"
                 >
-                  <FileText className="w-3.5 h-3.5 text-red-400" />
+                  <FileText className="w-3.5 h-3.5 text-purple-400" />
                   <span className="truncate max-w-[150px] font-mono">{att.name}</span>
                   <span className="text-[10px] text-slate-400">
                     ({Math.round(att.size / 1024)}KB)
@@ -129,8 +129,8 @@ export const MessageItem: React.FC<MessageItemProps> = ({
                   const codeId = Math.random().toString(36).substring(2, 9);
 
                   return !inline && match ? (
-                    <div className="relative my-3 rounded-xl overflow-hidden border border-red-500/30 bg-black/90 shadow-[0_4px_20px_rgba(0,0,0,0.8)]">
-                      <div className="flex items-center justify-between px-4 py-1.5 bg-red-950/60 border-b border-red-500/30 text-xs font-mono text-red-300">
+                    <div className="relative my-3 rounded-xl overflow-hidden border border-purple-500/30 bg-black/90 shadow-[0_4px_20px_rgba(0,0,0,0.8)]">
+                      <div className="flex items-center justify-between px-4 py-1.5 bg-purple-950/60 border-b border-purple-500/30 text-xs font-mono text-purple-300">
                         <span className="uppercase font-semibold tracking-wider">{match[1]}</span>
                         <button
                           onClick={() => handleCopyCode(codeString, codeId)}
@@ -138,8 +138,8 @@ export const MessageItem: React.FC<MessageItemProps> = ({
                         >
                           {copiedCodeId === codeId ? (
                             <>
-                              <Check className="w-3.5 h-3.5 text-red-400" />
-                              <span className="text-red-400 font-bold">Copied</span>
+                              <Check className="w-3.5 h-3.5 text-purple-400" />
+                              <span className="text-purple-400 font-bold">Copied</span>
                             </>
                           ) : (
                             <>
@@ -165,17 +165,17 @@ export const MessageItem: React.FC<MessageItemProps> = ({
             </ReactMarkdown>
           </div>
 
-          {/* Action Bar for PML Response */}
+          {/* Action Bar for PLM Response */}
           {!isUser && !message.isStreaming && (
-            <div className="mt-4 pt-3 border-t border-red-500/20 flex items-center justify-between text-xs text-slate-400 flex-wrap gap-2">
+            <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs text-slate-400 flex-wrap gap-2">
               <div className="flex items-center gap-2 flex-wrap">
-                <div className="flex items-center gap-1 font-mono text-[10px] text-red-400/90 tracking-wider">
-                  <Sparkles className="w-3 h-3 text-red-500 animate-pulse" />
-                  <span>PML ADVANCED NEURAL INTELLIGENCE</span>
+                <div className="flex items-center gap-1 font-mono text-[10px] text-purple-300 tracking-wider">
+                  <Sparkles className="w-3 h-3 text-purple-400 animate-pulse" />
+                  <span>PLM ADVANCED NEURAL INTELLIGENCE</span>
                 </div>
                 {message.memoriesUsed && message.memoriesUsed.length > 0 && (
                   <div
-                    className="flex items-center gap-1 text-[10px] font-mono text-red-300 bg-red-950/60 px-2 py-0.5 rounded-full border border-red-500/40 shadow-sm"
+                    className="flex items-center gap-1 text-[10px] font-mono text-purple-200 bg-purple-950/60 px-2 py-0.5 rounded-full border border-purple-500/40 shadow-sm"
                     title={`Memories used:\n${message.memoriesUsed.map(m => `• ${m}`).join('\n')}`}
                   >
                     <Brain className="w-3 h-3 text-red-400 animate-pulse" />

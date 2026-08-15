@@ -353,8 +353,8 @@ const PMLAppContent: React.FC = () => {
         <CosmicBackground density={settings.particleDensity} theme={settings.theme} />
         <div className="relative z-10 flex flex-col items-center gap-4 text-center">
           <PMLCore size="medium" state="thinking" />
-          <p className="font-mono text-sm uppercase tracking-widest text-red-400 font-semibold animate-pulse">
-            Connecting to PML Universe...
+          <p className="font-mono text-sm uppercase tracking-widest text-purple-300 font-semibold animate-pulse">
+            Connecting to PLM Universe...
           </p>
         </div>
       </div>
@@ -412,12 +412,12 @@ const PMLAppContent: React.FC = () => {
 
         {/* Guest Session Top Notice Pill (Subtle & Non-Intrusive, only shown for unauthenticated guests) */}
         {!user && showGuestBanner && (
-          <div className="mx-auto mt-2 px-4 py-1.5 rounded-full bg-red-950/70 border border-red-500/40 text-red-200 text-xs font-mono flex items-center gap-2 shadow-[0_0_15px_rgba(255,0,60,0.2)] z-20 backdrop-blur-md">
-            <Sparkles className="w-3.5 h-3.5 text-red-400 animate-pulse" />
+          <div className="mx-auto mt-2 px-4 py-1.5 rounded-full bg-purple-950/70 border border-purple-500/40 text-purple-200 text-xs font-mono flex items-center gap-2 shadow-[0_0_15px_rgba(168,85,247,0.25)] z-20 backdrop-blur-md">
+            <Sparkles className="w-3.5 h-3.5 text-purple-400 animate-pulse" />
             <span>Guest Mode active. </span>
             <button
               onClick={() => setAuthModalOpen(true)}
-              className="text-white font-bold underline hover:text-red-300 transition-colors cursor-pointer"
+              className="text-white font-bold underline hover:text-purple-300 transition-colors cursor-pointer"
             >
               Sign in to sync & save chat history
             </button>

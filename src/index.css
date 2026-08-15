@@ -500,3 +500,79 @@ html, body, #root {
   color: #be123c;
   border-color: rgba(225, 29, 72, 0.25);
 }
+
+/* ========================================================
+   PLM NEON GLOW TABS, WORKSPACE SELECTORS & CARDS (IMAGE 3)
+   ======================================================== */
+
+.plm-tab,
+.plm-neon-card {
+  position: relative;
+  background: rgba(10, 10, 18, 0.78);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Hover state (Soft white outer glow + top rim lighting) */
+.plm-tab:hover,
+.plm-neon-card:hover {
+  background: rgba(18, 18, 30, 0.88);
+  border-color: rgba(255, 255, 255, 0.45);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.16), 0 0 35px rgba(255, 255, 255, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+/* Active / Focus state (Radiant Purple / Indigo Neon Glow) */
+.plm-tab-active,
+.plm-tab.active,
+.plm-neon-card.active {
+  background: linear-gradient(135deg, rgba(88, 28, 135, 0.4) 0%, rgba(15, 23, 42, 0.85) 100%) !important;
+  border-color: #a855f7 !important;
+  box-shadow: 0 0 25px rgba(168, 85, 247, 0.6), 0 0 45px rgba(147, 51, 234, 0.3), inset 0 1px 0 rgba(216, 180, 254, 0.5) !important;
+  color: #ffffff !important;
+}
+
+/* Focus Blue Glow State (From image 3 focus selector) */
+.plm-tab-blue-focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 25px rgba(59, 130, 246, 0.7), 0 0 50px rgba(37, 99, 235, 0.35), inset 0 1px 0 rgba(147, 197, 253, 0.5) !important;
+}
+
+/* Selected Option Pill with Checkmark (From image 3 open dropdown) */
+.plm-pill-selected {
+  background: linear-gradient(90deg, #2563eb 0%, #4f46e5 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
+  box-shadow: 0 0 18px rgba(59, 130, 246, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.35) !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+}
+
+/* Error Neon Red State */
+.plm-tab-error {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 22px rgba(239, 68, 68, 0.65), inset 0 1px 0 rgba(252, 165, 165, 0.4) !important;
+}
+
+/* Light Mode Adaptations */
+[data-theme='light'] .plm-tab,
+[data-theme='light'] .plm-neon-card {
+  background: rgba(255, 255, 255, 0.92);
+  border-color: rgba(225, 29, 72, 0.2);
+}
+
+[data-theme='light'] .plm-tab:hover,
+[data-theme='light'] .plm-neon-card:hover {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(225, 29, 72, 0.5);
+  box-shadow: 0 0 20px rgba(225, 29, 72, 0.2);
+}
+
+[data-theme='light'] .plm-tab-active,
+[data-theme='light'] .plm-tab.active {
+  background: linear-gradient(135deg, rgba(255, 241, 242, 0.98) 0%, rgba(254, 205, 211, 0.85) 100%) !important;
+  border-color: #e11d48 !important;
+  box-shadow: 0 0 20px rgba(225, 29, 72, 0.4) !important;
+  color: #be123c !important;
+}

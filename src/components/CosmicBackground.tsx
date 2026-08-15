@@ -315,13 +315,46 @@ export const CosmicBackground: React.FC<CosmicBackgroundProps> = ({
   }, [density, theme, isLight]);
 
   if (density === 'off') {
-    return <div className={`fixed inset-0 pointer-events-none ${isLight ? 'bg-[#f8fafc]' : 'bg-[#020204]'} -z-10`} />;
+    return (
+      <div className="fixed inset-0 pointer-events-none -z-10">
+        <div 
+          className="absolute inset-0 bg-cover bg-center transition-all duration-700"
+          style={{ 
+            backgroundImage: "url('/assets/space_starfield.png')", 
+            opacity: isLight ? 0.25 : 0.85 
+          }} 
+        />
+        <div className={`absolute inset-0 ${isLight ? 'bg-[#f8fafc]/80' : 'bg-black/60'}`} />
+      </div>
+    );
   }
 
   return (
-    <canvas
-      ref={canvasRef}
-      className="fixed inset-0 pointer-events-none -z-10 transition-opacity duration-700"
-    />
+    <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
+      {/* High-Resolution Real Space Starfield Background (Image 2) */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-all duration-1000 scale-105"
+        style={{ 
+          backgroundImage: "url('/assets/space_starfield.png')", 
+          opacity: isLight ? 0.22 : 0.90,
+          filter: isLight ? 'brightness(1.2) contrast(0.9)' : 'brightness(0.95) contrast(1.1)'
+        }} 
+      />
+
+      {/* Atmospheric Deep Space Nebula Lighting Overlay */}
+      <div 
+        className={`absolute inset-0 transition-opacity duration-700 ${
+          isLight 
+            ? 'bg-gradient-to-b from-rose-100/40 via-transparent to-slate-200/60 mix-blend-multiply' 
+            : 'bg-gradient-to-b from-purple-950/30 via-transparent to-black/80'
+        }`} 
+      />
+
+      {/* Dynamic HTML5 Particle & Shooting Star Canvas */}
+      <canvas
+        ref={canvasRef}
+        className="absolute inset-0 pointer-events-none transition-opacity duration-700"
+      />
+    </div>
   );
 };

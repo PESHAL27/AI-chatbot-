@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Shield, Award, Sparkles, FileCheck, MessageSquare, LogOut, Brain, ExternalLink } from 'lucide-react';
+import { X, Award, Sparkles, FileCheck, MessageSquare, LogOut, Brain, ExternalLink } from 'lucide-react';
 import type { UserProfile } from '../types/pml';
 import { useAuth } from '../context/AuthContext';
 
@@ -21,7 +21,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   if (!isOpen) return null;
 
   const displayName = user?.user_metadata?.full_name || profile.name || 'Cosmic Explorer';
-  const displayEmail = user?.email || profile.email || 'explorer@pml.universe';
+  const displayEmail = user?.email || profile.email || 'explorer@plm.universe';
   const initial = displayName.charAt(0).toUpperCase() || 'P';
   const joinedYear = user?.created_at 
     ? new Date(user.created_at).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })
@@ -34,16 +34,18 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-      <div className="w-full max-w-md glass-panel rounded-3xl p-6 border border-red-500/40 shadow-[0_0_60px_rgba(255,0,60,0.25)] relative">
+      <div className="w-full max-w-md glass-panel rounded-3xl p-6 border border-purple-500/40 shadow-[0_0_60px_rgba(168,85,247,0.25)] relative plm-neon-card">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-red-500/20 pb-4 mb-5">
+        <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-5">
           <div className="flex items-center gap-2">
-            <Shield className="w-5 h-5 text-red-400" />
-            <h2 className="font-display font-bold text-xl text-white">Neural Identity</h2>
+            <div className="p-1.5 rounded-lg bg-black/60 border border-purple-500/30">
+              <img src="/assets/plm_symbol.png" alt="PLM" className="w-5 h-5 rounded-full object-cover" />
+            </div>
+            <h2 className="font-display font-bold text-xl text-white">PLM Neural Identity</h2>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-xl hover:bg-red-950/40 text-slate-400 hover:text-white transition-colors"
+            className="p-1.5 rounded-xl hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -51,7 +53,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
 
         {/* User Avatar Card */}
         <div className="text-center mb-6">
-          <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-tr from-red-600 via-rose-600 to-red-800 p-1 shadow-[0_0_25px_rgba(255,0,60,0.5)] mb-3">
+          <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 p-1 shadow-[0_0_25px_rgba(147,51,234,0.5)] mb-3">
             <div className="w-full h-full rounded-full bg-black flex items-center justify-center text-white font-bold text-2xl font-display">
               {initial}
             </div>
@@ -60,8 +62,8 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
           <h3 className="font-display font-bold text-lg text-white">{displayName}</h3>
           <p className="text-xs text-slate-400 font-mono mb-2">{displayEmail}</p>
 
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-950/80 border border-red-500/50 text-red-300 text-xs font-mono font-semibold shadow-[0_0_12px_rgba(255,0,60,0.2)]">
-            <Sparkles className="w-3 h-3 text-red-400 animate-pulse" />
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-950/80 border border-purple-500/50 text-purple-200 text-xs font-mono font-semibold shadow-[0_0_12px_rgba(168,85,247,0.2)]">
+            <Sparkles className="w-3 h-3 text-purple-400 animate-pulse" />
             <span>{profile.tier}</span>
           </span>
         </div>

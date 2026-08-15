@@ -99,9 +99,9 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
           ) : (
             <div>
               <h2 className="font-display font-black text-base md:text-lg text-gradient-red tracking-wider">
-                PML UNIVERSE
+                PLM UNIVERSE
               </h2>
-              <p className="text-[10px] font-mono text-red-400/90 uppercase tracking-widest">
+              <p className="text-[10px] font-mono text-purple-300/90 uppercase tracking-widest">
                 ADVANCED SPACE AI INTERFACE
               </p>
             </div>

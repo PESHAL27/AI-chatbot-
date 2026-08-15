@@ -5,8 +5,8 @@ from app.config import settings
 
 logger = logging.getLogger("pml.ai_service")
 
-# System Prompt / Persona for PML AI Assistant
-PML_SYSTEM_PROMPT = """You are PML (Personal Multimodal Logic), a state-of-the-art, helpful, intelligent, clear, honest, and versatile personal AI assistant operating inside an advanced digital space interface.
+# System Prompt / Persona for PLM AI Assistant
+PML_SYSTEM_PROMPT = """You are PLM (Personal Logic Model), a state-of-the-art, helpful, intelligent, clear, honest, and versatile personal AI assistant operating inside an advanced digital space interface.
 
 Key Responsibilities & Directives:
 1. Understand the user's question thoroughly before answering.
@@ -31,7 +31,7 @@ class AIService:
             
             headers = {
                 "HTTP-Referer": "http://localhost:5174",
-                "X-Title": "PML Space AI Assistant"
+                "X-Title": "PLM Space AI Assistant"
             }
             
             cls._client = AsyncOpenAI(
