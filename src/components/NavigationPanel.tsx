@@ -8,7 +8,8 @@ import {
   ChevronLeft, 
   Trash2, 
   Sparkles,
-  X
+  X,
+  LogOut
 } from 'lucide-react';
 import type { Conversation, UserProfile as UserProfileType } from '../types/pml';
 import { PMLCore } from './PMLCore';
@@ -27,6 +28,7 @@ interface NavigationPanelProps {
   userProfile: UserProfileType;
   isAuthenticated?: boolean;
   onOpenAuth?: () => void;
+  onSignOut?: () => void;
 }
 
 export const NavigationPanel: React.FC<NavigationPanelProps> = ({
@@ -43,6 +45,7 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
   userProfile,
   isAuthenticated = false,
   onOpenAuth,
+  onSignOut,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterMode, setFilterMode] = useState<'all' | 'starred'>('all');
@@ -224,30 +227,40 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
         </div>
 
         {/* Footer Settings & Profile */}
-        <div className="p-4 border-t border-red-500/25 flex items-center justify-between bg-black/70 rounded-b-2xl">
+        <div className="p-4 border-t border-red-500/25 flex items-center justify-between bg-black/70 rounded-b-2xl gap-1">
           <button
-            onClick={!isAuthenticated && onOpenAuth ? onOpenAuth : onOpenProfile}
-            className="flex items-center gap-3 p-1.5 rounded-xl hover:bg-red-950/50 text-left transition-colors flex-1 min-w-0 mr-2 cursor-pointer group"
+            onClick={isAuthenticated ? onOpenProfile : onOpenAuth}
+            className="flex items-center gap-3 p-1.5 rounded-xl hover:bg-red-950/50 text-left transition-colors flex-1 min-w-0 mr-1 cursor-pointer group"
           >
-            <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-red-600 via-rose-600 to-red-800 flex items-center justify-center text-white font-bold text-sm shadow-[0_0_12px_rgba(255,0,60,0.5)]">
-              {(userProfile.name || 'P').charAt(0).toUpperCase()}
+            <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-red-600 via-rose-600 to-red-800 flex items-center justify-center text-white font-bold text-sm shadow-[0_0_12px_rgba(255,0,60,0.5)] flex-shrink-0">
+              {(userProfile.name || 'G').charAt(0).toUpperCase()}
             </div>
             <div className="min-w-0">
               <p className="text-sm font-bold text-white truncate group-hover:text-red-300 transition-colors">
-                {isAuthenticated ? (userProfile.name || 'Cosmic Explorer') : 'Guest Explorer'}
+                {isAuthenticated ? userProfile.name : 'Guest Explorer'}
               </p>
               <p className="text-xs text-red-400 font-mono truncate">
-                {isAuthenticated ? (userProfile.email || 'Online') : 'Click to Sign In'}
+                {isAuthenticated ? userProfile.email : 'Click to Sign In'}
               </p>
             </div>
           </button>
 
+          {isAuthenticated && onSignOut && (
+            <button
+              onClick={onSignOut}
+              className="p-2 rounded-xl hover:bg-red-950/70 text-slate-400 hover:text-red-400 transition-colors cursor-pointer"
+              title="Sign Out / Disconnect"
+            >
+              <LogOut className="w-4.5 h-4.5" />
+            </button>
+          )}
+
           <button
             onClick={onOpenSettings}
-            className="p-2.5 rounded-xl hover:bg-red-950/50 text-slate-300 hover:text-red-400 transition-colors cursor-pointer"
+            className="p-2 rounded-xl hover:bg-red-950/50 text-slate-300 hover:text-red-400 transition-colors cursor-pointer"
             title="PML Settings"
           >
-            <Settings className="w-5 h-5" />
+            <Settings className="w-4.5 h-4.5" />
           </button>
         </div>
       </aside>

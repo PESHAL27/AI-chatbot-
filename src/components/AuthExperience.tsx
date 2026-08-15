@@ -77,24 +77,40 @@ export const AuthExperience: React.FC<AuthExperienceProps> = ({
       if (mode === 'login') {
         const { error } = await signIn(email, password);
         if (error) {
-          setErrorMsg(error.message || 'Incorrect email or password. Please try again.');
+          if (error.message.toLowerCase().includes('rate limit')) {
+            setErrorMsg('Too many attempts. Please wait a moment before trying again.');
+          } else if (error.message.toLowerCase().includes('invalid login credentials')) {
+            setErrorMsg('Invalid email or password. Please check your credentials or create an account.');
+          } else {
+            setErrorMsg(error.message || 'Incorrect email or password. Please try again.');
+          }
         } else if (onClose) {
           onClose();
         }
       } else if (mode === 'register') {
         const { error } = await signUp(email, password, fullName);
         if (error) {
-          setErrorMsg(error.message || 'Unable to create account. Please check your credentials.');
+          if (error.message.toLowerCase().includes('rate limit')) {
+            setErrorMsg('Supabase email rate limit reached. In your Supabase Dashboard -> Authentication -> Email, turn OFF "Confirm email" for instant account creation without rate limits, or try signing in.');
+          } else if (error.message.toLowerCase().includes('already registered')) {
+            setErrorMsg('An account with this email already exists. Please switch to Sign In.');
+          } else {
+            setErrorMsg(error.message || 'Unable to create account. Please check your credentials.');
+          }
         } else {
-          setSuccessMsg('Account created successfully! Check your email or sign in.');
+          setSuccessMsg('Account created successfully! Connecting to PML Universe...');
           if (onClose) {
-            setTimeout(onClose, 1200);
+            setTimeout(onClose, 800);
           }
         }
       } else if (mode === 'forgot') {
         const { error } = await resetPassword(email);
         if (error) {
-          setErrorMsg(error.message || 'Unable to send reset email. Please verify your address.');
+          if (error.message.toLowerCase().includes('rate limit')) {
+            setErrorMsg('Email limit reached. Please wait a short while before requesting another reset email.');
+          } else {
+            setErrorMsg(error.message || 'Unable to send reset email. Please verify your address.');
+          }
         } else {
           setSuccessMsg('Password reset instructions sent to your email.');
         }

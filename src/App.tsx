@@ -43,7 +43,7 @@ const DEFAULT_USER_PROFILE: UserProfile = {
 };
 
 const PMLAppContent: React.FC = () => {
-  const { user, loading } = useAuth();
+  const { user, profile, signOut, loading } = useAuth();
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
@@ -63,21 +63,34 @@ const PMLAppContent: React.FC = () => {
 
   const abortControllerRef = useRef<boolean>(false);
 
-  // Dynamic user profile from authenticated session
+  // Dynamic user profile from authenticated session (Strict priority: profile.full_name -> user_metadata -> email -> fallback)
+  const resolvedName = user
+    ? (profile?.full_name?.trim() || user.user_metadata?.full_name?.trim() || (user.email ? user.email.split('@')[0] : 'Cosmic Explorer'))
+    : 'Guest Explorer';
+
+  const resolvedEmail = user
+    ? (user.email || profile?.email || 'explorer@pml.universe')
+    : 'Guest Session';
+
   const userProfile: UserProfile = {
     ...DEFAULT_USER_PROFILE,
-    name: user?.user_metadata?.full_name || (user ? user.email?.split('@')[0] : 'Guest Explorer'),
-    email: user ? (user.email || 'explorer@pml.universe') : 'Guest Session',
+    name: resolvedName,
+    email: resolvedEmail,
     joinedDate: user?.created_at
       ? new Date(user.created_at).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })
       : 'August 2026',
   };
 
-  // Load conversations when user state initializes
+  // Load conversations when user state initializes or changes
   useEffect(() => {
-    pmlApi.fetchConversations().then(data => {
-      setConversations(data);
-    });
+    if (user) {
+      pmlApi.fetchConversations().then(data => {
+        setConversations(data);
+      });
+    } else {
+      setConversations([]);
+      setActiveConversationId(null);
+    }
   }, [user]);
 
   // Sync settings & theme attribute
@@ -93,6 +106,14 @@ const PMLAppContent: React.FC = () => {
   };
 
   const activeConversation = conversations.find(c => c.id === activeConversationId) || null;
+
+  // Handle Logout
+  const handleSignOut = async () => {
+    await signOut();
+    setConversations([]);
+    setActiveConversationId(null);
+    setProfileModalOpen(false);
+  };
 
   // Start new conversation
   const handleNewConversation = () => {
@@ -321,7 +342,7 @@ const PMLAppContent: React.FC = () => {
     pmlApi.sendFeedback(messageId, feedback);
   };
 
-  // 1. Initial Checking Session Loading Animation
+  // 1. Initial Checking Session Loading Animation (Prevents flashing guest before session resolves)
   if (loading) {
     return (
       <div className="relative w-screen h-screen overflow-hidden flex flex-col items-center justify-center bg-black">
@@ -357,6 +378,7 @@ const PMLAppContent: React.FC = () => {
         userProfile={userProfile}
         isAuthenticated={Boolean(user)}
         onOpenAuth={() => setAuthModalOpen(true)}
+        onSignOut={handleSignOut}
       />
 
       {/* Main Workspace Layout Wrapper */}
@@ -383,7 +405,7 @@ const PMLAppContent: React.FC = () => {
           onOpenAuth={() => setAuthModalOpen(true)}
         />
 
-        {/* Guest Session Top Notice Pill (Subtle & Non-Intrusive) */}
+        {/* Guest Session Top Notice Pill (Subtle & Non-Intrusive, only shown for unauthenticated guests) */}
         {!user && showGuestBanner && (
           <div className="mx-auto mt-2 px-4 py-1.5 rounded-full bg-red-950/70 border border-red-500/40 text-red-200 text-xs font-mono flex items-center gap-2 shadow-[0_0_15px_rgba(255,0,60,0.2)] z-20 backdrop-blur-md">
             <Sparkles className="w-3.5 h-3.5 text-red-400 animate-pulse" />
