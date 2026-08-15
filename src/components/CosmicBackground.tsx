@@ -338,7 +338,7 @@ export const CosmicBackground: React.FC<CosmicBackgroundProps> = ({
       <div 
         className={`absolute inset-0 transition-opacity duration-700 ${
           isLight 
-            ? 'bg-gradient-to-b from-rose-100/40 via-transparent to-slate-200/60 mix-blend-multiply' 
+            ? 'bg-gradient-to-b from-purple-100/50 via-white/60 to-slate-100/80' 
             : 'bg-gradient-to-b from-purple-950/30 via-transparent to-black/80'
         }`} 
       />
