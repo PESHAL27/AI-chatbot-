@@ -437,7 +437,7 @@ const PMLAppContent: React.FC = () => {
   }
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-transparent text-white font-sans select-none relative">
+    <div className="flex h-screen w-screen overflow-hidden bg-transparent font-sans select-none relative text-[var(--text-primary)]">
       {/* Dynamic Cosmic Background */}
       <CosmicBackground density={settings.particleDensity} theme={settings.theme} />
 

@@ -37,11 +37,11 @@ export const WelcomeExperience: React.FC<WelcomeExperienceProps> = ({
   onStopGeneration,
 }) => {
   return (
-    <div className="w-full max-w-4xl mx-auto flex flex-col items-center justify-center text-center px-4 py-8 md:py-12 my-auto">
-      {/* Welcome Header */}
-      <div className="flex flex-col items-center mb-6">
-        <h1 className="font-sans font-bold text-3xl md:text-5xl text-white tracking-tight mb-2">
-          Welcome to <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-300 to-pink-500">PML AI</span>
+    <div className="w-full max-w-4xl mx-auto flex flex-col items-center justify-center text-center px-4 pt-6 md:pt-10 pb-8 my-auto">
+      {/* Welcome Header (Elevated Higher) */}
+      <div className="flex flex-col items-center mb-10 md:mb-16">
+        <h1 className="font-sans font-bold text-3xl md:text-5xl text-white tracking-tight mb-3">
+          Welcome to <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-300 to-pink-500 drop-shadow-[0_0_25px_rgba(168,85,247,0.4)]">PML AI</span>
         </h1>
 
         <p className="font-sans text-sm md:text-base text-slate-400">
@@ -49,13 +49,13 @@ export const WelcomeExperience: React.FC<WelcomeExperienceProps> = ({
         </p>
 
         {/* Suggestion Chips */}
-        <div className="flex flex-wrap items-center justify-center gap-2 mt-5 max-w-2xl">
+        <div className="flex flex-wrap items-center justify-center gap-2 mt-6 max-w-2xl">
           {PROMPT_CHIPS.map((chip, idx) => (
             <button
               key={idx}
               onClick={() => onSendMessage && onSendMessage(chip.prompt, [])}
               className="
-                inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl
+                inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl
                 bg-[#120a22]/70 hover:bg-[#1f1038]/90
                 border border-purple-500/30 hover:border-purple-400/60
                 text-xs font-sans text-purple-200 hover:text-white
@@ -71,8 +71,8 @@ export const WelcomeExperience: React.FC<WelcomeExperienceProps> = ({
         </div>
       </div>
 
-      {/* Centered Search / Command Console */}
-      <div className="w-full max-w-3xl my-2">
+      {/* Centered Search / Command Console with Increased Distance */}
+      <div className="w-full max-w-3xl mt-2 mb-4">
         {onSendMessage && (
           <MessageComposer
             onSendMessage={onSendMessage}
