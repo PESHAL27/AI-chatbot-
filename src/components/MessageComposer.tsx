@@ -122,22 +122,16 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
 
     for (const file of fileList) {
       let type: AttachmentType = 'txt';
-      const isImg = file.type.startsWith('image/');
+      const ext = file.name.split('.').pop()?.toLowerCase() || '';
+      const isImg = file.type.startsWith('image/') || ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp', 'svg'].includes(ext);
       
       if (isImg) {
-        // Validate image format
-        const validExtensions = ['jpg', 'jpeg', 'png', 'webp'];
-        const ext = file.name.split('.').pop()?.toLowerCase();
-        if (!validExtensions.includes(ext || '')) {
-          alert(`Unsupported image format (.${ext}). Please upload JPG, JPEG, PNG, or WEBP.`);
-          continue;
-        }
         type = 'image';
-      } else if (file.type.includes('pdf')) {
+      } else if (file.type.includes('pdf') || ext === 'pdf') {
         type = 'pdf';
-      } else if (file.type.includes('csv')) {
+      } else if (file.type.includes('csv') || ext === 'csv') {
         type = 'csv';
-      } else if (file.type.includes('word') || file.name.endsWith('.doc') || file.name.endsWith('.docx')) {
+      } else if (file.type.includes('word') || ['doc', 'docx'].includes(ext)) {
         type = 'doc';
       }
 
@@ -145,8 +139,8 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
       if (isImg) {
         try {
           dataUrl = await readFileAsDataURL(file);
-        } catch {
-          dataUrl = URL.createObjectURL(file);
+        } catch (err) {
+          console.warn('Failed to read image as data URL:', err);
         }
       }
 
@@ -155,7 +149,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
         name: file.name,
         size: file.size,
         type,
-        mimeType: file.type || 'application/octet-stream',
+        mimeType: isImg ? (file.type || `image/${ext === 'jpg' ? 'jpeg' : ext}`) : (file.type || 'application/octet-stream'),
         previewUrl: dataUrl,
         content: dataUrl,
       });
@@ -253,14 +247,14 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
 
       if (['pdf', 'docx', 'doc', 'txt'].includes(ext || '') && onUploadDocument) {
         await onUploadDocument(file);
-      } else if (file.type.startsWith('image/')) {
+      } else if (file.type.startsWith('image/') || ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp'].includes(ext || '')) {
         const dataUrl = await readFileAsDataURL(file);
         const newAtt: Attachment = {
           id: Math.random().toString(36).substring(2, 9),
           name: file.name,
           size: file.size,
           type: 'image',
-          mimeType: file.type || 'image/jpeg',
+          mimeType: file.type || `image/${ext === 'jpg' ? 'jpeg' : ext}`,
           previewUrl: dataUrl,
           content: dataUrl,
         };

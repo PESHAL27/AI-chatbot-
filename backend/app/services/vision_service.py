@@ -2,17 +2,21 @@ import base64
 import io
 import re
 import logging
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Dict, Any, List, Optional
 from PIL import Image
 
 logger = logging.getLogger("pml.vision_service")
 
-# Supported image mime types and extensions
-SUPPORTED_IMAGE_TYPES = {
-    "image/jpeg": "jpeg",
-    "image/jpg": "jpeg",
-    "image/png": "png",
-    "image/webp": "webp"
+# Supported image MIME types and extensions
+SUPPORTED_IMAGE_MIMES = {
+    "image/jpeg": "JPEG",
+    "image/jpg": "JPEG",
+    "image/png": "PNG",
+    "image/webp": "WEBP",
+    "image/x-png": "PNG",
+    "image/pjpeg": "JPEG",
+    "image/bmp": "PNG",  # Convert BMP to PNG for AI compatibility
+    "image/gif": "PNG"   # Convert static GIF frame to PNG
 }
 
 # Max allowed image size: 12MB
@@ -28,8 +32,8 @@ class VisionService:
     @classmethod
     def validate_and_process_image(cls, raw_image_input: str) -> Dict[str, Any]:
         """
-        Validates raw image data (either a base64 data URI or raw base64 string),
-        checks file integrity with Pillow, verifies MIME types and size,
+        Validates raw image data (base64 data URI or raw base64 string),
+        checks file integrity with Pillow, verifies MIME types and dimensions,
         and returns a normalized data URL with image metadata.
         """
         if not raw_image_input or not isinstance(raw_image_input, str):
@@ -38,26 +42,23 @@ class VisionService:
         clean_input = raw_image_input.strip()
 
         # Check for data URI pattern
-        mime_type = "image/jpeg"
+        inferred_mime = "image/jpeg"
         base64_data = clean_input
 
-        data_uri_match = re.match(r"^data:(image\/[a-zA-Z0-9\+\-\.]+);base64,(.+)$", clean_input, re.DOTALL)
+        data_uri_match = re.match(r"^data:([^;]+);base64,(.+)$", clean_input, re.DOTALL)
         if data_uri_match:
-            mime_type = data_uri_match.group(1).lower()
+            inferred_mime = data_uri_match.group(1).lower().strip()
             base64_data = data_uri_match.group(2).strip()
-
-        if mime_type not in SUPPORTED_IMAGE_TYPES:
-            raise ValueError(
-                f"Unsupported image format '{mime_type}'. "
-                f"PML Vision supports JPG, JPEG, PNG, and WEBP formats."
-            )
 
         # Decode base64
         try:
-            image_bytes = base64.b64decode(base64_data, validate=True)
+            image_bytes = base64.b64decode(base64_data, validate=False)
         except Exception as err:
-            logger.warn(f"[VisionService] Base64 decode failed: {err}")
+            logger.warning(f"[VisionService] Base64 decode failed: {err}")
             raise ValueError("Corrupted image data: Base64 decoding failed.")
+
+        if len(image_bytes) == 0:
+            raise ValueError("Empty image data provided.")
 
         # Check size
         if len(image_bytes) > MAX_IMAGE_SIZE_BYTES:
@@ -70,37 +71,44 @@ class VisionService:
             with Image.open(image_stream) as img:
                 img.verify()  # Verifies file integrity
             
-            # Re-open for dimension inspection
+            # Re-open for dimension inspection and conversion
             image_stream.seek(0)
             with Image.open(image_stream) as img:
                 width, height = img.size
-                format_name = img.format.lower() if img.format else "unknown"
+                pil_format = (img.format or "JPEG").upper()
+                
+                # Normalize target MIME type
+                target_mime = "image/png" if pil_format in ("PNG", "BMP", "GIF") else ("image/webp" if pil_format == "WEBP" else "image/jpeg")
 
-                # Check for extreme dimensions (> 3000px in either dimension)
-                # Downscale safely if needed while keeping high clarity for code/diagrams
+                # Handle color modes (e.g. RGBA -> RGB for JPEG, or P/LA)
+                if target_mime == "image/jpeg" and img.mode in ("RGBA", "P", "LA"):
+                    img = img.convert("RGB")
+
+                # Downscale safely if extreme (>2560px) while maintaining crisp code text
                 max_dim = 2560
                 if width > max_dim or height > max_dim:
-                    logger.info(f"[VisionService] Resizing high-res image {width}x{height} to fit max {max_dim}px")
+                    logger.info(f"[VisionService] Downscaling ultra-high-res image ({width}x{height}) to max {max_dim}px")
                     img.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
-                    out_buffer = io.BytesIO()
-                    save_format = "PNG" if mime_type == "image/png" else ("WEBP" if mime_type == "image/webp" else "JPEG")
-                    img.save(out_buffer, format=save_format, quality=92)
-                    image_bytes = out_buffer.getvalue()
-                    base64_data = base64.b64encode(image_bytes).decode("utf-8")
                     width, height = img.size
 
+                out_buffer = io.BytesIO()
+                save_fmt = "PNG" if target_mime == "image/png" else ("WEBP" if target_mime == "image/webp" else "JPEG")
+                img.save(out_buffer, format=save_fmt, quality=95)
+                final_bytes = out_buffer.getvalue()
+                final_base64 = base64.b64encode(final_bytes).decode("utf-8")
+
         except Exception as err:
-            logger.warn(f"[VisionService] Pillow image verification error: {err}")
+            logger.warning(f"[VisionService] Pillow image verification error: {err}")
             raise ValueError(f"Corrupted or unreadable image file: {str(err)}")
 
-        normalized_data_url = f"data:{mime_type};base64,{base64_data}"
+        normalized_data_url = f"data:{target_mime};base64,{final_base64}"
 
         return {
-            "mime_type": mime_type,
-            "format": format_name,
+            "mime_type": target_mime,
+            "format": save_fmt,
             "width": width,
             "height": height,
-            "size_bytes": len(image_bytes),
+            "size_bytes": len(final_bytes),
             "data_url": normalized_data_url
         }
 

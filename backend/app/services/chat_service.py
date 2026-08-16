@@ -2,6 +2,7 @@ import uuid
 import asyncio
 import logging
 from typing import List, Dict, Optional, Any
+from app.config import settings
 from app.schemas.chat import ChatRequest, ChatResponse, DocumentSourceCitation, WebSourceCitation
 from app.services.ai_service import AIService
 from app.services.database_service import DatabaseService
@@ -36,14 +37,23 @@ class ChatService:
         # 1. Validate and process any attached images (Phase 9 Vision)
         validated_images: List[Dict[str, Any]] = []
         image_data_urls: List[str] = []
-        if request.images and len(request.images) > 0:
+        has_images = bool(request.images and len(request.images) > 0)
+        logger.info(f"[PML Vision] Image received: {has_images}")
+
+        if has_images:
             validated_images = VisionService.validate_image_batch(request.images)
             image_data_urls = [img["data_url"] for img in validated_images]
-            logger.info(f"[ChatService] Successfully validated {len(validated_images)} image(s) for Vision processing.")
+            for idx, img in enumerate(validated_images):
+                logger.info(f"[PML Vision] Image #{idx+1} file type: {img['mime_type']}")
+                logger.info(f"[PML Vision] Image #{idx+1} size: {img['width']}x{img['height']} ({img['size_bytes']} bytes)")
 
         effective_message = (request.message or "").strip()
         if not effective_message and image_data_urls:
             effective_message = "Analyze this image and describe what is visible in detail."
+
+        logger.info(f"[PML Vision] User message received: {effective_message[:120]}")
+        if image_data_urls:
+            logger.info(f"[PML Vision] Sending {len(image_data_urls)} image(s) to vision-capable model ({settings.AI_MODEL})")
 
         # 2. Check for explicit memory commands ("Remember that...", "Forget that...")
         if request.memory_enabled and effective_message:

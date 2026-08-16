@@ -89,8 +89,10 @@ export class PMLApiService {
       const imagePayloads: string[] = [];
       if (attachments && attachments.length > 0) {
         for (const att of attachments) {
-          if (att.type === 'image' && (att.previewUrl || att.content)) {
-            imagePayloads.push(att.previewUrl || att.content || '');
+          const isImg = att.type === 'image' || (att.mimeType && att.mimeType.startsWith('image/')) || (att.name && /\.(jpg|jpeg|png|webp|gif|bmp)$/i.test(att.name));
+          const url = att.previewUrl || att.content || '';
+          if (isImg && url && url.startsWith('data:image/')) {
+            imagePayloads.push(url);
           }
         }
       }
