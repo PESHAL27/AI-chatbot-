@@ -39,8 +39,14 @@ async def upload_document(
     user_id = current_user.get("id", "guest_user")
     token = current_user.get("token")
 
-    file_name = file.filename or "uploaded_document"
-    ext = os.path.splitext(file_name)[1].lower()
+    raw_filename = file.filename or "uploaded_document"
+    clean_base = os.path.basename(raw_filename)
+    # Strip dangerous path traversal characters
+    safe_name = "".join(c for c in clean_base if c.isalnum() or c in "._- ")
+    if not safe_name or safe_name in (".", ".."):
+        safe_name = f"document_{uuid.uuid4().hex[:8]}"
+
+    ext = os.path.splitext(safe_name)[1].lower()
 
     if ext not in ALLOWED_EXTENSIONS:
         raise HTTPException(
@@ -66,9 +72,15 @@ async def upload_document(
             )
 
         doc_id = f"pml-doc-{uuid.uuid4().hex[:12]}"
-        safe_name = re_safe_name = "".join(c for c in file_name if c.isalnum() or c in "._- ")
         local_filename = f"{doc_id}_{safe_name}"
-        file_path = os.path.join(STORAGE_DIR, local_filename)
+        file_path = os.path.abspath(os.path.join(STORAGE_DIR, local_filename))
+
+        # Security check: Ensure file_path is strictly within STORAGE_DIR (Path Traversal Protection)
+        if not file_path.startswith(os.path.abspath(STORAGE_DIR)):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid file path detected."
+            )
 
         with open(file_path, "wb") as f:
             f.write(content)

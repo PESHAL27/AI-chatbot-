@@ -1,24 +1,28 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
+from app.auth.rate_limiter import RateLimitMiddleware
 from app.routes import health, chat, conversations, memories, documents
 
 app = FastAPI(
     title=settings.APP_NAME,
-    description="PML — Advanced Space AI Assistant FastAPI Backend (Phase 8: Web Search + AI Tool Calling)",
-    version="8.0.0",
+    description="PML — Advanced Space AI Assistant FastAPI Backend (Production-Ready Security & Privacy)",
+    version="9.0.0",
     docs_url="/docs",
     redoc_url="/redoc"
 )
 
-# Configure CORS Middleware
+# Configure CORS Middleware with strict origin validation
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
+
+# Configure Rate Limiter Middleware to prevent abuse & denial of service
+app.add_middleware(RateLimitMiddleware)
 
 # Include Routers
 app.include_router(health.router)

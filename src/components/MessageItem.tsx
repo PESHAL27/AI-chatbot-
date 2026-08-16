@@ -199,6 +199,20 @@ export const MessageItem: React.FC<MessageItemProps> = ({
                       </code>
                     );
                   },
+                  a({ href, children, ...props }: any) {
+                    const safeHref = href && (href.startsWith('http://') || href.startsWith('https://') || href.startsWith('mailto:')) ? href : '#';
+                    return (
+                      <a
+                        href={safeHref}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-cyan-400 hover:text-cyan-300 underline font-medium transition-colors"
+                        {...props}
+                      >
+                        {children}
+                      </a>
+                    );
+                  }
                 }}
               >
                 {message.content}

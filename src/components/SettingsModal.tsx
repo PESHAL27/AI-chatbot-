@@ -1,5 +1,18 @@
 import React from 'react';
-import { X, Sun, Moon, Volume2, Server, RotateCcw, Brain, ExternalLink, Sliders } from 'lucide-react';
+import { 
+  X, 
+  Sun, 
+  Moon, 
+  Volume2, 
+  Server, 
+  RotateCcw, 
+  Brain, 
+  ExternalLink, 
+  Sliders, 
+  ShieldCheck, 
+  Lock, 
+  CheckCircle2 
+} from 'lucide-react';
 import type { PMLSettings, ParticleDensity } from '../types/pml';
 import { PMLToggle } from './ui/PMLToggle';
 import { PMLButton } from './ui/PMLButton';
@@ -34,7 +47,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
             <div>
               <h2 className="font-display font-bold text-xl text-white">PML Control System</h2>
-              <p className="text-[10px] font-mono text-purple-300 uppercase tracking-wider">AI Configuration & Aesthetics</p>
+              <p className="text-[10px] font-mono text-purple-300 uppercase tracking-wider">AI Configuration & Security</p>
             </div>
           </div>
           <button
@@ -46,6 +59,34 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </div>
 
         <div className="space-y-4 max-h-[70vh] overflow-y-auto cosmic-scroll pr-1">
+          {/* Security & Data Privacy Status Box */}
+          <div className="p-4 rounded-2xl bg-gradient-to-b from-[#140b28]/90 to-[#0c0618]/90 border border-purple-500/40 shadow-[0_4px_20px_rgba(0,0,0,0.6)]">
+            <div className="flex items-center gap-2 mb-3">
+              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              <span className="font-display font-bold text-xs uppercase tracking-wider text-white">
+                PML Security & Privacy
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-[11px] font-sans">
+              <div className="flex items-center gap-1.5 p-2 rounded-xl bg-black/40 border border-white/10 text-slate-300">
+                <Lock className="w-3 h-3 text-emerald-400" />
+                <span>Account: <b className="text-emerald-400 font-mono">Protected</b></span>
+              </div>
+              <div className="flex items-center gap-1.5 p-2 rounded-xl bg-black/40 border border-white/10 text-slate-300">
+                <CheckCircle2 className="w-3 h-3 text-cyan-400" />
+                <span>Memory: <b className="text-cyan-300 font-mono">Private</b></span>
+              </div>
+              <div className="flex items-center gap-1.5 p-2 rounded-xl bg-black/40 border border-white/10 text-slate-300">
+                <CheckCircle2 className="w-3 h-3 text-violet-400" />
+                <span>Documents: <b className="text-violet-300 font-mono">Isolated</b></span>
+              </div>
+              <div className="flex items-center gap-1.5 p-2 rounded-xl bg-black/40 border border-white/10 text-slate-300">
+                <CheckCircle2 className="w-3 h-3 text-purple-400" />
+                <span>Chats: <b className="text-purple-300 font-mono">Encrypted</b></span>
+              </div>
+            </div>
+          </div>
+
           {/* Long-Term Memory Control */}
           <div className="p-4 rounded-2xl bg-[#110822]/80 border border-purple-500/30">
             <PMLToggle

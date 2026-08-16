@@ -57,8 +57,7 @@ async def get_current_user(
                     "token": token
                 }
             else:
-                logger.warn(f"Supabase Auth token verification failed with status {res.status_code}: {res.text}")
-                # Fallback to guest if token expired, so user can still chat without hard crash
+                logger.warning(f"Supabase Auth token verification failed with status {res.status_code}")
                 return {
                     "id": "guest_user",
                     "email": "guest@pml.universe",
@@ -75,3 +74,18 @@ async def get_current_user(
             "is_guest": True,
             "token": None
         }
+
+async def require_authenticated_user(
+    current_user: Dict[str, Any] = Depends(get_current_user)
+) -> Dict[str, Any]:
+    """
+    Strict authorization dependency for private/sensitive operations.
+    Rejects guest requests with HTTP 401 Unauthorized.
+    """
+    if current_user.get("is_guest") or not current_user.get("id") or current_user.get("id") == "guest_user":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required. Please sign in to access this private resource.",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+    return current_user
