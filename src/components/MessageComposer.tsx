@@ -7,7 +7,6 @@ import {
   MicOff, 
   Square, 
   X, 
-  FileText,
   Plus,
   BookOpen,
   Camera,
@@ -15,6 +14,7 @@ import {
 } from 'lucide-react';
 import type { Attachment, AttachmentType, DocumentItem } from '../types/pml';
 import { voiceService } from '../services/voiceService';
+import { PMLFileCard } from './ui/PMLFileCard';
 
 interface MessageComposerProps {
   onSendMessage: (text: string, attachments: Attachment[]) => void;
@@ -26,6 +26,13 @@ interface MessageComposerProps {
   onUploadDocument?: (file: File) => Promise<void>;
   speechLanguage?: string;
 }
+
+const ROTATING_PLACEHOLDERS = [
+  "Message PML AI or speak with voice 🎤...",
+  "Ask PML anything, upload an image 📷, or analyze documents 📄...",
+  "Search the live web 🌐 or calculate complex formulas 🧮...",
+  "Paste screenshots directly with Ctrl+V to analyze code & math...",
+];
 
 export const MessageComposer: React.FC<MessageComposerProps> = ({
   onSendMessage,
@@ -43,11 +50,20 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
   const [isRecording, setIsRecording] = useState(false);
   const [isDraggingFile, setIsDraggingFile] = useState(false);
   const [showPlusMenu, setShowPlusMenu] = useState(false);
+  const [placeholderIndex, setPlaceholderIndex] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const docRAGInputRef = useRef<HTMLInputElement | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const plusMenuRef = useRef<HTMLDivElement | null>(null);
+
+  // Rotating subtle placeholder
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setPlaceholderIndex(prev => (prev + 1) % ROTATING_PLACEHOLDERS.length);
+    }, 6000);
+    return () => clearInterval(timer);
+  }, []);
 
   // Auto-resize textarea
   useEffect(() => {
@@ -314,22 +330,22 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
 
       {/* Live Voice Recording Status Banner */}
       {isRecording && (
-        <div className="mb-2 flex items-center justify-between px-4 py-2 rounded-xl bg-gradient-to-r from-rose-950/80 via-purple-950/80 to-violet-950/80 border border-rose-500/50 backdrop-blur-md text-xs text-rose-200 animate-pulse shadow-[0_0_20px_rgba(244,63,94,0.3)]">
+        <div className="mb-2 flex items-center justify-between px-4 py-2 rounded-2xl bg-gradient-to-r from-rose-950/90 via-purple-950/90 to-violet-950/90 border border-rose-500/50 backdrop-blur-xl text-xs text-rose-200 shadow-[0_0_25px_rgba(244,63,94,0.4)] animate-pulse">
           <div className="flex items-center gap-2.5">
             <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping" />
             <Radio className="w-4 h-4 text-rose-400 animate-pulse" />
-            <span className="font-bold font-display text-rose-100">Listening to your voice...</span>
+            <span className="font-bold font-display text-rose-100 uppercase tracking-wider text-[11px]">Listening to voice</span>
             {interimTranscript && (
-              <span className="italic text-purple-200 truncate max-w-xs md:max-w-md">
+              <span className="italic text-purple-200 truncate max-w-xs md:max-w-md font-sans">
                 "{interimTranscript}"
               </span>
             )}
           </div>
           <button
             onClick={toggleVoiceInput}
-            className="px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/40 text-rose-200 border border-rose-400/30 text-[11px] font-bold uppercase transition-colors cursor-pointer"
+            className="px-3 py-1 rounded-xl bg-rose-500/25 hover:bg-rose-500/50 text-rose-200 border border-rose-400/40 text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer"
           >
-            Done Speaking
+            Done
           </button>
         </div>
       )}
@@ -339,8 +355,8 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
         <div className="mb-2 flex items-center justify-between px-3.5 py-1.5 rounded-xl bg-violet-900/40 border border-violet-500/40 backdrop-blur-md text-xs text-violet-200 animate-fadeIn shadow-[0_0_15px_rgba(139,92,246,0.2)]">
           <div className="flex items-center gap-2">
             <span className="text-base">📄</span>
-            <span className="font-semibold truncate max-w-[280px]">{selectedDocument.file_name}</span>
-            <span className="px-2 py-0.5 text-[10px] font-bold uppercase rounded-full bg-violet-500/20 text-violet-300 border border-violet-400/30">
+            <span className="font-semibold truncate max-w-[280px] font-mono">{selectedDocument.file_name}</span>
+            <span className="px-2 py-0.5 text-[10px] font-bold uppercase rounded-full bg-violet-500/20 text-violet-300 border border-violet-400/30 font-mono">
               Scoped RAG Document
             </span>
           </div>
@@ -357,44 +373,20 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
 
       {/* File & Image Attachment Previews */}
       {attachments.length > 0 && (
-        <div className="mb-2 flex flex-wrap gap-2 p-2.5 rounded-2xl glass-panel bg-black/90 border border-purple-500/30 shadow-lg animate-fadeIn">
+        <div className="mb-2 flex flex-wrap gap-2 p-2.5 rounded-2xl bg-[#0d071a]/85 border border-purple-500/30 backdrop-blur-xl shadow-lg animate-fadeIn">
           {attachments.map(att => (
-            <div
+            <PMLFileCard
               key={att.id}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-purple-950/60 border border-purple-500/40 text-xs text-white shadow-sm"
-            >
-              {att.type === 'image' && att.previewUrl ? (
-                <div className="flex items-center gap-2">
-                  <img 
-                    src={att.previewUrl} 
-                    alt={att.name} 
-                    className="w-7 h-7 object-cover rounded-lg border border-purple-400/60 shadow-sm" 
-                  />
-                  <div className="flex flex-col">
-                    <span className="truncate max-w-[140px] font-mono text-[11px] font-semibold text-purple-200">{att.name}</span>
-                    <span className="text-[9px] text-purple-400 font-mono">Vision Attachment</span>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <FileText className="w-4 h-4 text-purple-400" />
-                  <span className="truncate max-w-[140px] font-mono">{att.name}</span>
-                </>
-              )}
-              <button
-                onClick={() => removeAttachment(att.id)}
-                className="text-slate-400 hover:text-rose-400 transition-colors ml-1 p-0.5 rounded cursor-pointer"
-                title="Remove attachment"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
+              attachment={att}
+              onRemove={removeAttachment}
+              isAnalyzed={true}
+            />
           ))}
         </div>
       )}
 
-      {/* Futuristic Floating Glittering Glass Console */}
-      <div className="relative glitter-glass-search rounded-2xl p-3.5 flex flex-col gap-2 transition-all duration-300">
+      {/* Futuristic Floating Command Console */}
+      <div className="relative glitter-glass-search rounded-3xl p-3.5 flex flex-col gap-2 transition-all duration-300 focus-within:border-purple-400 focus-within:shadow-[0_0_35px_rgba(168,85,247,0.45),inset_0_0_20px_rgba(168,85,247,0.2)]">
         <textarea
           ref={textareaRef}
           value={interimTranscript ? `${input} ${interimTranscript}` : input}
@@ -403,60 +395,58 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
           onPaste={handlePaste}
           placeholder={
             isRecording
-              ? "Listening to you speak (transcription appearing live)..."
-              : attachments.some(a => a.type === 'image')
-                ? "Ask a question about this image (e.g. 'Solve this', 'Find error in code')..."
-                : selectedDocument 
-                  ? `Ask questions about ${selectedDocument.file_name}...` 
-                  : "Message PML, speak with voice 🎤, upload images 📷, or search web 🌐..."
+              ? "Listening to speech (words appearing live)..."
+              : selectedDocument 
+                ? `Ask questions about ${selectedDocument.file_name}...` 
+                : ROTATING_PLACEHOLDERS[placeholderIndex]
           }
           rows={1}
-          className="w-full bg-transparent px-3 py-2.5 text-base text-white placeholder-slate-400 focus:outline-none resize-none cosmic-scroll max-h-[180px] font-main"
+          className="w-full bg-transparent px-3 py-2 text-sm md:text-base text-white placeholder-slate-400/80 focus:outline-none resize-none cosmic-scroll max-h-[180px] font-sans leading-relaxed"
         />
 
-        {/* Console Action Bar */}
-        <div className="flex items-center justify-between border-t border-white/10 pt-2 px-2">
-          <div className="flex items-center gap-2.5">
-            {/* Plus Button Menu for Vision, RAG & Uploads */}
+        {/* Action Controls Bar */}
+        <div className="flex items-center justify-between border-t border-white/10 pt-2 px-1">
+          <div className="flex items-center gap-1.5">
+            {/* Plus Hub Menu */}
             <div className="relative" ref={plusMenuRef}>
               <button
                 onClick={() => setShowPlusMenu(prev => !prev)}
                 className={`p-2 rounded-xl border transition-all cursor-pointer ${
                   showPlusMenu 
-                    ? 'bg-violet-600/40 text-violet-200 border-violet-400 shadow-[0_0_12px_rgba(139,92,246,0.4)]' 
-                    : 'hover:bg-white/10 text-slate-400 hover:text-violet-300 border-transparent'
+                    ? 'bg-purple-600/40 text-purple-200 border-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.5)]' 
+                    : 'hover:bg-white/10 text-slate-300 hover:text-white border-transparent'
                 }`}
-                title="Upload Image (Vision) or Document (RAG)"
+                title="Attach Image (Vision) or Document (RAG)"
               >
-                <Plus className="w-4.5 h-4.5" />
+                <Plus className="w-4 h-4" />
               </button>
 
               {showPlusMenu && (
-                <div className="absolute bottom-full left-0 mb-2 w-64 p-1.5 rounded-xl bg-[#130d29]/95 border border-violet-500/40 shadow-xl shadow-violet-950/80 backdrop-blur-md z-50 animate-fadeIn text-xs text-violet-200 space-y-1">
-                  {/* Vision Upload Option */}
+                <div className="absolute bottom-full left-0 mb-2 w-64 p-1.5 rounded-2xl bg-[#0f091f]/95 border border-purple-500/40 shadow-2xl shadow-black/90 backdrop-blur-2xl z-50 animate-fadeIn text-xs text-purple-200 space-y-1">
+                  {/* Vision Upload */}
                   <button
                     onClick={() => {
                       setShowPlusMenu(false);
                       imageInputRef.current?.click();
                     }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-violet-600/30 hover:text-white transition-colors text-left cursor-pointer"
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-purple-600/30 hover:text-white transition-colors text-left cursor-pointer"
                   >
                     <Camera className="w-4 h-4 text-purple-400" />
                     <div>
                       <div className="font-semibold text-purple-100">Upload Image (Vision)</div>
-                      <div className="text-[10px] text-purple-300">Code screenshot, math, diagrams (JPG, PNG, WEBP)</div>
+                      <div className="text-[10px] text-purple-300">Code screenshot, math, diagrams</div>
                     </div>
                   </button>
 
-                  <div className="h-[1px] bg-violet-500/20 my-1" />
+                  <div className="h-[1px] bg-purple-500/20 my-1" />
 
-                  {/* Document RAG Upload Option */}
+                  {/* Document RAG Upload */}
                   <button
                     onClick={() => {
                       setShowPlusMenu(false);
                       docRAGInputRef.current?.click();
                     }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-violet-600/30 hover:text-white transition-colors text-left cursor-pointer"
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-purple-600/30 hover:text-white transition-colors text-left cursor-pointer"
                   >
                     <span>📄</span>
                     <div>
@@ -465,13 +455,13 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
                     </div>
                   </button>
 
-                  {/* Document Library Option */}
+                  {/* Document Library */}
                   <button
                     onClick={() => {
                       setShowPlusMenu(false);
                       if (onOpenDocumentLibrary) onOpenDocumentLibrary();
                     }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-violet-600/30 hover:text-white transition-colors text-left cursor-pointer"
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-purple-600/30 hover:text-white transition-colors text-left cursor-pointer"
                   >
                     <BookOpen className="w-4 h-4 text-violet-400" />
                     <div>
@@ -483,38 +473,38 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
               )}
             </div>
 
-            {/* Voice Input Microphone Trigger */}
+            {/* Microphone Button with Energy Ring */}
             <button
               onClick={toggleVoiceInput}
-              className={`p-2 rounded-xl transition-all cursor-pointer relative ${
+              className={`relative p-2 rounded-xl transition-all cursor-pointer ${
                 isRecording
-                  ? 'bg-rose-600/40 text-rose-300 animate-pulse border border-rose-500 shadow-[0_0_20px_rgba(244,63,94,0.6)]'
-                  : 'hover:bg-white/10 text-slate-400 hover:text-purple-300'
+                  ? 'bg-rose-600/40 text-rose-300 border border-rose-500 shadow-[0_0_20px_rgba(244,63,94,0.7)]'
+                  : 'hover:bg-white/10 text-slate-300 hover:text-purple-300 border border-transparent'
               }`}
               title={isRecording ? 'Stop Recording' : 'Voice Input (Speak to PML)'}
             >
-              {isRecording ? <MicOff className="w-4.5 h-4.5 text-rose-300" /> : <Mic className="w-4.5 h-4.5" />}
+              {isRecording ? <MicOff className="w-4 h-4 text-rose-300" /> : <Mic className="w-4 h-4" />}
               {isRecording && (
                 <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping" />
               )}
             </button>
 
-            {/* Image Upload Trigger (Vision) */}
+            {/* Image Trigger (Vision) */}
             <button
               onClick={() => imageInputRef.current?.click()}
-              className="p-2 rounded-xl hover:bg-white/10 text-slate-400 hover:text-purple-400 transition-colors cursor-pointer"
-              title="Attach Image (JPG, PNG, WEBP for Vision)"
+              className="p-2 rounded-xl hover:bg-white/10 text-slate-300 hover:text-purple-400 transition-colors cursor-pointer"
+              title="Attach Image (Vision)"
             >
-              <ImageIcon className="w-4.5 h-4.5" />
+              <ImageIcon className="w-4 h-4" />
             </button>
 
-            {/* General File Upload Trigger */}
+            {/* Document Trigger (RAG) */}
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="p-2 rounded-xl hover:bg-white/10 text-slate-400 hover:text-purple-400 transition-colors cursor-pointer"
+              className="p-2 rounded-xl hover:bg-white/10 text-slate-300 hover:text-purple-400 transition-colors cursor-pointer"
               title="Attach Document (PDF, DOCX)"
             >
-              <Paperclip className="w-4.5 h-4.5" />
+              <Paperclip className="w-4 h-4" />
             </button>
 
             {/* Hidden Input Elements */}
@@ -543,24 +533,34 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
             />
           </div>
 
+          {/* Send / Abort Controls */}
           <div className="flex items-center gap-2">
             {isStreaming ? (
               <button
                 onClick={onStopGeneration}
-                className="px-4 py-2 rounded-xl bg-purple-950/80 border border-purple-500/60 hover:bg-purple-900 text-purple-300 text-sm font-bold font-display flex items-center gap-2 transition-all shadow-[0_0_15px_rgba(168,85,247,0.3)] cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-purple-950/80 border border-purple-500/60 hover:bg-purple-900 text-purple-300 text-xs font-bold font-display flex items-center gap-1.5 transition-all shadow-[0_0_15px_rgba(168,85,247,0.3)] cursor-pointer"
               >
-                <Square className="w-4 h-4 fill-current" />
+                <Square className="w-3.5 h-3.5 fill-current" />
                 <span>ABORT</span>
               </button>
             ) : (
               <button
                 onClick={handleSend}
                 disabled={!input.trim() && !interimTranscript.trim() && attachments.length === 0}
-                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 via-indigo-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-display font-bold text-sm uppercase tracking-wider shadow-[0_0_25px_rgba(139,92,246,0.5)] hover:shadow-[0_0_35px_rgba(168,85,247,0.7)] disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-300 active:scale-95 flex items-center justify-center gap-2 border border-white/20 cursor-pointer"
-                title="Send to PML AI"
+                className="
+                  px-5 py-2 rounded-xl
+                  bg-gradient-to-r from-violet-600 via-indigo-600 to-purple-600 
+                  hover:from-violet-500 hover:to-purple-500 
+                  text-white font-display font-bold text-xs uppercase tracking-wider 
+                  shadow-[0_0_20px_rgba(139,92,246,0.45)] hover:shadow-[0_0_30px_rgba(168,85,247,0.75)] 
+                  disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none
+                  transition-all duration-200 active:scale-95 flex items-center gap-2 
+                  border border-white/20 cursor-pointer
+                "
+                title="Send Message to PML AI"
               >
                 <span>SEND</span>
-                <Send className="w-4 h-4" />
+                <Send className="w-3.5 h-3.5" />
               </button>
             )}
           </div>

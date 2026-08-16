@@ -14,6 +14,7 @@ import { pmlApi } from './services/pmlApi';
 import { cosmicAudio } from './utils/audioSynth';
 import { voiceService } from './services/voiceService';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ToastProvider } from './components/ui/PMLToast';
 
 import { CosmicBackground } from './components/CosmicBackground';
 import { NavigationPanel } from './components/NavigationPanel';
@@ -584,7 +585,9 @@ const PMLAppContent: React.FC = () => {
 export const App: React.FC = () => {
   return (
     <AuthProvider>
-      <PMLAppContent />
+      <ToastProvider>
+        <PMLAppContent />
+      </ToastProvider>
     </AuthProvider>
   );
 };
