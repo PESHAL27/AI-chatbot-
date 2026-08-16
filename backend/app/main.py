@@ -5,8 +5,8 @@ from app.routes import health, chat, conversations, memories, documents
 
 app = FastAPI(
     title=settings.APP_NAME,
-    description="PML — Advanced Space AI Assistant FastAPI Backend (Phase 7: Document Intelligence & RAG)",
-    version="7.0.0",
+    description="PML — Advanced Space AI Assistant FastAPI Backend (Phase 8: Web Search + AI Tool Calling)",
+    version="8.0.0",
     docs_url="/docs",
     redoc_url="/redoc"
 )
@@ -26,6 +26,10 @@ app.include_router(chat.router)
 app.include_router(conversations.router)
 app.include_router(memories.router)
 app.include_router(documents.router)
+
+@app.get("/health", include_in_schema=False)
+async def health_root():
+    return {"status": "ok", "service": "PML Backend"}
 
 @app.get("/", include_in_schema=False)
 async def root():
