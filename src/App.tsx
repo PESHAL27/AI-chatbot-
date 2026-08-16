@@ -6,7 +6,6 @@ import type {
   PMLCoreState, 
   PMLSettings, 
   UserProfile, 
-  QuickAction, 
   Attachment,
   DocumentItem
 } from './types/pml';
@@ -420,11 +419,6 @@ const PMLAppContent: React.FC = () => {
     }
   };
 
-  // Select Quick Action Card on Welcome Screen
-  const handleSelectQuickAction = (action: QuickAction) => {
-    handleSendMessage(action.prompt);
-  };
-
   // Register Feedback
   const handleFeedback = (messageId: string, feedback: 'like' | 'dislike') => {
     pmlApi.sendFeedback(messageId, feedback);
@@ -518,7 +512,6 @@ const PMLAppContent: React.FC = () => {
         <ConversationWorkspace
           activeConversation={activeConversation}
           coreState={coreState}
-          onSelectQuickAction={handleSelectQuickAction}
           onRegenerateResponse={handleRegenerateResponse}
           onFeedback={handleFeedback}
           onSendMessage={handleSendMessage}
@@ -527,19 +520,23 @@ const PMLAppContent: React.FC = () => {
           onOpenDocumentLibrary={() => setDocumentModalOpen(true)}
           onUploadDocument={handleUploadDocument}
           speechLanguage={settings.speechLanguage || 'en-US'}
-        />
-
-        {/* Pinned Bottom Message Console */}
-        <MessageComposer
-          onSendMessage={handleSendMessage}
           isStreaming={isStreaming}
           onStopGeneration={handleStopGeneration}
-          selectedDocument={selectedDocument}
-          onClearDocumentScope={() => setSelectedDocument(null)}
-          onOpenDocumentLibrary={() => setDocumentModalOpen(true)}
-          onUploadDocument={handleUploadDocument}
-          speechLanguage={settings.speechLanguage || 'en-US'}
         />
+
+        {/* Pinned Bottom Message Console (when actively chatting in a thread) */}
+        {activeConversation && activeConversation.messages.length > 0 && (
+          <MessageComposer
+            onSendMessage={handleSendMessage}
+            isStreaming={isStreaming}
+            onStopGeneration={handleStopGeneration}
+            selectedDocument={selectedDocument}
+            onClearDocumentScope={() => setSelectedDocument(null)}
+            onOpenDocumentLibrary={() => setDocumentModalOpen(true)}
+            onUploadDocument={handleUploadDocument}
+            speechLanguage={settings.speechLanguage || 'en-US'}
+          />
+        )}
       </div>
 
       {/* Modals */}

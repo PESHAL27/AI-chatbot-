@@ -72,29 +72,32 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
 
   return (
     <>
-      {/* Mobile Backdrop */}
+      {/* Backdrop */}
       {isOpen && (
         <div
           onClick={onToggle}
-          className="fixed inset-0 bg-black/80 backdrop-blur-md z-40 lg:hidden transition-opacity duration-300"
+          className="fixed inset-0 bg-black/75 backdrop-blur-md z-40 transition-opacity duration-300"
         />
       )}
 
-      {/* Docked SaaS Left Sidebar Navigation */}
+      {/* Left Menu Bar / Navigation Drawer */}
       <aside
         className={`
-          fixed lg:static top-0 left-0 bottom-0 z-50 w-72 
-          bg-[#070510]/95 border-r border-purple-500/20 
+          fixed top-0 left-0 bottom-0 z-50 w-72 
+          bg-[#070510]/95 border-r border-purple-500/25 
           backdrop-blur-2xl flex flex-col h-full
           transition-all duration-300 ease-out 
-          shadow-[10px_0_30px_rgba(0,0,0,0.7)]
-          ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+          shadow-[15px_0_40px_rgba(0,0,0,0.85)]
+          ${isOpen ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0 pointer-events-none'}
         `}
       >
         {/* Top Branding Section */}
         <div className="p-4 flex items-center justify-between border-b border-white/10">
           <div 
-            onClick={onNewConversation}
+            onClick={() => {
+              onNewConversation();
+              onToggle();
+            }}
             className="flex items-center gap-2.5 cursor-pointer group select-none"
           >
             <div className="p-1 rounded-xl bg-purple-950/60 border border-purple-500/30 shadow-[0_0_12px_rgba(168,85,247,0.3)]">
@@ -112,8 +115,8 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
 
           <button
             onClick={onToggle}
-            className="lg:hidden p-1.5 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors cursor-pointer"
-            title="Close Sidebar"
+            className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors cursor-pointer"
+            title="Close Menu Bar"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
@@ -125,7 +128,7 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
           <button
             onClick={() => {
               onNewConversation();
-              if (window.innerWidth < 1024) onToggle();
+              onToggle();
             }}
             className="
               w-full py-2.5 px-3.5 rounded-xl
@@ -168,7 +171,10 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
           <nav className="space-y-1 pt-1">
             {onOpenDocuments && (
               <button
-                onClick={onOpenDocuments}
+                onClick={() => {
+                  onOpenDocuments();
+                  onToggle();
+                }}
                 className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/[0.06] text-xs font-sans font-semibold transition-colors cursor-pointer text-left"
               >
                 <BookOpen className="w-4 h-4 text-cyan-400 flex-shrink-0" />
@@ -178,21 +184,16 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
 
             {onOpenMemory && (
               <button
-                onClick={onOpenMemory}
+                onClick={() => {
+                  onOpenMemory();
+                  onToggle();
+                }}
                 className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/[0.06] text-xs font-sans font-semibold transition-colors cursor-pointer text-left"
               >
                 <Brain className="w-4 h-4 text-purple-400 flex-shrink-0" />
                 <span>Long-Term Memory</span>
               </button>
             )}
-
-            <button
-              onClick={onOpenSettings}
-              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/[0.06] text-xs font-sans font-semibold transition-colors cursor-pointer text-left"
-            >
-              <Settings className="w-4 h-4 text-indigo-400 flex-shrink-0" />
-              <span>System Settings</span>
-            </button>
           </nav>
         </div>
 
@@ -231,7 +232,7 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
                   key={conv.id}
                   onClick={() => {
                     onSelectConversation(conv.id);
-                    if (window.innerWidth < 1024) onToggle();
+                    onToggle();
                   }}
                   className={`
                     group relative flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer
@@ -276,11 +277,11 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
           )}
         </div>
 
-        {/* Bottom User Profile Section */}
-        <div className="p-3 border-t border-white/10 flex items-center justify-between bg-[#06040d]/90 gap-1">
+        {/* Bottom User Profile Section: Settings button near Logout button */}
+        <div className="p-3 border-t border-white/10 flex items-center justify-between bg-[#06040d]/95 gap-1.5">
           <button
             onClick={isAuthenticated ? onOpenProfile : onOpenAuth}
-            className="flex items-center gap-2.5 p-1.5 rounded-xl hover:bg-white/10 text-left transition-colors flex-1 min-w-0 mr-1 cursor-pointer group"
+            className="flex items-center gap-2.5 p-1 rounded-xl hover:bg-white/10 text-left transition-colors flex-1 min-w-0 mr-1 cursor-pointer group"
           >
             <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-violet-600 via-indigo-600 to-purple-600 flex items-center justify-center text-white font-bold text-xs shadow-[0_0_10px_rgba(139,92,246,0.5)] flex-shrink-0 border border-purple-400/40">
               {(userProfile.name || 'G').charAt(0).toUpperCase()}
@@ -293,6 +294,18 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
                 {isAuthenticated ? userProfile.tier : 'Click to Sign In'}
               </p>
             </div>
+          </button>
+
+          {/* Settings button placed right near the Logout button */}
+          <button
+            onClick={() => {
+              onOpenSettings();
+              onToggle();
+            }}
+            className="p-2 rounded-xl hover:bg-white/10 text-slate-300 hover:text-purple-400 transition-colors cursor-pointer"
+            title="Settings"
+          >
+            <Settings className="w-4 h-4" />
           </button>
 
           {isAuthenticated && onSignOut && (

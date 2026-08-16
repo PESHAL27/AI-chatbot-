@@ -69,10 +69,10 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
       <div className="flex items-center gap-3 min-w-0">
         <button
           onClick={onToggleNav}
-          className="p-2 rounded-xl hover:bg-white/10 text-purple-300 hover:text-white transition-colors cursor-pointer lg:hidden"
-          title="Toggle Navigation"
+          className="p-2 rounded-xl hover:bg-white/10 text-purple-300 hover:text-white transition-colors cursor-pointer flex items-center justify-center border border-purple-500/20 bg-purple-950/30"
+          title="Open Menu Bar"
         >
-          <Menu className="w-5 h-5" />
+          <Menu className="w-4.5 h-4.5" />
         </button>
 
         {/* Breadcrumb / Title */}

@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
-import type { Conversation, PMLCoreState, QuickAction, DocumentItem, Attachment } from '../types/pml';
+import type { Conversation, PMLCoreState, DocumentItem, Attachment } from '../types/pml';
 import { MessageItem } from './MessageItem';
 import { WelcomeExperience } from './WelcomeExperience';
 import { PMLCore } from './PMLCore';
@@ -8,7 +8,6 @@ import { PMLCore } from './PMLCore';
 interface ConversationWorkspaceProps {
   activeConversation: Conversation | null;
   coreState: PMLCoreState;
-  onSelectQuickAction: (action: QuickAction) => void;
   onRegenerateResponse: () => void;
   onFeedback: (messageId: string, feedback: 'like' | 'dislike') => void;
   onSendMessage?: (text: string, attachments?: Attachment[]) => void;
@@ -17,6 +16,8 @@ interface ConversationWorkspaceProps {
   onOpenDocumentLibrary?: () => void;
   onUploadDocument?: (file: File) => Promise<void>;
   speechLanguage?: string;
+  isStreaming?: boolean;
+  onStopGeneration?: () => void;
 }
 
 export const ConversationWorkspace: React.FC<ConversationWorkspaceProps> = ({
@@ -25,7 +26,13 @@ export const ConversationWorkspace: React.FC<ConversationWorkspaceProps> = ({
   onRegenerateResponse,
   onFeedback,
   onSendMessage,
+  selectedDocument,
+  onClearDocumentScope,
   onOpenDocumentLibrary,
+  onUploadDocument,
+  speechLanguage = 'en-US',
+  isStreaming = false,
+  onStopGeneration,
 }) => {
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -53,10 +60,16 @@ export const ConversationWorkspace: React.FC<ConversationWorkspaceProps> = ({
 
   if (!activeConversation || activeConversation.messages.length === 0) {
     return (
-      <div className="flex-1 w-full min-h-0 overflow-y-auto cosmic-scroll flex flex-col items-center justify-center">
+      <div className="flex-1 w-full min-h-0 overflow-y-auto cosmic-scroll flex flex-col items-center justify-center p-4">
         <WelcomeExperience
           onSendMessage={onSendMessage}
+          selectedDocument={selectedDocument}
+          onClearDocumentScope={onClearDocumentScope}
           onOpenDocumentLibrary={onOpenDocumentLibrary}
+          onUploadDocument={onUploadDocument}
+          speechLanguage={speechLanguage}
+          isStreaming={isStreaming}
+          onStopGeneration={onStopGeneration}
         />
       </div>
     );
