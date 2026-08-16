@@ -19,6 +19,13 @@ export interface DocumentSourceCitation {
   score?: number;
 }
 
+export interface WebSourceCitation {
+  title: string;
+  url: string;
+  snippet?: string;
+  source?: string;
+}
+
 export interface Message {
   id: string;
   role: Role;
@@ -30,6 +37,8 @@ export interface Message {
   error?: boolean;
   memoriesUsed?: string[];
   sources?: DocumentSourceCitation[];
+  webSources?: WebSourceCitation[];
+  toolsCalled?: string[];
 }
 
 export interface Conversation {

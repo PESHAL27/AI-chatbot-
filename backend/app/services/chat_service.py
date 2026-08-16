@@ -2,7 +2,7 @@ import uuid
 import asyncio
 import logging
 from typing import List, Dict, Optional, Any
-from app.schemas.chat import ChatRequest, ChatResponse, DocumentSourceCitation
+from app.schemas.chat import ChatRequest, ChatResponse, DocumentSourceCitation, WebSourceCitation
 from app.services.ai_service import AIService
 from app.services.database_service import DatabaseService
 from app.services.memory_service import MemoryService
@@ -18,17 +18,16 @@ class ChatService:
         user_token: Optional[str] = None
     ) -> ChatResponse:
         """
-        Processes chat requests with full Phase 6 Memory & Phase 7 Document RAG integration:
+        Processes chat requests with full Phase 6 Memory, Phase 7 Document RAG, and Phase 8 AI Tool Calling:
         1. Checks for explicit memory commands ("Remember that...", "Forget that...").
-        2. Ensures conversation record exists and is owned by user_id.
-        3. Saves user prompt message with ownership.
-        4. Retrieves relevant long-term memories if memory_enabled is True.
-        5. Retrieves relevant document RAG chunks (Phase 7).
-        6. Retrieves stored history context for that user.
-        7. Calls AIService for LLM response with injected memory & document context.
-        8. Saves AI response to database.
-        9. Analyzes conversation in background to extract new stable memories.
-        10. Returns structured response with memory indicators and document source citations.
+        2. Saves user prompt message with ownership.
+        3. Retrieves relevant long-term memories if memory_enabled is True.
+        4. Retrieves relevant document RAG chunks (Phase 7).
+        5. Retrieves stored history context for that user.
+        6. Calls AIService with Tool Calling Loop (Phase 8: Web Search + Calculator).
+        7. Saves AI response to database.
+        8. Analyzes conversation in background to extract new stable memories.
+        9. Returns structured response with memory indicators, document citations, web citations, and tools called.
         """
         conv_id = request.conversation_id or f"pml-conv-{uuid.uuid4().hex[:12]}"
         
@@ -62,7 +61,9 @@ class ChatService:
                     conversation_id=conv_id,
                     status="success",
                     memories_used=["Explicit Memory Operation"],
-                    sources=None
+                    sources=None,
+                    web_sources=None,
+                    tools_called=None
                 )
 
         # 2. Save user prompt message to Database
@@ -116,7 +117,7 @@ class ChatService:
         
         formatted_history: List[Dict[str, str]] = []
         if db_messages:
-            # Exclude the very last user message we just inserted to avoid duplicate prompt in LLM prompt
+            # Exclude the very last user message we just inserted
             for m in db_messages[:-1]:
                 formatted_history.append({
                     "role": m.get("role", "user"),
@@ -126,13 +127,30 @@ class ChatService:
             raw = request.history or request.messages or []
             formatted_history = [{"role": m.role, "content": m.content} for m in raw]
 
-        # 6. Generate response from AI Service with memory and document RAG injection
-        ai_reply = await AIService.generate_response(
+        # 6. Generate response from AI Service with Memory, Document RAG, and Tool Calling Loop
+        ai_res = await AIService.generate_response(
             user_message=request.message,
             history=formatted_history,
             relevant_memories=relevant_memories_list if relevant_memories_list else None,
-            document_context=document_chunks if document_chunks else None
+            document_context=document_chunks if document_chunks else None,
+            enable_tools=True
         )
+
+        ai_reply = ai_res.get("content", "")
+        raw_web_sources = ai_res.get("web_sources", [])
+        tools_called = ai_res.get("tools_called", [])
+
+        web_citations: Optional[List[WebSourceCitation]] = None
+        if raw_web_sources:
+            web_citations = [
+                WebSourceCitation(
+                    title=ws.get("title", "Web Source"),
+                    url=ws.get("url", "#"),
+                    snippet=ws.get("snippet"),
+                    source=ws.get("source")
+                )
+                for ws in raw_web_sources
+            ]
 
         # 7. Save assistant response to Database
         await DatabaseService.save_message(
@@ -160,5 +178,7 @@ class ChatService:
             conversation_id=conv_id,
             status="success",
             memories_used=relevant_memories_list if relevant_memories_list else None,
-            sources=citations
+            sources=citations,
+            web_sources=web_citations,
+            tools_called=tools_called if tools_called else None
         )

@@ -6,7 +6,15 @@ const DEFAULT_API_ENDPOINT = import.meta.env.VITE_API_URL || 'http://localhost:8
 
 export interface StreamCallbacks {
   onChunk: (chunk: string, fullText: string) => void;
-  onComplete: (fullText: string, metadata?: { memoriesUsed?: string[]; sources?: import('../types/pml').DocumentSourceCitation[] }) => void;
+  onComplete: (
+    fullText: string, 
+    metadata?: { 
+      memoriesUsed?: string[]; 
+      sources?: import('../types/pml').DocumentSourceCitation[];
+      webSources?: import('../types/pml').WebSourceCitation[];
+      toolsCalled?: string[];
+    }
+  ) => void;
   onError: (error: Error) => void;
 }
 
@@ -48,45 +56,41 @@ export class PMLApiService {
   /**
    * Health Check method to verify backend operational status.
    */
-  async checkHealth(): Promise<{ status: string; service: string } | null> {
+  async checkHealth(): Promise<boolean> {
     try {
-      const res = await fetch(`${this.endpoint}/api/health`, { method: 'GET' });
-      if (res.ok) {
-        return await res.json();
-      }
-      return null;
+      const apiBase = this.endpoint || DEFAULT_API_ENDPOINT;
+      const res = await fetch(`${apiBase}/health`, {
+        headers: this.getHeaders(),
+      });
+      if (!res.ok) return false;
+      const data = await res.json();
+      return data.status === 'ok';
     } catch {
-      return null;
+      return false;
     }
   }
 
   /**
-   * Send message to PML FastAPI backend (POST /api/chat).
-   * Stream results smoothly into UI callbacks.
+   * Real AI Streaming / Backend API Integration
    */
   async sendMessageStream(
     userMessage: string,
-    attachments: Attachment[] = [],
+    _attachments: Attachment[],
     conversationId: string,
     settings: PMLSettings,
     callbacks: StreamCallbacks,
-    history: { role: 'user' | 'assistant' | 'system'; content: string }[] = [],
+    history?: { role: 'user' | 'assistant'; content: string }[],
     documentId?: string
   ): Promise<void> {
-    const apiBase = this.endpoint || settings.apiEndpoint || DEFAULT_API_ENDPOINT;
-
     try {
-      const payload: FastApiChatRequest = {
-        conversation_id: conversationId,
+      const apiBase = this.endpoint || DEFAULT_API_ENDPOINT;
+
+      const payload: FastApiChatRequest & { history?: any[]; document_id?: string } = {
         message: userMessage,
-        memory_enabled: settings.memoryEnabled !== false,
+        conversation_id: conversationId,
+        memory_enabled: settings.memoryEnabled ?? true,
         document_id: documentId,
-        history: history,
-        attachments: attachments.map(a => ({
-          filename: a.name,
-          content_type: a.mimeType,
-          file_id: a.id,
-        })),
+        history: history && history.length > 0 ? history : undefined,
       };
 
       const response = await fetch(`${apiBase}/api/chat`, {
@@ -113,6 +117,8 @@ export class PMLApiService {
       await this.streamTextSmoothly(responseText, settings, callbacks, {
         memoriesUsed: data.memories_used,
         sources: data.sources,
+        webSources: data.web_sources,
+        toolsCalled: data.tools_called,
       });
     } catch (err: any) {
       console.warn('FastAPI backend connection issue:', err);
@@ -133,7 +139,12 @@ export class PMLApiService {
     text: string,
     settings: PMLSettings,
     callbacks: StreamCallbacks,
-    metadata?: { memoriesUsed?: string[]; sources?: import('../types/pml').DocumentSourceCitation[] }
+    metadata?: { 
+      memoriesUsed?: string[]; 
+      sources?: import('../types/pml').DocumentSourceCitation[];
+      webSources?: import('../types/pml').WebSourceCitation[];
+      toolsCalled?: string[];
+    }
   ): Promise<void> {
     let currentText = '';
     const delay = Math.max(8, settings.streamSpeed || 15);

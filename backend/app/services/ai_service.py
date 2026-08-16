@@ -1,11 +1,12 @@
 import logging
+import json
 from typing import List, Dict, Any, Optional
 from openai import AsyncOpenAI, AuthenticationError, RateLimitError, APIConnectionError, APITimeoutError
 from app.config import settings
+from app.tools.registry import tool_registry
 
 logger = logging.getLogger("pml.ai_service")
 
-# System Prompt / Persona for PML AI Assistant
 PML_SYSTEM_PROMPT = """You are PML (Personal Multimodal Logic), a state-of-the-art, helpful, intelligent, clear, honest, and versatile personal AI assistant operating inside an advanced digital space interface.
 
 Key Responsibilities & Directives:
@@ -17,6 +18,11 @@ Key Responsibilities & Directives:
 6. Follow instructions precisely.
 7. Format responses using GitHub-flavored Markdown (include clean headers, bold terms, bullet points, code blocks with syntax highlighting, and LaTeX math formulas if applicable).
 8. Never pretend to be human or claim capabilities that are not implemented.
+9. TOOL USAGE RULES:
+   - You have access to tools (`web_search`, `calculator`).
+   - Use `web_search` ONLY when real-time news, current events, recent tech releases, or web facts are needed. Do NOT call `web_search` for stable general knowledge (e.g. "What is inheritance in Java?").
+   - Use `calculator` whenever arithmetic or mathematical calculations are requested (e.g. "3847 * 29", "25% of 840"). Do NOT estimate complex arithmetic yourself.
+   - When web search results are returned, ground your answer directly in the search results and cite sources with their exact, un-modified URLs. NEVER invent or fabricate URLs.
 """
 
 class AIService:
@@ -48,11 +54,16 @@ class AIService:
         history: Optional[List[Dict[str, str]]] = None,
         relevant_memories: Optional[List[str]] = None,
         document_context: Optional[List[Dict[str, Any]]] = None,
-        model_override: Optional[str] = None
-    ) -> str:
+        model_override: Optional[str] = None,
+        enable_tools: bool = True
+    ) -> Dict[str, Any]:
         """
-        Communicates with the AI provider (OpenAI) to generate a chat response.
-        Appends system prompt instructions, long-term memory context, document RAG excerpts, and multi-turn history.
+        Communicates with OpenAI API to generate a response.
+        Supports:
+        - System prompt & persona
+        - Long-Term User Memory (Phase 6)
+        - Document Intelligence & RAG Excerpts (Phase 7)
+        - OpenAI Function Calling & Tool Execution Loop (Phase 8: Web Search + Calculator)
         """
         client = cls.get_client()
         model_name = model_override or settings.AI_MODEL
@@ -72,9 +83,8 @@ You have the following verified long-term memory about the user:
 {memory_block}
 
 DIRECTIVES FOR USING LONG-TERM MEMORY:
-1. When the user asks about their background, project, learning goals, preferences, or personal context (e.g., "What project am I working on?", "What am I building?", "What do I like?"), USE THE LONG-TERM MEMORY ABOVE to answer directly, accurately, and confidently.
-2. NEVER say "I cannot recall specific past conversations or projects" or "I don't have access to past chats" when the relevant facts are provided in the memory above.
-3. Incorporate these facts naturally and helpfully in your personalized response.
+1. When the user asks about their background, project, learning goals, preferences, or personal context (e.g., "What project am I working on?", "What am I building?"), USE THE LONG-TERM MEMORY ABOVE to answer directly and confidently.
+2. Incorporate these facts naturally in your response.
 ==================================================
 """
 
@@ -100,14 +110,12 @@ The user has uploaded documents. The most relevant extracted excerpts are provid
 
 DIRECTIVES FOR DOCUMENT RAG:
 1. Ground your answers directly in the provided document excerpts above.
-2. Cite the source document (and page number if available) when referencing information (e.g. "According to your {document_context[0].get('file_name', 'document')}, ...").
-3. When multiple documents are provided (e.g., Java and Python notes), synthesize and compare insights across them seamlessly.
-4. Do not invent page numbers or details that contradict the document excerpts.
+2. Cite the source document (and page number if available) when referencing information.
 ==================================================
 """
 
         # Construct message payload with system instruction
-        messages: List[Dict[str, str]] = [
+        messages: List[Dict[str, Any]] = [
             {"role": "system", "content": system_content}
         ]
 
@@ -122,48 +130,133 @@ DIRECTIVES FOR DOCUMENT RAG:
         # Append current user prompt message
         messages.append({"role": "user", "content": user_message})
 
+        tools_schema = tool_registry.get_openai_tools_schema() if enable_tools else None
+        web_sources: List[Dict[str, str]] = []
+        tools_called: List[str] = []
+
+        max_iterations = 3
+        iteration = 0
+
         try:
-            logger.info(f"Sending prompt to model '{model_name}' (messages count: {len(messages)}, RAG chunks: {len(document_context) if document_context else 0})")
-            
-            completion = await client.chat.completions.create(
-                model=model_name,
-                messages=messages,
-                temperature=settings.AI_TEMPERATURE,
-                max_tokens=settings.AI_MAX_TOKENS,
-                timeout=35.0  # 35 seconds timeout limit
-            )
+            while iteration < max_iterations:
+                iteration += 1
+                logger.info(f"[AIService] Generation iteration {iteration} (model: '{model_name}', tools available: {bool(tools_schema)})")
 
-            if not completion.choices or not completion.choices[0].message.content:
-                raise ValueError("Empty response received from AI model provider.")
+                kwargs: Dict[str, Any] = {
+                    "model": model_name,
+                    "messages": messages,
+                    "temperature": settings.AI_TEMPERATURE,
+                    "max_tokens": settings.AI_MAX_TOKENS,
+                    "timeout": 35.0
+                }
 
-            response_content = completion.choices[0].message.content.strip()
-            return response_content
+                if tools_schema and iteration == 1:
+                    kwargs["tools"] = tools_schema
+                    kwargs["tool_choice"] = "auto"
+
+                completion = await client.chat.completions.create(**kwargs)
+
+                if not completion.choices:
+                    raise ValueError("Empty response received from AI model provider.")
+
+                choice = completion.choices[0]
+                message = choice.message
+
+                # Check if model invoked tool calls
+                if hasattr(message, "tool_calls") and message.tool_calls:
+                    logger.info(f"[PML Tool Loop] Model requested {len(message.tool_calls)} tool call(s).")
+                    
+                    # Convert Assistant message with tool_calls for API trajectory
+                    tool_calls_payload = []
+                    for tc in message.tool_calls:
+                        tool_calls_payload.append({
+                            "id": tc.id,
+                            "type": "function",
+                            "function": {
+                                "name": tc.function.name,
+                                "arguments": tc.function.arguments
+                            }
+                        })
+                    
+                    messages.append({
+                        "role": "assistant",
+                        "content": message.content or "",
+                        "tool_calls": tool_calls_payload
+                    })
+
+                    # Execute each tool call
+                    for tc in message.tool_calls:
+                        tool_name = tc.function.name
+                        try:
+                            tool_args = json.loads(tc.function.arguments) if tc.function.arguments else {}
+                        except Exception:
+                            tool_args = {}
+
+                        tools_called.append(tool_name)
+                        logger.info(f"[PML Tool Exec] Executing '{tool_name}' with args {tool_args}")
+
+                        tool_res = await tool_registry.execute_tool(tool_name, tool_args)
+
+                        # Capture web sources for citations if web_search
+                        if tool_name == "web_search" and tool_res.success and isinstance(tool_res.data, dict):
+                            raw_results = tool_res.data.get("results", [])
+                            for item in raw_results:
+                                if item not in web_sources:
+                                    web_sources.append(item)
+
+                        # Append tool response message to conversation trajectory
+                        messages.append({
+                            "role": "tool",
+                            "tool_call_id": tc.id,
+                            "content": tool_res.formatted_output
+                        })
+
+                    # Continue loop to let AI generate grounded final answer using tool output
+                    continue
+
+                # If no tool call, return final answer content
+                final_text = (message.content or "").strip()
+                return {
+                    "content": final_text,
+                    "web_sources": web_sources,
+                    "tools_called": tools_called
+                }
+
+            # If loop limit reached, return latest message content
+            return {
+                "content": (messages[-1].get("content") or "Tool execution completed.").strip(),
+                "web_sources": web_sources,
+                "tools_called": tools_called
+            }
 
         except AuthenticationError as auth_err:
             logger.error(f"OpenAI Authentication Failed: {auth_err}")
-            return (
-                "### ⚠️ PML AI API Key Notice\n\n"
-                "The configured OpenAI API key is invalid or expired. "
-                "Please update `AI_API_KEY` in `backend/.env` with a valid key."
-            )
+            return {
+                "content": "### ⚠️ PML AI API Key Notice\n\nThe configured OpenAI API key is invalid or expired. Please update `AI_API_KEY` in `backend/.env` with a valid key.",
+                "web_sources": [],
+                "tools_called": []
+            }
 
         except RateLimitError as rate_err:
             logger.error(f"OpenAI Rate Limit / Quota Exceeded: {rate_err}")
-            return (
-                "### ⚡ PML AI Rate Limit / Quota Exceeded\n\n"
-                "PML successfully connected to OpenAI (`gpt-4o-mini`), but the API key has exceeded its quota or has no remaining credits (`insufficient_quota`).\n\n"
-                "**Action required:**\n"
-                "- Check billing / add credits at [OpenAI Billing](https://platform.openai.com/settings/organization/billing)\n"
-                "- Or update `AI_API_KEY` in `backend/.env` with an active key."
-            )
+            return {
+                "content": "### ⚡ PML AI Rate Limit / Quota Exceeded\n\nPML successfully connected to OpenAI, but the API key has exceeded its quota (`insufficient_quota`). Please update `AI_API_KEY` in `backend/.env`.",
+                "web_sources": [],
+                "tools_called": []
+            }
 
         except (APIConnectionError, APITimeoutError) as conn_err:
             logger.error(f"OpenAI Network Error: {conn_err}")
-            return (
-                "### 🌐 PML AI Service Timeout\n\n"
-                "Unable to reach the AI model provider. Please verify network connectivity."
-            )
+            return {
+                "content": "### 🌐 PML AI Service Timeout\n\nUnable to reach the AI model provider. Please verify network connectivity.",
+                "web_sources": [],
+                "tools_called": []
+            }
 
         except Exception as err:
             logger.error(f"Unexpected AI Service Error: {err}", exc_info=True)
-            return "PML is temporarily unable to generate a response. Please try again later."
+            return {
+                "content": "PML is temporarily unable to generate a response. Please try again later.",
+                "web_sources": [],
+                "tools_called": []
+            }

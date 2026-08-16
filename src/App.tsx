@@ -308,7 +308,9 @@ const PMLAppContent: React.FC = () => {
                           content: fullText,
                           isStreaming: false,
                           memoriesUsed: metadata?.memoriesUsed,
-                          sources: metadata?.sources
+                          sources: metadata?.sources,
+                          webSources: metadata?.webSources,
+                          toolsCalled: metadata?.toolsCalled
                         }
                       : m
                   ),

@@ -15,7 +15,10 @@ import {
   User, 
   Sparkles,
   Brain,
-  BookOpen
+  BookOpen,
+  Globe,
+  ExternalLink,
+  Calculator
 } from 'lucide-react';
 import type { Message, Attachment } from '../types/pml';
 import { PMLCore } from './PMLCore';
@@ -211,21 +214,62 @@ export const MessageItem: React.FC<MessageItemProps> = ({
             </div>
           )}
 
+          {/* Live Web Sources (Phase 8 Web Search) */}
+          {!isUser && message.webSources && message.webSources.length > 0 && (
+            <div className="mt-4 pt-3 border-t border-cyan-500/20">
+              <div className="text-[11px] font-semibold text-cyan-300/90 mb-2 flex items-center gap-1.5">
+                <Globe className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Verified Live Web Sources:</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {message.webSources.map((webSrc, idx) => (
+                  <a
+                    key={idx}
+                    href={webSrc.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-2.5 py-1 rounded-lg bg-cyan-950/60 border border-cyan-500/40 hover:border-cyan-400/80 hover:bg-cyan-900/40 text-xs text-cyan-200 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm group/link"
+                    title={webSrc.snippet || webSrc.url}
+                  >
+                    <span>🌐</span>
+                    <span className="font-semibold max-w-[220px] truncate group-hover/link:underline">{webSrc.title}</span>
+                    <ExternalLink className="w-3 h-3 text-cyan-400 opacity-70 group-hover/link:opacity-100 flex-shrink-0" />
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Action Bar for PML Response */}
           {!isUser && !message.isStreaming && (
             <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs text-slate-400 flex-wrap gap-2">
               <div className="flex items-center gap-2 flex-wrap">
                 <div className="flex items-center gap-1 font-mono text-[10px] text-purple-300 tracking-wider">
                   <Sparkles className="w-3 h-3 text-purple-400 animate-pulse" />
-                  <span>PML ADVANCED NEURAL INTELLIGENCE</span>
+                  <span>PML NEURAL INTELLIGENCE</span>
                 </div>
+
                 {message.memoriesUsed && message.memoriesUsed.length > 0 && (
                   <div
                     className="flex items-center gap-1 text-[10px] font-mono text-purple-200 bg-purple-950/60 px-2.5 py-0.5 rounded-full border border-purple-500/40 shadow-sm"
                     title={`Memories used:\n${message.memoriesUsed.map(m => `• ${m}`).join('\n')}`}
                   >
                     <Brain className="w-3 h-3 text-purple-400 animate-pulse" />
-                    <span>{message.memoriesUsed.length} {message.memoriesUsed.length === 1 ? 'memory' : 'memories'} active</span>
+                    <span>{message.memoriesUsed.length} {message.memoriesUsed.length === 1 ? 'memory' : 'memories'}</span>
+                  </div>
+                )}
+
+                {message.toolsCalled && message.toolsCalled.length > 0 && (
+                  <div
+                    className="flex items-center gap-1.5 text-[10px] font-mono text-cyan-200 bg-cyan-950/60 px-2.5 py-0.5 rounded-full border border-cyan-500/40 shadow-sm"
+                    title={`Executed tools: ${message.toolsCalled.join(', ')}`}
+                  >
+                    {message.toolsCalled.includes('calculator') ? (
+                      <Calculator className="w-3 h-3 text-cyan-400" />
+                    ) : (
+                      <Globe className="w-3 h-3 text-cyan-400" />
+                    )}
+                    <span>{message.toolsCalled.join(', ')}</span>
                   </div>
                 )}
               </div>
@@ -233,7 +277,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
               <div className="flex items-center gap-1.5">
                 <button
                   onClick={() => handleCopyText(message.content)}
-                  className="p-1.5 rounded-lg hover:bg-white/10 hover:text-white transition-colors"
+                  className="p-1.5 rounded-lg hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
                   title="Copy response"
                 >
                   {copied ? <Check className="w-3.5 h-3.5 text-purple-400" /> : <Copy className="w-3.5 h-3.5" />}
@@ -241,7 +285,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
 
                 <button
                   onClick={handleToggleSpeak}
-                  className={`p-1.5 rounded-lg transition-colors ${
+                  className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
                     speaking ? 'bg-purple-600/30 text-purple-300 border border-purple-500/40' : 'hover:bg-white/10 hover:text-white'
                   }`}
                   title={speaking ? 'Stop Voice' : 'Read Aloud'}
@@ -252,7 +296,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
                 {onRegenerate && (
                   <button
                     onClick={onRegenerate}
-                    className="p-1.5 rounded-lg hover:bg-white/10 hover:text-white transition-colors"
+                    className="p-1.5 rounded-lg hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
                     title="Regenerate response"
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
@@ -263,7 +307,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
 
                 <button
                   onClick={() => handleFeedbackClick('like')}
-                  className={`p-1.5 rounded-lg transition-colors ${
+                  className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
                     userFeedback === 'like' ? 'text-purple-300 bg-purple-600/30 border border-purple-500/40' : 'hover:bg-white/10 hover:text-white'
                   }`}
                   title="Helpful"
@@ -273,7 +317,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
 
                 <button
                   onClick={() => handleFeedbackClick('dislike')}
-                  className={`p-1.5 rounded-lg transition-colors ${
+                  className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
                     userFeedback === 'dislike' ? 'text-rose-400 bg-rose-950/60 border border-rose-500/40' : 'hover:bg-white/10 hover:text-white'
                   }`}
                   title="Not helpful"

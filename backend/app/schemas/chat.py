@@ -11,6 +11,12 @@ class DocumentSourceCitation(BaseModel):
     excerpt: Optional[str] = Field(None, description="Relevant content snippet")
     score: Optional[float] = Field(None, description="Relevance score")
 
+class WebSourceCitation(BaseModel):
+    title: str = Field(..., description="Title of search result")
+    url: str = Field(..., description="Clickable web URL")
+    snippet: Optional[str] = Field(None, description="Relevant text snippet")
+    source: Optional[str] = Field(None, description="Domain source name")
+
 class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1, description="The user's prompt message")
     conversation_id: Optional[str] = Field(None, description="Optional conversation ID for tracking sessions")
@@ -33,6 +39,8 @@ class ChatResponse(BaseModel):
     status: str = Field("success", description="Status code string")
     memories_used: Optional[List[str]] = Field(None, description="List of relevant memory statements utilized")
     sources: Optional[List[DocumentSourceCitation]] = Field(None, description="List of document citations utilized for RAG")
+    web_sources: Optional[List[WebSourceCitation]] = Field(None, description="List of live web sources utilized for answer grounding")
+    tools_called: Optional[List[str]] = Field(None, description="List of tool names executed during response generation")
 
 class HealthCheckResponse(BaseModel):
     status: str = Field("ok", description="Service status")
