@@ -468,9 +468,7 @@ const PMLAppContent: React.FC = () => {
       />
 
       {/* Main Workspace Layout Wrapper */}
-      <div className={`flex-1 flex flex-col min-h-0 overflow-hidden transition-all duration-300 w-full relative ${
-        navOpen ? 'lg:pl-84' : 'pl-0'
-      }`}>
+      <div className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden w-full relative">
         {/* Top Toolbar Header */}
         <TopHeader
           navOpen={navOpen}
@@ -491,6 +489,8 @@ const PMLAppContent: React.FC = () => {
           }
           isAuthenticated={Boolean(user)}
           onOpenAuth={() => setAuthModalOpen(true)}
+          selectedDocument={selectedDocument}
+          onClearDocumentScope={() => setSelectedDocument(null)}
         />
 
         {/* Guest Session Top Notice Pill */}
@@ -529,19 +529,17 @@ const PMLAppContent: React.FC = () => {
           speechLanguage={settings.speechLanguage || 'en-US'}
         />
 
-        {/* Floating Message Console */}
-        {activeConversation && activeConversation.messages.length > 0 && (
-          <MessageComposer
-            onSendMessage={handleSendMessage}
-            isStreaming={isStreaming}
-            onStopGeneration={handleStopGeneration}
-            selectedDocument={selectedDocument}
-            onClearDocumentScope={() => setSelectedDocument(null)}
-            onOpenDocumentLibrary={() => setDocumentModalOpen(true)}
-            onUploadDocument={handleUploadDocument}
-            speechLanguage={settings.speechLanguage || 'en-US'}
-          />
-        )}
+        {/* Pinned Bottom Message Console */}
+        <MessageComposer
+          onSendMessage={handleSendMessage}
+          isStreaming={isStreaming}
+          onStopGeneration={handleStopGeneration}
+          selectedDocument={selectedDocument}
+          onClearDocumentScope={() => setSelectedDocument(null)}
+          onOpenDocumentLibrary={() => setDocumentModalOpen(true)}
+          onUploadDocument={handleUploadDocument}
+          speechLanguage={settings.speechLanguage || 'en-US'}
+        />
       </div>
 
       {/* Modals */}
