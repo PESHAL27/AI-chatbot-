@@ -45,10 +45,10 @@ export const MemoryManagementModal: React.FC<MemoryManagementModalProps> = ({
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isOpen && isAuthenticated) {
+    if (isOpen) {
       loadMemories();
     }
-  }, [isOpen, isAuthenticated]);
+  }, [isOpen]);
 
   const loadMemories = async () => {
     setLoading(true);

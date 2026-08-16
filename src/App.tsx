@@ -50,7 +50,9 @@ const PMLAppContent: React.FC = () => {
   const { user, profile, signOut, loading } = useAuth();
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(() => {
+    return localStorage.getItem('pml_active_conv_id') || null;
+  });
   const [coreState, setCoreState] = useState<PMLCoreState>('idle');
   const [navOpen, setNavOpen] = useState<boolean>(false);
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
@@ -70,6 +72,7 @@ const PMLAppContent: React.FC = () => {
   });
 
   const abortControllerRef = useRef<boolean>(false);
+  const lastLoadedUserIdRef = useRef<string | null | undefined>(undefined);
 
   // Dynamic user profile from authenticated session
   const resolvedName = user
@@ -89,30 +92,44 @@ const PMLAppContent: React.FC = () => {
       : 'August 2026',
   };
 
-  // Load conversations when user state initializes or changes
-  useEffect(() => {
-    if (user) {
-      pmlApi.fetchConversations().then(async data => {
-        setConversations(data);
-        if (data.length > 0) {
-          const mostRecent = data[0];
-          setActiveConversationId(mostRecent.id);
-          const fullDetails = await pmlApi.fetchConversationDetails(mostRecent.id);
-          if (fullDetails) {
-            setConversations(prev => prev.map(c => (c.id === mostRecent.id ? fullDetails : c)));
-          }
-        }
-      });
+  // Helper to safely select and persist active conversation ID
+  const selectConversationId = (id: string | null) => {
+    setActiveConversationId(id);
+    if (id) {
+      localStorage.setItem('pml_active_conv_id', id);
     } else {
-      pmlApi.fetchConversations().then(data => {
-        setConversations(data);
-        if (data.length > 0) {
-          setActiveConversationId(data[0].id);
-        } else {
-          setActiveConversationId(null);
-        }
-      });
+      localStorage.removeItem('pml_active_conv_id');
     }
+  };
+
+  // Load conversations when user state initializes or changes (login/logout transition)
+  useEffect(() => {
+    const currentUserId = user?.id || 'guest';
+    
+    // Only re-fetch if this is an actual user change/login/logout event
+    if (lastLoadedUserIdRef.current === currentUserId) {
+      return;
+    }
+    lastLoadedUserIdRef.current = currentUserId;
+
+    pmlApi.fetchConversations().then(async data => {
+      setConversations(data);
+      if (data.length > 0) {
+        // Retain current active conversation if valid, otherwise pick the first
+        const currentSavedId = localStorage.getItem('pml_active_conv_id');
+        const targetId = (currentSavedId && data.some(c => c.id === currentSavedId))
+          ? currentSavedId
+          : data[0].id;
+
+        selectConversationId(targetId);
+        const fullDetails = await pmlApi.fetchConversationDetails(targetId);
+        if (fullDetails) {
+          setConversations(prev => prev.map(c => (c.id === targetId ? fullDetails : c)));
+        }
+      } else {
+        selectConversationId(null);
+      }
+    });
   }, [user]);
 
   // Sync settings & theme attribute
@@ -132,8 +149,9 @@ const PMLAppContent: React.FC = () => {
   // Handle Logout
   const handleSignOut = async () => {
     await signOut();
+    lastLoadedUserIdRef.current = undefined;
     setConversations([]);
-    setActiveConversationId(null);
+    selectConversationId(null);
     setProfileModalOpen(false);
     setMemoryModalOpen(false);
     setDocumentModalOpen(false);
@@ -146,13 +164,13 @@ const PMLAppContent: React.FC = () => {
     const newConv = await pmlApi.createConversation('New Cosmic Thread');
     const updated = [newConv, ...conversations];
     saveConversationsState(updated);
-    setActiveConversationId(newConv.id);
+    selectConversationId(newConv.id);
   };
 
   // Select Existing Conversation
   const handleSelectConversation = async (id: string) => {
     cosmicAudio.playNodeSound(settings.soundEffects);
-    setActiveConversationId(id);
+    selectConversationId(id);
 
     const currentConv = conversations.find(c => c.id === id);
     if (!currentConv || currentConv.messages.length === 0) {
@@ -170,7 +188,7 @@ const PMLAppContent: React.FC = () => {
     const updated = conversations.filter(c => c.id !== id);
     saveConversationsState(updated);
     if (activeConversationId === id) {
-      setActiveConversationId(updated.length > 0 ? updated[0].id : null);
+      selectConversationId(updated.length > 0 ? updated[0].id : null);
     }
   };
 
@@ -215,7 +233,7 @@ const PMLAppContent: React.FC = () => {
       const createdConv = await pmlApi.createConversation(firstTitle || 'New Conversation');
       currentConvId = createdConv.id;
       updatedConversations = [createdConv, ...conversations];
-      setActiveConversationId(currentConvId);
+      selectConversationId(currentConvId);
     }
 
     // 1. Prepare User Message
