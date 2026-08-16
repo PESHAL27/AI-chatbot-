@@ -1,12 +1,61 @@
+import asyncio
 import httpx
 import urllib.parse
+import urllib.request
 import json
 import logging
 from typing import Dict, Any, List
 from bs4 import BeautifulSoup
+from app.config import settings
 from app.tools.base import BaseTool, ToolResult
 
 logger = logging.getLogger(__name__)
+
+def _sync_ddg_html_search(clean_query: str, num_results: int = 5) -> List[Dict[str, str]]:
+    """Synchronous DuckDuckGo search using standard urllib."""
+    results: List[Dict[str, str]] = []
+    try:
+        data = urllib.parse.urlencode({"q": clean_query, "b": ""}).encode("utf-8")
+        req = urllib.request.Request(
+            "https://html.duckduckgo.com/html/",
+            data=data,
+            headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Accept-Language": "en-US,en;q=0.9"
+            }
+        )
+        with urllib.request.urlopen(req, timeout=9.0) as res:
+            soup = BeautifulSoup(res.read(), "html.parser")
+            results_divs = soup.find_all("div", class_="result")
+
+            for div in results_divs[:num_results]:
+                title_elem = div.find("a", class_="result__a")
+                snippet_elem = div.find("a", class_="result__snippet")
+
+                if title_elem and title_elem.text:
+                    raw_url = title_elem.get("href", "")
+                    if "uddg=" in raw_url:
+                        parsed = urllib.parse.parse_qs(urllib.parse.urlparse(raw_url).query)
+                        final_url = parsed.get("uddg", [raw_url])[0]
+                    else:
+                        final_url = raw_url
+
+                    title = title_elem.text.strip()
+                    snippet = snippet_elem.text.strip() if snippet_elem else "No excerpt available."
+                    domain = urllib.parse.urlparse(final_url).netloc or "web"
+
+                    if final_url and final_url.startswith("http"):
+                        results.append({
+                            "title": title,
+                            "url": final_url,
+                            "snippet": snippet,
+                            "source": domain
+                        })
+    except Exception as err:
+        logger.warn(f"[PML Tool] Sync DuckDuckGo search error: {err}")
+    return results
+
 
 class WebSearchTool(BaseTool):
     """
@@ -38,81 +87,56 @@ class WebSearchTool(BaseTool):
 
         results: List[Dict[str, str]] = []
 
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-            "Content-Type": "application/x-www-form-urlencoded",
-            "Accept-Language": "en-US,en;q=0.9"
-        }
-
-        # 1. Try DuckDuckGo HTML Search via POST (reliable & non-rate limited)
-        try:
-            ddg_url = "https://html.duckduckgo.com/html/"
-            form_data = {"q": clean_query, "b": ""}
-
-            async with httpx.AsyncClient(follow_redirects=True, timeout=10.0) as client:
-                res = await client.post(ddg_url, data=form_data, headers=headers)
-                if res.status_code == 200:
-                    soup = BeautifulSoup(res.text, "html.parser")
-                    results_divs = soup.find_all("div", class_="result")
-
-                    for div in results_divs[:num_results]:
-                        title_elem = div.find("a", class_="result__a")
-                        snippet_elem = div.find("a", class_="result__snippet")
-
-                        if title_elem and title_elem.text:
-                            raw_url = title_elem.get("href", "")
-                            # Clean DuckDuckGo redirect URL if present
-                            if "uddg=" in raw_url:
-                                parsed = urllib.parse.parse_qs(urllib.parse.urlparse(raw_url).query)
-                                final_url = parsed.get("uddg", [raw_url])[0]
-                            else:
-                                final_url = raw_url
-
-                            title = title_elem.text.strip()
-                            snippet = snippet_elem.text.strip() if snippet_elem else "No excerpt available."
-                            domain = urllib.parse.urlparse(final_url).netloc or "web"
-
-                            if final_url and final_url.startswith("http"):
-                                results.append({
-                                    "title": title,
-                                    "url": final_url,
-                                    "snippet": snippet,
-                                    "source": domain
-                                })
-        except Exception as err:
-            logger.warn(f"[PML Tool] DuckDuckGo HTML search POST failed: {err}")
-
-        # 2. Fallback if POST returned no items: DuckDuckGo GET search
-        if not results:
+        # 1. Check for Tavily Search API Key
+        tavily_key = settings.TAVILY_API_KEY or settings.WEB_SEARCH_API_KEY
+        if tavily_key and (settings.WEB_SEARCH_PROVIDER == "tavily" or tavily_key.startswith("tvly")):
             try:
-                encoded_q = urllib.parse.quote_plus(clean_query)
-                ddg_get_url = f"https://html.duckduckgo.com/html/?q={encoded_q}"
-                async with httpx.AsyncClient(follow_redirects=True, timeout=8.0) as client:
-                    res = await client.get(ddg_get_url, headers=headers)
-                    if res.status_code == 200:
-                        soup = BeautifulSoup(res.text, "html.parser")
-                        results_divs = soup.find_all("div", class_="result")
-                        for div in results_divs[:num_results]:
-                            title_elem = div.find("a", class_="result__a")
-                            snippet_elem = div.find("a", class_="result__snippet")
-                            if title_elem and title_elem.text:
-                                raw_url = title_elem.get("href", "")
-                                final_url = raw_url
-                                if "uddg=" in raw_url:
-                                    parsed = urllib.parse.parse_qs(urllib.parse.urlparse(raw_url).query)
-                                    final_url = parsed.get("uddg", [raw_url])[0]
-                                title = title_elem.text.strip()
-                                snippet = snippet_elem.text.strip() if snippet_elem else "No excerpt available."
-                                domain = urllib.parse.urlparse(final_url).netloc or "web"
-                                if final_url and final_url.startswith("http"):
-                                    results.append({
-                                        "title": title,
-                                        "url": final_url,
-                                        "snippet": snippet,
-                                        "source": domain
-                                    })
+                async with httpx.AsyncClient(timeout=10.0) as client:
+                    tav_res = await client.post(
+                        "https://api.tavily.com/search",
+                        json={
+                            "api_key": tavily_key,
+                            "query": clean_query,
+                            "search_depth": "basic",
+                            "max_results": num_results
+                        }
+                    )
+                    if tav_res.status_code == 200:
+                        tav_data = tav_res.json()
+                        for item in tav_data.get("results", []):
+                            results.append({
+                                "title": item.get("title", clean_query),
+                                "url": item.get("url", "#"),
+                                "snippet": item.get("content", ""),
+                                "source": urllib.parse.urlparse(item.get("url", "")).netloc or "tavily"
+                            })
             except Exception as err:
-                logger.warn(f"[PML Tool] DuckDuckGo GET fallback failed: {err}")
+                logger.warn(f"[PML Tool] Tavily search API error: {err}")
+
+        # 2. Check for Serper (Google Search) API Key
+        if not results and settings.SERPER_API_KEY:
+            try:
+                async with httpx.AsyncClient(timeout=10.0) as client:
+                    serp_res = await client.post(
+                        "https://google.serper.dev/search",
+                        headers={"X-API-KEY": settings.SERPER_API_KEY, "Content-Type": "application/json"},
+                        json={"q": clean_query, "num": num_results}
+                    )
+                    if serp_res.status_code == 200:
+                        serp_data = serp_res.json()
+                        for item in serp_data.get("organic", [])[:num_results]:
+                            results.append({
+                                "title": item.get("title", clean_query),
+                                "url": item.get("link", "#"),
+                                "snippet": item.get("snippet", ""),
+                                "source": urllib.parse.urlparse(item.get("link", "")).netloc or "google"
+                            })
+            except Exception as err:
+                logger.warn(f"[PML Tool] Serper API error: {err}")
+
+        # 3. Default Zero-Key Engine: DuckDuckGo Live Search
+        if not results:
+            results = await asyncio.to_thread(_sync_ddg_html_search, clean_query, num_results)
 
         if not results:
             logger.info(f"[PML Tool] Search failed or returned empty results for query '{clean_query}'.")

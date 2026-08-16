@@ -26,6 +26,12 @@ class Settings:
     AI_TEMPERATURE: float = float(os.getenv("AI_TEMPERATURE", "0.7"))
     AI_MAX_TOKENS: int = int(os.getenv("AI_MAX_TOKENS", "2048"))
 
+    # Web Search Providers (Phase 8: Web Search + AI Tool Calling)
+    WEB_SEARCH_PROVIDER: str = os.getenv("WEB_SEARCH_PROVIDER", "duckduckgo")  # 'duckduckgo', 'tavily', 'serper'
+    WEB_SEARCH_API_KEY: str = os.getenv("WEB_SEARCH_API_KEY", "")
+    TAVILY_API_KEY: str = os.getenv("TAVILY_API_KEY", "")
+    SERPER_API_KEY: str = os.getenv("SERPER_API_KEY", "")
+
     # Supabase Configuration
     SUPABASE_URL: str = os.getenv("SUPABASE_URL", "https://axvbjoaqkanowkjoftxc.supabase.co")
     SUPABASE_KEY: str = os.getenv("SUPABASE_KEY", "")
