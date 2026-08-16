@@ -415,7 +415,7 @@ How can I assist your exploration today? Feel free to ask a question, attach doc
     return true;
   }
 
-  async createConversation(title: string = 'New Cosmic Thread'): Promise<Conversation> {
+  async createConversation(title: string = 'PML AI'): Promise<Conversation> {
     const newConv: Conversation = {
       id: `pml-conv-${Math.random().toString(36).substring(2, 11)}`,
       title,

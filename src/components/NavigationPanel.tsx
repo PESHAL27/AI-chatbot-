@@ -304,7 +304,7 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
                     <MessageSquare className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-purple-300' : 'text-purple-400/80 group-hover:text-purple-300'}`} />
                     <div className="min-w-0 flex-1">
                       <p className="text-xs truncate font-bold text-white group-hover:text-purple-200 transition-colors font-sans">
-                        {conv.title || 'Untitled Session'}
+                        {conv.title === 'New Cosmic Thread' ? 'PML AI' : (conv.title || 'PML AI')}
                       </p>
                       {formattedDate && (
                         <p className="text-[10px] font-mono text-purple-300/70 truncate flex items-center gap-1 mt-0.5">

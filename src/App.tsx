@@ -176,7 +176,7 @@ const PMLAppContent: React.FC = () => {
   // Start New Conversation
   const handleNewConversation = async () => {
     cosmicAudio.playInitiateSound(settings.soundEffects);
-    const newConv = await pmlApi.createConversation('New Cosmic Thread');
+    const newConv = await pmlApi.createConversation('PML AI');
     const updated = [newConv, ...conversations];
     saveConversationsState(updated);
     selectConversationId(newConv.id);

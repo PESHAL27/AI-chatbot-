@@ -83,11 +83,11 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
             ) : (
               <div className="flex items-center gap-2 min-w-0 group">
                 <h2 className="font-sans font-bold text-sm md:text-base text-white truncate tracking-wide">
-                  {activeConversation.title}
+                  {activeConversation.title === 'New Cosmic Thread' ? 'PML AI' : (activeConversation.title || 'PML AI')}
                 </h2>
                 <button
                   onClick={() => {
-                    setTitleInput(activeConversation.title);
+                    setTitleInput(activeConversation.title === 'New Cosmic Thread' ? 'PML AI' : activeConversation.title);
                     setIsEditingTitle(true);
                   }}
                   className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-purple-400 transition-opacity cursor-pointer"
@@ -100,11 +100,11 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
           ) : (
             <div className="flex items-center gap-2">
               <span className="font-display font-black text-base md:text-lg tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-300 to-pink-500 drop-shadow-[0_0_15px_rgba(168,85,247,0.5)]">
-                PML
+                PML AI
               </span>
               <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-mono text-purple-300/80 bg-purple-950/60 px-2 py-0.5 rounded-full border border-purple-500/30 uppercase tracking-widest">
                 <Sparkles className="w-2.5 h-2.5 text-purple-400" />
-                <span>AI UNIVERSE</span>
+                <span>UNIVERSE</span>
               </span>
             </div>
           )}
