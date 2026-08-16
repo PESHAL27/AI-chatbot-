@@ -473,27 +473,33 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
               )}
             </div>
 
-            {/* Microphone Button with Energy Ring */}
-            <button
-              onClick={toggleVoiceInput}
-              className={`relative p-2 rounded-xl transition-all cursor-pointer ${
-                isRecording
-                  ? 'bg-rose-600/40 text-rose-300 border border-rose-500 shadow-[0_0_20px_rgba(244,63,94,0.7)]'
-                  : 'hover:bg-white/10 text-slate-300 hover:text-purple-300 border border-transparent'
-              }`}
-              title={isRecording ? 'Stop Recording' : 'Voice Input (Speak to PML)'}
-            >
-              {isRecording ? <MicOff className="w-4 h-4 text-rose-300" /> : <Mic className="w-4 h-4" />}
+            {/* Microphone Button with 3-Ring Orbital Energy Field */}
+            <div className="relative flex items-center justify-center">
               {isRecording && (
-                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping" />
+                <>
+                  <span className="pointer-events-none absolute w-9 h-9 rounded-full border border-rose-500/80 animate-ping" />
+                  <span className="pointer-events-none absolute w-11 h-11 rounded-full border border-purple-500/50 animate-pulse [animation-duration:1.5s]" />
+                  <span className="pointer-events-none absolute w-13 h-13 rounded-full border border-violet-500/30 animate-spin [animation-duration:3s]" />
+                </>
               )}
-            </button>
+              <button
+                onClick={toggleVoiceInput}
+                className={`relative p-2.5 rounded-xl transition-all duration-200 cursor-pointer z-10 ${
+                  isRecording
+                    ? 'bg-rose-600/40 text-rose-300 border border-rose-400 shadow-[0_0_25px_rgba(244,63,94,0.8)] scale-105'
+                    : 'hover:bg-white/10 text-slate-300 hover:text-purple-300 border border-transparent'
+                }`}
+                title={isRecording ? 'Stop Voice Recording' : 'Voice Input (Speak to PML AI)'}
+              >
+                {isRecording ? <MicOff className="w-4 h-4 text-rose-200" /> : <Mic className="w-4 h-4" />}
+              </button>
+            </div>
 
             {/* Image Trigger (Vision) */}
             <button
               onClick={() => imageInputRef.current?.click()}
-              className="p-2 rounded-xl hover:bg-white/10 text-slate-300 hover:text-purple-400 transition-colors cursor-pointer"
-              title="Attach Image (Vision)"
+              className="p-2.5 rounded-xl hover:bg-white/10 text-slate-300 hover:text-purple-300 border border-transparent transition-colors cursor-pointer"
+              title="Attach Image for Visual Analysis (Vision)"
             >
               <ImageIcon className="w-4 h-4" />
             </button>
@@ -501,8 +507,8 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
             {/* Document Trigger (RAG) */}
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="p-2 rounded-xl hover:bg-white/10 text-slate-300 hover:text-purple-400 transition-colors cursor-pointer"
-              title="Attach Document (PDF, DOCX)"
+              className="p-2.5 rounded-xl hover:bg-white/10 text-slate-300 hover:text-purple-300 border border-transparent transition-colors cursor-pointer"
+              title="Attach Document for Vector Knowledge (RAG)"
             >
               <Paperclip className="w-4 h-4" />
             </button>
@@ -538,7 +544,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
             {isStreaming ? (
               <button
                 onClick={onStopGeneration}
-                className="px-4 py-2 rounded-xl bg-purple-950/80 border border-purple-500/60 hover:bg-purple-900 text-purple-300 text-xs font-bold font-display flex items-center gap-1.5 transition-all shadow-[0_0_15px_rgba(168,85,247,0.3)] cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-purple-950/80 border border-purple-500/60 hover:bg-purple-900 text-purple-200 text-xs font-bold font-display flex items-center gap-1.5 transition-all shadow-[0_0_15px_rgba(168,85,247,0.4)] cursor-pointer"
               >
                 <Square className="w-3.5 h-3.5 fill-current" />
                 <span>ABORT</span>
@@ -548,19 +554,19 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
                 onClick={handleSend}
                 disabled={!input.trim() && !interimTranscript.trim() && attachments.length === 0}
                 className="
-                  px-5 py-2 rounded-xl
-                  bg-gradient-to-r from-violet-600 via-indigo-600 to-purple-600 
+                  group relative flex items-center justify-center px-5 py-2.5 rounded-2xl
+                  bg-gradient-to-tr from-violet-600 via-indigo-600 to-purple-600 
                   hover:from-violet-500 hover:to-purple-500 
                   text-white font-display font-bold text-xs uppercase tracking-wider 
-                  shadow-[0_0_20px_rgba(139,92,246,0.45)] hover:shadow-[0_0_30px_rgba(168,85,247,0.75)] 
+                  shadow-[0_0_25px_rgba(139,92,246,0.55)] hover:shadow-[0_0_40px_rgba(168,85,247,0.85)] 
+                  hover:-translate-y-0.5 active:scale-95 active:translate-y-0.5
                   disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none
-                  transition-all duration-200 active:scale-95 flex items-center gap-2 
-                  border border-white/20 cursor-pointer
+                  transition-all duration-200 gap-2 border border-white/25 cursor-pointer
                 "
                 title="Send Message to PML AI"
               >
                 <span>SEND</span>
-                <Send className="w-3.5 h-3.5" />
+                <Send className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
               </button>
             )}
           </div>

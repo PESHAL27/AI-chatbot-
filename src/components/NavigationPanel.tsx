@@ -1,18 +1,17 @@
 import React, { useState, useMemo } from 'react';
 import { 
-  Plus, 
   Search, 
   MessageSquare, 
   Star, 
   Settings, 
   ChevronLeft, 
   Trash2, 
-  Sparkles,
-  X,
-  LogOut,
-  Brain,
-  BookOpen,
-  Calendar,
+  Sparkles, 
+  X, 
+  LogOut, 
+  Brain, 
+  BookOpen, 
+  Calendar, 
   Layers
 } from 'lucide-react';
 import type { Conversation, UserProfile as UserProfileType } from '../types/pml';
@@ -58,7 +57,7 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [filterMode, setFilterMode] = useState<'all' | 'starred'>('all');
 
-  // Filter conversations by search term and starred status
+  // Filter conversations
   const filteredConversations = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
     return conversations
@@ -73,7 +72,6 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
       });
   }, [conversations, filterMode, searchQuery]);
 
-  // Format relative timestamp
   const formatTimestamp = (dateStr?: string) => {
     if (!dateStr) return '';
     try {
@@ -106,25 +104,30 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
         />
       )}
 
-      {/* Floating Glass Navigation Drawer */}
+      {/* Floating Holographic Glass Navigation Panel */}
       <aside
-        className={`fixed top-3 left-3 bottom-3 z-50 w-80 glass-floating-nav rounded-2xl flex flex-col transition-all duration-300 ease-out transform border border-white/15 shadow-[0_0_50px_rgba(139,92,246,0.2)] bg-[#0c081e]/95 backdrop-blur-xl ${
-          isOpen ? 'translate-x-0 opacity-100' : '-translate-x-[115%] opacity-0 pointer-events-none'
-        }`}
+        className={`
+          fixed top-3 left-3 bottom-3 z-50 w-80 
+          bg-[#0a0518]/95 border border-purple-500/30 
+          backdrop-blur-2xl rounded-3xl flex flex-col 
+          transition-all duration-300 ease-out transform 
+          shadow-[0_20px_60px_rgba(0,0,0,0.9),inset_0_0_20px_rgba(168,85,247,0.15),0_0_30px_rgba(139,92,246,0.25)]
+          ${isOpen ? 'translate-x-0 opacity-100' : '-translate-x-[115%] opacity-0 pointer-events-none'}
+        `}
       >
-        {/* Header Branding */}
+        {/* Header Identity */}
         <div className="p-4 flex items-center justify-between border-b border-white/10">
           <div 
             onClick={onNewConversation}
-            className="flex items-center gap-3 cursor-pointer group"
+            className="flex items-center gap-3 cursor-pointer group select-none"
           >
             <PMLCore size="small" state="idle" />
             <div>
-              <h1 className="font-display font-black text-2xl tracking-wider text-gradient-violet group-hover:brightness-125 transition-all">
-                PML
+              <h1 className="font-display font-black text-xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-300 to-pink-500 group-hover:brightness-125 transition-all">
+                PML AI
               </h1>
-              <p className="text-[10px] font-mono text-purple-300/90 tracking-widest uppercase font-semibold">
-                SPACE INTELLIGENCE
+              <p className="text-[10px] font-mono text-purple-300 tracking-widest uppercase font-semibold">
+                NEURAL NAVIGATION
               </p>
             </div>
           </div>
@@ -138,29 +141,47 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
           </button>
         </div>
 
-        {/* Action Controls */}
+        {/* Action Controls & Futuristic New Chat Button */}
         <div className="p-4 space-y-3 border-b border-white/10">
-          {/* New Chat Button */}
+          {/* Futuristic Primary New Chat Control */}
           <button
             onClick={() => {
               onNewConversation();
               if (window.innerWidth < 1024) onToggle();
             }}
-            className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-violet-600 via-indigo-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-display font-bold text-xs md:text-sm uppercase tracking-wider flex items-center justify-center gap-2.5 shadow-[0_0_20px_rgba(139,92,246,0.5)] hover:shadow-[0_0_30px_rgba(168,85,247,0.7)] transition-all duration-300 active:scale-98 border border-white/20 cursor-pointer"
+            className="
+              w-full py-3 px-4 rounded-2xl
+              bg-gradient-to-r from-violet-600 via-indigo-600 to-purple-600 
+              hover:from-violet-500 hover:to-purple-500 
+              text-white font-display font-bold text-xs uppercase tracking-wider 
+              flex items-center justify-center gap-2.5 
+              border border-white/30 
+              shadow-[0_0_20px_rgba(139,92,246,0.5)] hover:shadow-[0_0_35px_rgba(168,85,247,0.75)]
+              hover:-translate-y-0.5 active:translate-y-0.5 active:scale-[0.98]
+              transition-all duration-200 cursor-pointer
+            "
           >
-            <Plus className="w-4.5 h-4.5 text-white" />
-            <span>New Cosmic Chat</span>
+            <Sparkles className="w-4 h-4 text-purple-200 animate-pulse" />
+            <span>✦ NEW CONVERSATION</span>
           </button>
 
-          {/* Quick Hub Buttons: Documents & Memory */}
+          {/* Quick Hub Controls: Documents & Memory */}
           <div className="grid grid-cols-2 gap-2">
             {onOpenDocuments && (
               <button
                 onClick={onOpenDocuments}
-                className="py-2 px-3 rounded-xl bg-violet-950/50 hover:bg-violet-900/70 border border-violet-500/30 text-violet-200 hover:text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer"
+                className="
+                  py-2.5 px-3 rounded-xl 
+                  bg-[#120822]/80 hover:bg-[#1f0e38]/90 
+                  border border-purple-500/30 hover:border-purple-400/60 
+                  text-purple-200 hover:text-white text-xs font-sans font-semibold 
+                  flex items-center justify-center gap-1.5 
+                  shadow-[0_4px_12px_rgba(0,0,0,0.5)] hover:shadow-[0_0_15px_rgba(168,85,247,0.3)]
+                  transition-all duration-200 cursor-pointer
+                "
                 title="Document Intelligence & RAG Library"
               >
-                <BookOpen className="w-3.5 h-3.5 text-violet-400" />
+                <BookOpen className="w-3.5 h-3.5 text-purple-400" />
                 <span>Documents</span>
               </button>
             )}
@@ -168,7 +189,15 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
             {onOpenMemory && (
               <button
                 onClick={onOpenMemory}
-                className="py-2 px-3 rounded-xl bg-purple-950/50 hover:bg-purple-900/70 border border-purple-500/30 text-purple-200 hover:text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer"
+                className="
+                  py-2.5 px-3 rounded-xl 
+                  bg-[#120822]/80 hover:bg-[#1f0e38]/90 
+                  border border-purple-500/30 hover:border-purple-400/60 
+                  text-purple-200 hover:text-white text-xs font-sans font-semibold 
+                  flex items-center justify-center gap-1.5 
+                  shadow-[0_4px_12px_rgba(0,0,0,0.5)] hover:shadow-[0_0_15px_rgba(168,85,247,0.3)]
+                  transition-all duration-200 cursor-pointer
+                "
                 title="Long-Term AI Memory Console"
               >
                 <Brain className="w-3.5 h-3.5 text-purple-400" />
@@ -178,14 +207,14 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
           </div>
 
           {/* Search Input Bar */}
-          <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-black/80 border border-white/15 focus-within:border-purple-400 focus-within:shadow-[0_0_15px_rgba(168,85,247,0.4)] transition-all">
-            <Search className="w-4 h-4 text-purple-400 flex-shrink-0" />
+          <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#090414] border border-white/12 focus-within:border-purple-400 focus-within:shadow-[0_0_15px_rgba(168,85,247,0.4)] transition-all">
+            <Search className="w-3.5 h-3.5 text-purple-400 flex-shrink-0" />
             <input
               type="text"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Search conversations & messages..."
-              className="w-full bg-transparent text-xs text-slate-100 placeholder-slate-400 focus:outline-none font-sans"
+              placeholder="Search conversations..."
+              className="w-full bg-transparent text-xs text-slate-100 placeholder-slate-400/70 focus:outline-none font-sans"
             />
             {searchQuery && (
               <button
@@ -198,14 +227,14 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
             )}
           </div>
 
-          {/* Category Tabs: All vs Starred */}
-          <div className="flex items-center gap-1.5 p-1 rounded-xl bg-black/60 border border-white/10 text-xs">
+          {/* Filter Pills */}
+          <div className="flex items-center gap-1.5 p-1 rounded-xl bg-[#080312] border border-white/10 text-xs">
             <button
               onClick={() => setFilterMode('all')}
               className={`flex-1 py-1.5 rounded-lg flex items-center justify-center gap-1.5 font-display text-xs transition-all cursor-pointer ${
                 filterMode === 'all'
-                  ? 'pml-tab-active font-bold'
-                  : 'text-slate-400 hover:text-white font-medium'
+                  ? 'bg-purple-600/40 text-white font-bold border border-purple-400 shadow-[0_0_12px_rgba(168,85,247,0.4)]'
+                  : 'text-slate-400 hover:text-white font-medium border border-transparent'
               }`}
             >
               <Sparkles className="w-3 h-3" />
@@ -215,8 +244,8 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
               onClick={() => setFilterMode('starred')}
               className={`flex-1 py-1.5 rounded-lg flex items-center justify-center gap-1.5 font-display text-xs transition-all cursor-pointer ${
                 filterMode === 'starred'
-                  ? 'pml-tab-active font-bold'
-                  : 'text-slate-400 hover:text-white font-medium'
+                  ? 'bg-purple-600/40 text-white font-bold border border-purple-400 shadow-[0_0_12px_rgba(168,85,247,0.4)]'
+                  : 'text-slate-400 hover:text-white font-medium border border-transparent'
               }`}
             >
               <Star className="w-3 h-3" />
@@ -225,8 +254,8 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
           </div>
         </div>
 
-        {/* Section Header with Match Count */}
-        <div className="px-4 pt-3 pb-1 flex items-center justify-between text-[11px] font-mono text-purple-300/80 uppercase tracking-wider">
+        {/* Section Header */}
+        <div className="px-4 pt-3 pb-1 flex items-center justify-between text-[10px] font-mono text-purple-300 uppercase tracking-wider">
           <div className="flex items-center gap-1.5">
             <Layers className="w-3 h-3 text-purple-400" />
             <span>
@@ -238,14 +267,6 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
               }
             </span>
           </div>
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
-              className="text-purple-400 hover:underline cursor-pointer lowercase text-[10px]"
-            >
-              reset
-            </button>
-          )}
         </div>
 
         {/* Scrollable Conversation List */}
@@ -253,7 +274,7 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
           {filteredConversations.length === 0 ? (
             <div className="text-center py-10 px-3">
               <MessageSquare className="w-7 h-7 text-purple-400/40 mx-auto mb-2" />
-              <p className="text-xs font-semibold text-white">No Conversations Found</p>
+              <p className="text-xs font-semibold text-white">No Sessions Found</p>
               <p className="text-[11px] text-purple-300/70 mt-1">
                 {searchQuery ? `No sessions match "${searchQuery}".` : 'Start a new conversation to begin.'}
               </p>
@@ -270,16 +291,19 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
                     onSelectConversation(conv.id);
                     if (window.innerWidth < 1024) onToggle();
                   }}
-                  className={`group relative flex items-center justify-between p-2.5 rounded-xl cursor-pointer transition-all duration-200 ${
-                    isActive
-                      ? 'bg-gradient-to-r from-violet-600/40 via-purple-600/30 to-indigo-600/30 border border-violet-400/60 shadow-[0_0_20px_rgba(139,92,246,0.3)]'
-                      : 'hover:bg-white/5 border border-transparent text-slate-300 hover:text-white'
-                  }`}
+                  className={`
+                    group relative flex items-center justify-between p-2.5 rounded-2xl cursor-pointer
+                    transition-all duration-200 select-none
+                    ${isActive
+                      ? 'bg-gradient-to-r from-violet-600/35 via-purple-600/30 to-indigo-600/30 border border-purple-400/70 shadow-[0_0_20px_rgba(139,92,246,0.35)]'
+                      : 'hover:bg-white/[0.06] border border-transparent text-slate-300 hover:text-white'
+                    }
+                  `}
                 >
                   <div className="flex items-center gap-2.5 min-w-0 pr-1 flex-1">
                     <MessageSquare className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-purple-300' : 'text-purple-400/80 group-hover:text-purple-300'}`} />
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs truncate font-bold text-white group-hover:text-purple-200 transition-colors">
+                      <p className="text-xs truncate font-bold text-white group-hover:text-purple-200 transition-colors font-sans">
                         {conv.title || 'Untitled Session'}
                       </p>
                       {formattedDate && (
@@ -295,7 +319,7 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
                     <button
                       onClick={e => onToggleStarConversation(conv.id, e)}
-                      className={`p-1 rounded hover:bg-white/10 transition-colors cursor-pointer ${
+                      className={`p-1 rounded-lg hover:bg-white/10 transition-colors cursor-pointer ${
                         conv.isStarred ? 'text-amber-400' : 'text-slate-400 hover:text-amber-300'
                       }`}
                       title={conv.isStarred ? 'Unstar session' : 'Star session'}
@@ -304,7 +328,7 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
                     </button>
                     <button
                       onClick={e => onDeleteConversation(conv.id, e)}
-                      className="p-1 rounded hover:bg-rose-500/30 text-slate-400 hover:text-rose-400 transition-colors cursor-pointer"
+                      className="p-1 rounded-lg hover:bg-rose-500/30 text-slate-400 hover:text-rose-400 transition-colors cursor-pointer"
                       title="Delete session"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -317,16 +341,16 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
         </div>
 
         {/* Footer Profile & Settings */}
-        <div className="p-3 border-t border-white/10 flex items-center justify-between bg-black/80 rounded-b-2xl gap-1">
+        <div className="p-3 border-t border-white/10 flex items-center justify-between bg-[#080312]/90 rounded-b-3xl gap-1">
           <button
             onClick={isAuthenticated ? onOpenProfile : onOpenAuth}
-            className="flex items-center gap-2.5 p-1 rounded-xl hover:bg-white/10 text-left transition-colors flex-1 min-w-0 mr-1 cursor-pointer group"
+            className="flex items-center gap-2.5 p-1.5 rounded-2xl hover:bg-white/10 text-left transition-colors flex-1 min-w-0 mr-1 cursor-pointer group"
           >
             <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-violet-600 via-indigo-600 to-purple-600 flex items-center justify-center text-white font-bold text-xs shadow-[0_0_12px_rgba(139,92,246,0.5)] flex-shrink-0 border border-purple-400/40">
               {(userProfile.name || 'G').charAt(0).toUpperCase()}
             </div>
             <div className="min-w-0">
-              <p className="text-xs font-bold text-white truncate group-hover:text-purple-300 transition-colors">
+              <p className="text-xs font-bold text-white truncate group-hover:text-purple-300 transition-colors font-sans">
                 {isAuthenticated ? userProfile.name : 'Guest Explorer'}
               </p>
               <p className="text-[10px] text-purple-300 font-mono truncate">
@@ -339,7 +363,7 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
             <button
               onClick={onSignOut}
               className="p-2 rounded-xl hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition-colors cursor-pointer"
-              title="Sign Out / Disconnect"
+              title="Sign Out"
             >
               <LogOut className="w-4 h-4" />
             </button>
@@ -348,7 +372,7 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
           <button
             onClick={onOpenSettings}
             className="p-2 rounded-xl hover:bg-white/10 text-slate-300 hover:text-purple-400 transition-colors cursor-pointer"
-            title="PML Settings"
+            title="PML Control System"
           >
             <Settings className="w-4 h-4" />
           </button>
