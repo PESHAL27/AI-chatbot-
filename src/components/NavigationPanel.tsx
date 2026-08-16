@@ -72,11 +72,11 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
 
   return (
     <>
-      {/* Backdrop */}
+      {/* Backdrop without blur */}
       {isOpen && (
         <div
           onClick={onToggle}
-          className="fixed inset-0 bg-black/75 backdrop-blur-md z-40 transition-opacity duration-300"
+          className="fixed inset-0 bg-black/20 z-40 transition-opacity duration-300"
         />
       )}
 
