@@ -54,8 +54,21 @@ const PMLAppContent: React.FC = () => {
     return localStorage.getItem('pml_active_conv_id') || null;
   });
   const [coreState, setCoreState] = useState<PMLCoreState>('idle');
-  const [navOpen, setNavOpen] = useState<boolean>(false);
+  const [navOpen, setNavOpen] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    const saved = localStorage.getItem('pml_sidebar_open');
+    if (saved !== null) return saved === 'true';
+    return window.innerWidth >= 1024;
+  });
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
+
+  const handleToggleNav = () => {
+    setNavOpen(prev => {
+      const next = !prev;
+      localStorage.setItem('pml_sidebar_open', String(next));
+      return next;
+    });
+  };
 
   const [settingsModalOpen, setSettingsModalOpen] = useState<boolean>(false);
   const [profileModalOpen, setProfileModalOpen] = useState<boolean>(false);
@@ -419,7 +432,7 @@ const PMLAppContent: React.FC = () => {
       {/* Floating Glass Navigation Drawer */}
       <NavigationPanel
         isOpen={navOpen}
-        onToggle={() => setNavOpen(!navOpen)}
+        onToggle={handleToggleNav}
         conversations={conversations}
         activeConversationId={activeConversationId}
         onSelectConversation={handleSelectConversation}
@@ -437,11 +450,13 @@ const PMLAppContent: React.FC = () => {
       />
 
       {/* Main Workspace Layout Wrapper */}
-      <div className="flex-1 flex flex-col min-h-0 overflow-hidden transition-all duration-300 w-full relative">
+      <div className={`flex-1 flex flex-col min-h-0 overflow-hidden transition-all duration-300 w-full relative ${
+        navOpen ? 'lg:pl-84' : 'pl-0'
+      }`}>
         {/* Top Toolbar Header */}
         <TopHeader
           navOpen={navOpen}
-          onToggleNav={() => setNavOpen(!navOpen)}
+          onToggleNav={handleToggleNav}
           activeConversation={activeConversation}
           onRenameConversation={handleRenameConversation}
           coreState={coreState}
