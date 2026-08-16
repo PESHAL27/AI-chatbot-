@@ -151,6 +151,13 @@ const PMLAppContent: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('pml_settings', JSON.stringify(settings));
     document.documentElement.setAttribute('data-theme', settings.theme);
+    if (settings.theme === 'light') {
+      document.documentElement.classList.add('light');
+      document.documentElement.classList.remove('dark');
+    } else {
+      document.documentElement.classList.add('dark');
+      document.documentElement.classList.remove('light');
+    }
   }, [settings]);
 
   // Sync conversations to storage
@@ -438,7 +445,7 @@ const PMLAppContent: React.FC = () => {
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-transparent text-white font-sans select-none relative">
       {/* Dynamic Cosmic Background */}
-      <CosmicBackground density={settings.particleDensity} />
+      <CosmicBackground density={settings.particleDensity} theme={settings.theme} />
 
       {/* Floating Glass Navigation Drawer */}
       <NavigationPanel
