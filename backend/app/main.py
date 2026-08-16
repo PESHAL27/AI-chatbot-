@@ -2,12 +2,13 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.auth.rate_limiter import RateLimitMiddleware
+from app.auth.request_id_middleware import RequestIDMiddleware
 from app.routes import health, chat, conversations, memories, documents
 
 app = FastAPI(
     title=settings.APP_NAME,
-    description="PML — Advanced Space AI Assistant FastAPI Backend (Production-Ready Security & Privacy)",
-    version="9.0.0",
+    description="PML — Advanced Space AI Assistant FastAPI Backend (Production-Grade Performance, Monitoring & Cost Control)",
+    version="10.0.0",
     docs_url="/docs",
     redoc_url="/redoc"
 )
@@ -21,6 +22,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Configure Request ID & Performance Monitoring Middleware
+app.add_middleware(RequestIDMiddleware)
+
 # Configure Rate Limiter Middleware to prevent abuse & denial of service
 app.add_middleware(RateLimitMiddleware)
 
@@ -33,14 +37,15 @@ app.include_router(documents.router)
 
 @app.get("/health", include_in_schema=False)
 async def health_root():
-    return {"status": "ok", "service": "PML Backend"}
+    return {"status": "ok", "service": "PML Backend", "version": "10.0.0"}
 
 @app.get("/", include_in_schema=False)
 async def root():
     return {
-        "message": "Welcome to PML FastAPI Backend",
+        "message": "Welcome to PML FastAPI Production Backend",
         "docs": "/docs",
         "health": "/api/health",
+        "monitoring": "/api/monitoring/metrics",
         "conversations": "/api/conversations",
         "documents": "/api/documents"
     }
