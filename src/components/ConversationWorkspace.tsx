@@ -16,6 +16,7 @@ interface ConversationWorkspaceProps {
   onClearDocumentScope?: () => void;
   onOpenDocumentLibrary?: () => void;
   onUploadDocument?: (file: File) => Promise<void>;
+  speechLanguage?: string;
 }
 
 export const ConversationWorkspace: React.FC<ConversationWorkspaceProps> = ({
@@ -29,6 +30,7 @@ export const ConversationWorkspace: React.FC<ConversationWorkspaceProps> = ({
   onClearDocumentScope,
   onOpenDocumentLibrary,
   onUploadDocument,
+  speechLanguage = 'en-US'
 }) => {
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -64,6 +66,7 @@ export const ConversationWorkspace: React.FC<ConversationWorkspaceProps> = ({
           onClearDocumentScope={onClearDocumentScope}
           onOpenDocumentLibrary={onOpenDocumentLibrary}
           onUploadDocument={onUploadDocument}
+          speechLanguage={speechLanguage}
         />
       </div>
     );

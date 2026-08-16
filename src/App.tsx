@@ -12,6 +12,7 @@ import type {
 } from './types/pml';
 import { pmlApi } from './services/pmlApi';
 import { cosmicAudio } from './utils/audioSynth';
+import { voiceService } from './services/voiceService';
 import { AuthProvider, useAuth } from './context/AuthContext';
 
 import { CosmicBackground } from './components/CosmicBackground';
@@ -350,6 +351,14 @@ const PMLAppContent: React.FC = () => {
               return c;
             });
             pmlApi.saveConversations(finalState);
+
+            // Auto-Read Aloud Response if enabled
+            if (settings.autoReadAloud && accumulatedContent) {
+              voiceService.speak(accumulatedContent, assistantMsgId, {
+                lang: settings.speechLanguage || 'en-US'
+              });
+            }
+
             return finalState;
           });
         },
@@ -389,6 +398,7 @@ const PMLAppContent: React.FC = () => {
   // Stop Generation
   const handleStopGeneration = () => {
     abortControllerRef.current = true;
+    voiceService.stopSpeaking();
     setIsStreaming(false);
     setCoreState('idle');
   };
@@ -508,6 +518,7 @@ const PMLAppContent: React.FC = () => {
           onClearDocumentScope={() => setSelectedDocument(null)}
           onOpenDocumentLibrary={() => setDocumentModalOpen(true)}
           onUploadDocument={handleUploadDocument}
+          speechLanguage={settings.speechLanguage || 'en-US'}
         />
 
         {/* Floating Message Console */}
@@ -520,6 +531,7 @@ const PMLAppContent: React.FC = () => {
             onClearDocumentScope={() => setSelectedDocument(null)}
             onOpenDocumentLibrary={() => setDocumentModalOpen(true)}
             onUploadDocument={handleUploadDocument}
+            speechLanguage={settings.speechLanguage || 'en-US'}
           />
         )}
       </div>

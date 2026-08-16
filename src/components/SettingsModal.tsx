@@ -139,6 +139,54 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
           </div>
 
+          {/* Auto-Read Aloud Voice Output */}
+          <div className="flex items-center justify-between p-3.5 rounded-2xl bg-black/40 border border-white/10">
+            <div className="flex items-center gap-3">
+              <Volume2 className="w-5 h-5 text-purple-400" />
+              <div>
+                <p className="text-xs font-semibold text-white font-display">Auto-Read Aloud Responses</p>
+                <p className="text-[10px] text-slate-400">PML automatically speaks answers after generation</p>
+              </div>
+            </div>
+            <button
+              onClick={() => onUpdateSettings({ autoReadAloud: !settings.autoReadAloud })}
+              className={`w-12 h-6 rounded-full transition-colors relative p-1 cursor-pointer ${
+                settings.autoReadAloud ? 'bg-purple-600' : 'bg-slate-800'
+              }`}
+            >
+              <div
+                className={`w-4 h-4 rounded-full bg-white transition-transform ${
+                  settings.autoReadAloud ? 'translate-x-6' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
+
+          {/* Voice Language Selector */}
+          <div>
+            <label className="text-xs font-mono uppercase tracking-wider text-purple-300 mb-2 flex items-center justify-between font-semibold">
+              <span>Voice Interaction Language</span>
+              <span className="text-purple-400 font-bold">{settings.speechLanguage || 'en-US'}</span>
+            </label>
+            <select
+              value={settings.speechLanguage || 'en-US'}
+              onChange={e => onUpdateSettings({ speechLanguage: e.target.value })}
+              className="w-full px-3.5 py-2.5 text-xs font-sans rounded-xl bg-black/70 border border-white/15 text-purple-200 focus:border-purple-500 focus:outline-none cursor-pointer"
+            >
+              <option value="en-US">🇺🇸 English (United States)</option>
+              <option value="en-GB">🇬🇧 English (United Kingdom)</option>
+              <option value="hi-IN">🇮🇳 Hindi (हिन्दी)</option>
+              <option value="ta-IN">🇮🇳 Tamil (தமிழ்)</option>
+              <option value="es-ES">🇪🇸 Spanish (Español)</option>
+              <option value="fr-FR">🇫🇷 French (Français)</option>
+              <option value="de-DE">🇩🇪 German (Deutsch)</option>
+              <option value="ja-JP">🇯🇵 Japanese (日本語)</option>
+            </select>
+            <p className="text-[10px] text-slate-400 mt-1 font-mono">
+              Used for microphone speech-to-text and voice playback pronunciation.
+            </p>
+          </div>
+
           {/* Sound FX Toggle */}
           <div className="flex items-center justify-between p-3.5 rounded-2xl bg-black/40 border border-white/10">
             <div className="flex items-center gap-3">

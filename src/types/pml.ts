@@ -63,6 +63,9 @@ export interface PMLSettings {
   streamSpeed: number; // ms per chunk
   apiEndpoint: string;
   autoReadAloud: boolean;
+  speechLanguage?: string; // e.g. 'en-US', 'ta-IN', 'hi-IN'
+  voiceRate?: number;
+  voicePitch?: number;
   memoryEnabled: boolean; // Phase 6: Long-term AI memory master switch
 }
 

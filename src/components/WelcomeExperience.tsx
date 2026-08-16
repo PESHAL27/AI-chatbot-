@@ -18,6 +18,7 @@ interface WelcomeExperienceProps {
   onClearDocumentScope?: () => void;
   onOpenDocumentLibrary?: () => void;
   onUploadDocument?: (file: File) => Promise<void>;
+  speechLanguage?: string;
 }
 
 const QUICK_ACTIONS: QuickAction[] = [
@@ -66,6 +67,7 @@ export const WelcomeExperience: React.FC<WelcomeExperienceProps> = ({
   onClearDocumentScope,
   onOpenDocumentLibrary,
   onUploadDocument,
+  speechLanguage = 'en-US'
 }) => {
   const getIcon = (name: string) => {
     switch (name) {
@@ -124,6 +126,7 @@ export const WelcomeExperience: React.FC<WelcomeExperienceProps> = ({
             onClearDocumentScope={onClearDocumentScope}
             onOpenDocumentLibrary={onOpenDocumentLibrary}
             onUploadDocument={onUploadDocument}
+            speechLanguage={speechLanguage}
           />
         ) : (
           <div className="w-full p-4 rounded-2xl pml-neon-card text-slate-300 text-base">

@@ -10,9 +10,11 @@ import {
   FileText,
   Plus,
   BookOpen,
-  Camera
+  Camera,
+  Radio
 } from 'lucide-react';
 import type { Attachment, AttachmentType, DocumentItem } from '../types/pml';
+import { voiceService } from '../services/voiceService';
 
 interface MessageComposerProps {
   onSendMessage: (text: string, attachments: Attachment[]) => void;
@@ -22,6 +24,7 @@ interface MessageComposerProps {
   onClearDocumentScope?: () => void;
   onOpenDocumentLibrary?: () => void;
   onUploadDocument?: (file: File) => Promise<void>;
+  speechLanguage?: string;
 }
 
 export const MessageComposer: React.FC<MessageComposerProps> = ({
@@ -31,9 +34,11 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
   selectedDocument,
   onClearDocumentScope,
   onOpenDocumentLibrary,
-  onUploadDocument
+  onUploadDocument,
+  speechLanguage = 'en-US'
 }) => {
   const [input, setInput] = useState('');
+  const [interimTranscript, setInterimTranscript] = useState('');
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [isRecording, setIsRecording] = useState(false);
   const [isDraggingFile, setIsDraggingFile] = useState(false);
@@ -42,7 +47,6 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const docRAGInputRef = useRef<HTMLInputElement | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
-  const recognitionRef = useRef<any>(null);
   const plusMenuRef = useRef<HTMLDivElement | null>(null);
 
   // Auto-resize textarea
@@ -51,7 +55,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
       textareaRef.current.style.height = 'auto';
       textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 180)}px`;
     }
-  }, [input]);
+  }, [input, interimTranscript]);
 
   // Click outside to close plus menu
   useEffect(() => {
@@ -64,40 +68,52 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Voice recognition setup
-  const toggleVoiceInput = () => {
+  // Cleanup voice recording on unmount
+  useEffect(() => {
+    return () => {
+      voiceService.stopListening();
+    };
+  }, []);
+
+  // Voice recognition handler
+  const toggleVoiceInput = async () => {
     if (isRecording) {
-      if (recognitionRef.current) recognitionRef.current.stop();
+      voiceService.stopListening();
       setIsRecording(false);
+      setInterimTranscript('');
       return;
     }
 
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      alert('Speech recognition is not supported in this browser.');
+    if (!voiceService.isSTTSupported()) {
+      alert("Voice speech recognition isn't supported in this browser. Please use Google Chrome, Microsoft Edge, or Safari.");
       return;
     }
 
-    try {
-      const recognition = new SpeechRecognition();
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.lang = 'en-US';
+    const started = await voiceService.startListening({
+      lang: speechLanguage,
+      onStart: () => {
+        setIsRecording(true);
+        setInterimTranscript('');
+      },
+      onResult: (finalText) => {
+        setInput(prev => (prev ? `${prev.trim()} ${finalText.trim()}` : finalText.trim()));
+        setInterimTranscript('');
+      },
+      onInterim: (interim) => {
+        setInterimTranscript(interim);
+      },
+      onError: (err) => {
+        setIsRecording(false);
+        setInterimTranscript('');
+        alert(err);
+      },
+      onEnd: () => {
+        setIsRecording(false);
+        setInterimTranscript('');
+      }
+    });
 
-      recognition.onstart = () => setIsRecording(true);
-      recognition.onresult = (event: any) => {
-        let transcript = '';
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          transcript += event.results[i][0].transcript;
-        }
-        setInput(prev => (prev ? prev + ' ' + transcript : transcript));
-      };
-      recognition.onerror = () => setIsRecording(false);
-      recognition.onend = () => setIsRecording(false);
-
-      recognitionRef.current = recognition;
-      recognition.start();
-    } catch {
+    if (!started) {
       setIsRecording(false);
     }
   };
@@ -174,9 +190,18 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
   };
 
   const handleSend = () => {
-    if ((!input.trim() && attachments.length === 0) || isStreaming) return;
-    onSendMessage(input.trim(), attachments);
+    if (isRecording) {
+      voiceService.stopListening();
+      setIsRecording(false);
+      setInterimTranscript('');
+    }
+
+    const messageText = input.trim();
+    if ((!messageText && attachments.length === 0) || isStreaming) return;
+    
+    onSendMessage(messageText, attachments);
     setInput('');
+    setInterimTranscript('');
     setAttachments([]);
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
   };
@@ -205,7 +230,6 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
     }
 
     if (imageFiles.length > 0) {
-      // Prevent pasting raw image binary characters into text input
       e.preventDefault();
       const newAttachments: Attachment[] = [];
       for (const file of imageFiles) {
@@ -288,6 +312,28 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
         </div>
       )}
 
+      {/* Live Voice Recording Status Banner */}
+      {isRecording && (
+        <div className="mb-2 flex items-center justify-between px-4 py-2 rounded-xl bg-gradient-to-r from-rose-950/80 via-purple-950/80 to-violet-950/80 border border-rose-500/50 backdrop-blur-md text-xs text-rose-200 animate-pulse shadow-[0_0_20px_rgba(244,63,94,0.3)]">
+          <div className="flex items-center gap-2.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping" />
+            <Radio className="w-4 h-4 text-rose-400 animate-pulse" />
+            <span className="font-bold font-display text-rose-100">Listening to your voice...</span>
+            {interimTranscript && (
+              <span className="italic text-purple-200 truncate max-w-xs md:max-w-md">
+                "{interimTranscript}"
+              </span>
+            )}
+          </div>
+          <button
+            onClick={toggleVoiceInput}
+            className="px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/40 text-rose-200 border border-rose-400/30 text-[11px] font-bold uppercase transition-colors cursor-pointer"
+          >
+            Done Speaking
+          </button>
+        </div>
+      )}
+
       {/* Active Document Scoping Pill */}
       {selectedDocument && (
         <div className="mb-2 flex items-center justify-between px-3.5 py-1.5 rounded-xl bg-violet-900/40 border border-violet-500/40 backdrop-blur-md text-xs text-violet-200 animate-fadeIn shadow-[0_0_15px_rgba(139,92,246,0.2)]">
@@ -351,16 +397,18 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
       <div className="relative glitter-glass-search rounded-2xl p-3.5 flex flex-col gap-2 transition-all duration-300">
         <textarea
           ref={textareaRef}
-          value={input}
+          value={interimTranscript ? `${input} ${interimTranscript}` : input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           onPaste={handlePaste}
           placeholder={
-            attachments.some(a => a.type === 'image')
-              ? "Ask a question about this image (e.g. 'Solve this', 'Find error in code')..."
-              : selectedDocument 
-                ? `Ask questions about ${selectedDocument.file_name}...` 
-                : "Message PML, paste/upload code screenshots, solve math images, or search web..."
+            isRecording
+              ? "Listening to you speak (transcription appearing live)..."
+              : attachments.some(a => a.type === 'image')
+                ? "Ask a question about this image (e.g. 'Solve this', 'Find error in code')..."
+                : selectedDocument 
+                  ? `Ask questions about ${selectedDocument.file_name}...` 
+                  : "Message PML, speak with voice 🎤, upload images 📷, or search web 🌐..."
           }
           rows={1}
           className="w-full bg-transparent px-3 py-2.5 text-base text-white placeholder-slate-400 focus:outline-none resize-none cosmic-scroll max-h-[180px] font-main"
@@ -435,6 +483,22 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
               )}
             </div>
 
+            {/* Voice Input Microphone Trigger */}
+            <button
+              onClick={toggleVoiceInput}
+              className={`p-2 rounded-xl transition-all cursor-pointer relative ${
+                isRecording
+                  ? 'bg-rose-600/40 text-rose-300 animate-pulse border border-rose-500 shadow-[0_0_20px_rgba(244,63,94,0.6)]'
+                  : 'hover:bg-white/10 text-slate-400 hover:text-purple-300'
+              }`}
+              title={isRecording ? 'Stop Recording' : 'Voice Input (Speak to PML)'}
+            >
+              {isRecording ? <MicOff className="w-4.5 h-4.5 text-rose-300" /> : <Mic className="w-4.5 h-4.5" />}
+              {isRecording && (
+                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping" />
+              )}
+            </button>
+
             {/* Image Upload Trigger (Vision) */}
             <button
               onClick={() => imageInputRef.current?.click()}
@@ -451,19 +515,6 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
               title="Attach Document (PDF, DOCX)"
             >
               <Paperclip className="w-4.5 h-4.5" />
-            </button>
-
-            {/* Voice Input Trigger */}
-            <button
-              onClick={toggleVoiceInput}
-              className={`p-2 rounded-xl transition-all cursor-pointer ${
-                isRecording
-                  ? 'bg-purple-600/30 text-purple-400 animate-pulse border border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.5)]'
-                  : 'hover:bg-white/10 text-slate-400 hover:text-white'
-              }`}
-              title={isRecording ? 'Stop Recording' : 'Voice Input'}
-            >
-              {isRecording ? <MicOff className="w-4.5 h-4.5" /> : <Mic className="w-4.5 h-4.5" />}
             </button>
 
             {/* Hidden Input Elements */}
@@ -504,7 +555,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
             ) : (
               <button
                 onClick={handleSend}
-                disabled={!input.trim() && attachments.length === 0}
+                disabled={!input.trim() && !interimTranscript.trim() && attachments.length === 0}
                 className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 via-indigo-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-display font-bold text-sm uppercase tracking-wider shadow-[0_0_25px_rgba(139,92,246,0.5)] hover:shadow-[0_0_35px_rgba(168,85,247,0.7)] disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-300 active:scale-95 flex items-center justify-center gap-2 border border-white/20 cursor-pointer"
                 title="Send to PML AI"
               >

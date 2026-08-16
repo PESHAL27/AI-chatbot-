@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
@@ -10,7 +10,7 @@ import {
   ThumbsUp, 
   ThumbsDown, 
   Volume2, 
-  VolumeX, 
+  Square,
   FileText, 
   User, 
   Sparkles,
@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import type { Message, Attachment } from '../types/pml';
 import { PMLCore } from './PMLCore';
+import { voiceService } from '../services/voiceService';
 
 interface MessageItemProps {
   message: Message;
@@ -36,11 +37,18 @@ export const MessageItem: React.FC<MessageItemProps> = ({
 }) => {
   const [copied, setCopied] = useState(false);
   const [copiedCodeId, setCopiedCodeId] = useState<string | null>(null);
-  const [speaking, setSpeaking] = useState(false);
+  const [isSpeakingThis, setIsSpeakingThis] = useState(false);
   const [userFeedback, setUserFeedback] = useState<'like' | 'dislike' | null>(message.feedback || null);
   const [activeExcerptIndex, setActiveExcerptIndex] = useState<number | null>(null);
 
   const isUser = message.role === 'user';
+
+  useEffect(() => {
+    const unsub = voiceService.subscribe(state => {
+      setIsSpeakingThis(state.isSpeaking && state.activeMsgId === message.id);
+    });
+    return unsub;
+  }, [message.id]);
 
   const handleCopyText = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -55,22 +63,10 @@ export const MessageItem: React.FC<MessageItemProps> = ({
   };
 
   const handleToggleSpeak = () => {
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
-
-    if (speaking) {
-      window.speechSynthesis.cancel();
-      setSpeaking(false);
+    if (isSpeakingThis) {
+      voiceService.stopSpeaking();
     } else {
-      window.speechSynthesis.cancel();
-      // Clean markdown tags for speech synthesis
-      const plainText = message.content.replace(/[#*`_~$]/g, '');
-      const utterance = new SpeechSynthesisUtterance(plainText);
-      utterance.rate = 1.0;
-      utterance.pitch = 1.0;
-      utterance.onend = () => setSpeaking(false);
-      utterance.onerror = () => setSpeaking(false);
-      window.speechSynthesis.speak(utterance);
-      setSpeaking(true);
+      voiceService.speak(message.content, message.id);
     }
   };
 
@@ -300,15 +296,30 @@ export const MessageItem: React.FC<MessageItemProps> = ({
                   {copied ? <Check className="w-3.5 h-3.5 text-purple-400" /> : <Copy className="w-3.5 h-3.5" />}
                 </button>
 
-                <button
-                  onClick={handleToggleSpeak}
-                  className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                    speaking ? 'bg-purple-600/30 text-purple-300 border border-purple-500/40' : 'hover:bg-white/10 hover:text-white'
-                  }`}
-                  title={speaking ? 'Stop Voice' : 'Read Aloud'}
-                >
-                  {speaking ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
-                </button>
+                {isSpeakingThis ? (
+                  <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-purple-600/30 border border-purple-500/50 text-purple-200 text-xs shadow-[0_0_12px_rgba(168,85,247,0.4)]">
+                    <span className="flex items-center gap-0.5">
+                      <span className="w-0.5 h-2.5 bg-purple-300 rounded-full animate-bounce" />
+                      <span className="w-0.5 h-3.5 bg-purple-200 rounded-full animate-bounce [animation-delay:150ms]" />
+                      <span className="w-0.5 h-2 bg-purple-300 rounded-full animate-bounce [animation-delay:300ms]" />
+                    </span>
+                    <button
+                      onClick={() => voiceService.stopSpeaking()}
+                      className="p-0.5 hover:text-rose-400 text-purple-200 transition-colors cursor-pointer"
+                      title="Stop Audio Playback"
+                    >
+                      <Square className="w-3 h-3 fill-current" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={handleToggleSpeak}
+                    className="p-1.5 rounded-lg hover:bg-white/10 hover:text-white text-slate-400 transition-colors cursor-pointer"
+                    title="Read Aloud with Voice"
+                  >
+                    <Volume2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
 
                 {onRegenerate && (
                   <button
