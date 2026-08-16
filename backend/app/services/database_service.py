@@ -331,6 +331,72 @@ class DatabaseService:
         conn.close()
         return True
 
+    @classmethod
+    async def search_conversations(
+        cls,
+        query: str,
+        user_id: str,
+        user_token: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Searches conversations by title or message content, strictly scoped to user_id.
+        """
+        if not query or not query.strip():
+            return []
+
+        search_term = query.strip()
+        matched_results: Dict[str, Dict[str, Any]] = {}
+
+        # 1. Get user's conversations first (security boundary)
+        user_convs = await cls.get_conversations(user_id=user_id, user_token=user_token)
+        conv_lookup = {c["id"]: c for c in user_convs}
+
+        # Check title matches
+        for cid, conv in conv_lookup.items():
+            if search_term.lower() in conv.get("title", "").lower():
+                matched_results[cid] = {
+                    "id": cid,
+                    "title": conv.get("title", "Conversation"),
+                    "updated_at": conv.get("updated_at"),
+                    "preview": f"Matched title: {conv.get('title')}",
+                    "match_type": "title"
+                }
+
+        # Check message content matches in SQLite fallback
+        cls._init_sqlite()
+        conn = sqlite3.connect(SQLITE_DB_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT m.conversation_id, m.content, c.title, c.updated_at
+            FROM messages m
+            JOIN conversations c ON m.conversation_id = c.id
+            WHERE c.user_id = ? AND m.content LIKE ?
+            ORDER BY c.updated_at DESC
+            LIMIT 30
+        """, (user_id, f"%{search_term}%"))
+        rows = cursor.fetchall()
+        conn.close()
+
+        for r in rows:
+            cid = r["conversation_id"]
+            if cid not in matched_results:
+                content = r["content"]
+                idx = content.lower().find(search_term.lower())
+                start = max(0, idx - 40)
+                end = min(len(content), idx + len(search_term) + 60)
+                snippet = ("..." if start > 0 else "") + content[start:end] + ("..." if end < len(content) else "")
+
+                matched_results[cid] = {
+                    "id": cid,
+                    "title": r["title"],
+                    "updated_at": r["updated_at"],
+                    "preview": snippet,
+                    "match_type": "message"
+                }
+
+        return list(matched_results.values())
+
     # ==================== MESSAGES OPERATIONS ====================
 
     @classmethod

@@ -1,5 +1,5 @@
 from typing import Optional, List, Dict, Any
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, status, Depends, Query
 from pydantic import BaseModel, Field
 from app.services.database_service import DatabaseService
 from app.auth.dependencies import get_current_user
@@ -7,10 +7,17 @@ from app.auth.dependencies import get_current_user
 router = APIRouter(prefix="/api/conversations", tags=["Conversations"])
 
 class CreateConversationRequest(BaseModel):
-    title: Optional[str] = Field("New Conversation", description="Initial conversation title")
+    title: Optional[str] = Field("PML AI", description="Initial conversation title")
 
 class RenameConversationRequest(BaseModel):
     title: str = Field(..., min_length=1, description="New conversation title")
+
+class SearchConversationResult(BaseModel):
+    id: str
+    title: str
+    updated_at: Optional[str] = None
+    preview: str
+    match_type: str
 
 @router.get("", summary="Get User Conversations List")
 async def list_conversations(current_user: Dict[str, Any] = Depends(get_current_user)):
@@ -45,6 +52,35 @@ async def create_conversation(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Unable to create conversation: {str(err)}"
+        )
+
+@router.get("/search", response_model=List[SearchConversationResult], summary="Search User Conversations")
+async def search_conversations(
+    query: str = Query(..., min_length=1, description="Keywords to search in titles and messages"),
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
+    """
+    Searches across the user's conversation titles and message content.
+    Strictly isolated to the authenticated user's records.
+    """
+    try:
+        user_id = current_user["id"]
+        token = current_user.get("token")
+        results = await DatabaseService.search_conversations(query=query, user_id=user_id, user_token=token)
+        return [
+            SearchConversationResult(
+                id=r["id"],
+                title=r["title"],
+                updated_at=r.get("updated_at"),
+                preview=r["preview"],
+                match_type=r.get("match_type", "title")
+            )
+            for r in results
+        ]
+    except Exception as err:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Conversation search failed: {str(err)}"
         )
 
 @router.get("/{conversation_id}", summary="Get Conversation Details & Messages History")

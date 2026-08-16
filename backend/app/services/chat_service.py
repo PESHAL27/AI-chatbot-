@@ -10,6 +10,7 @@ from app.services.memory_service import MemoryService
 from app.services.rag_service import RAGService
 from app.services.vision_service import VisionService
 from app.services.router_service import RouterService
+from app.services.conversation_service import ConversationIntelligenceService
 
 logger = logging.getLogger("pml.chat_service")
 
@@ -21,14 +22,16 @@ class ChatService:
         user_token: Optional[str] = None
     ) -> ChatResponse:
         """
-        Orchestrates user requests through the PML Intelligent Router:
+        Orchestrates continuous conversation intelligence and multi-tool planning:
         1. Analyzes user intent, tools, and multi-tool dependencies via RouterService.
         2. Handles clarification for ambiguous prompts.
         3. Executes explicit memory writes when requested.
         4. Ingests multimodal images (Vision) when present.
         5. Retrieves RAG excerpts and personal context when relevant.
-        6. Runs AI model with Function Calling tool loop (Web Search, Calculator).
-        7. Gracefully recovers from tool failures and returns clean citations & tool status indicators.
+        6. Optimizes conversation history context window.
+        7. Runs AI model with Function Calling tool loop (Web Search, Calculator).
+        8. Triggers async title generation and background memory extraction.
+        9. Returns clean citations & tool status indicators.
         """
         conv_id = request.conversation_id or f"pml-conv-{uuid.uuid4().hex[:12]}"
         effective_message = (request.message or "").strip()
@@ -143,30 +146,36 @@ class ChatService:
         db_messages = await DatabaseService.get_messages(
             conversation_id=conv_id, 
             user_id=user_id, 
-            limit=30,
+            limit=40,
             user_token=user_token
         )
         
-        formatted_history: List[Dict[str, str]] = []
+        raw_history: List[Dict[str, str]] = []
         if db_messages:
             for m in db_messages[:-1]:
-                formatted_history.append({
+                raw_history.append({
                     "role": m.get("role", "user"),
                     "content": m.get("content", "")
                 })
         elif request.history or request.messages:
             raw = request.history or request.messages or []
-            formatted_history = [{"role": m.role, "content": m.content} for m in raw]
+            raw_history = [{"role": m.role, "content": m.content} for m in raw]
+
+        # Optimize context window to retain high relevance without blowing context
+        optimized_history = ConversationIntelligenceService.optimize_context_window(
+            history=raw_history,
+            current_prompt=effective_message,
+            max_history_turns=10
+        )
 
         # 9. Execute AI Response Generation with Tool Execution Loop
-        enable_tools = True
         ai_res = await AIService.generate_response(
             user_message=effective_message,
             images=image_data_urls if image_data_urls else None,
-            history=formatted_history,
+            history=optimized_history,
             relevant_memories=relevant_memories_list if relevant_memories_list else None,
             document_context=document_chunks if document_chunks else None,
-            enable_tools=enable_tools
+            enable_tools=True
         )
 
         ai_reply = ai_res.get("content", "")
@@ -202,17 +211,30 @@ class ChatService:
             user_token=user_token
         )
 
-        # 11. Background Memory Extraction
-        if request.memory_enabled and effective_message:
+        # 11. Background Memory Extraction & Async Title Generation (Fire & Forget)
+        if effective_message:
+            # Async smart title generation if conversation title is generic
             asyncio.create_task(
-                MemoryService.analyze_and_extract_memory(
-                    user_message=effective_message,
-                    assistant_response=ai_reply,
-                    user_id=user_id,
+                ConversationIntelligenceService.generate_title_if_default(
                     conversation_id=conv_id,
+                    user_message=effective_message,
+                    ai_response=ai_reply,
+                    user_id=user_id,
                     user_token=user_token
                 )
             )
+
+            # Async long-term memory analysis
+            if request.memory_enabled:
+                asyncio.create_task(
+                    MemoryService.analyze_and_extract_memory(
+                        user_message=effective_message,
+                        assistant_response=ai_reply,
+                        user_id=user_id,
+                        conversation_id=conv_id,
+                        user_token=user_token
+                    )
+                )
 
         return ChatResponse(
             response=ai_reply,
