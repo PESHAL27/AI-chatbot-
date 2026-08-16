@@ -9,6 +9,7 @@ from app.services.database_service import DatabaseService
 from app.services.memory_service import MemoryService
 from app.services.rag_service import RAGService
 from app.services.vision_service import VisionService
+from app.services.router_service import RouterService
 
 logger = logging.getLogger("pml.chat_service")
 
@@ -20,43 +21,50 @@ class ChatService:
         user_token: Optional[str] = None
     ) -> ChatResponse:
         """
-        Processes chat requests with full Phase 6 Memory, Phase 7 Document RAG, Phase 8 AI Tool Calling, and Phase 9 Vision:
-        1. Validates and preprocesses any attached images (Phase 9 Vision).
-        2. Checks for explicit memory commands ("Remember that...", "Forget that...").
-        3. Saves user prompt message with ownership.
-        4. Retrieves relevant long-term memories if memory_enabled is True.
-        5. Retrieves relevant document RAG chunks (Phase 7).
-        6. Retrieves stored history context for that user.
-        7. Calls AIService with Vision and Tool Calling Loop (Phase 8: Web Search + Calculator).
-        8. Saves AI response to database.
-        9. Analyzes conversation in background to extract new stable memories.
-        10. Returns structured response with memory indicators, document citations, web citations, and tools called.
+        Orchestrates user requests through the PML Intelligent Router:
+        1. Analyzes user intent, tools, and multi-tool dependencies via RouterService.
+        2. Handles clarification for ambiguous prompts.
+        3. Executes explicit memory writes when requested.
+        4. Ingests multimodal images (Vision) when present.
+        5. Retrieves RAG excerpts and personal context when relevant.
+        6. Runs AI model with Function Calling tool loop (Web Search, Calculator).
+        7. Gracefully recovers from tool failures and returns clean citations & tool status indicators.
         """
         conv_id = request.conversation_id or f"pml-conv-{uuid.uuid4().hex[:12]}"
-        
-        # 1. Validate and process any attached images (Phase 9 Vision)
-        validated_images: List[Dict[str, Any]] = []
-        image_data_urls: List[str] = []
+        effective_message = (request.message or "").strip()
         has_images = bool(request.images and len(request.images) > 0)
-        logger.info(f"[PML Vision] Image received: {has_images}")
 
+        # 1. Run Intelligent Router Planning
+        plan = RouterService.plan(
+            message=effective_message,
+            has_images=has_images,
+            document_id=request.document_id,
+            memory_enabled=request.memory_enabled
+        )
+        logger.info(f"[PML Router Orchestrator] Plan: intent={plan.intent}, tools={plan.required_tools}")
+
+        # 2. Handle Ambiguous Clarification Requests
+        if plan.needs_clarification and plan.clarification_prompt:
+            return ChatResponse(
+                response=plan.clarification_prompt,
+                conversation_id=conv_id,
+                status="success",
+                memories_used=None,
+                sources=None,
+                web_sources=None,
+                tools_called=None
+            )
+
+        # 3. Vision Validation & Preprocessing
+        image_data_urls: List[str] = []
         if has_images:
             validated_images = VisionService.validate_image_batch(request.images)
             image_data_urls = [img["data_url"] for img in validated_images]
-            for idx, img in enumerate(validated_images):
-                logger.info(f"[PML Vision] Image #{idx+1} file type: {img['mime_type']}")
-                logger.info(f"[PML Vision] Image #{idx+1} size: {img['width']}x{img['height']} ({img['size_bytes']} bytes)")
+            if not effective_message:
+                effective_message = "Analyze this image and describe what is visible in detail."
 
-        effective_message = (request.message or "").strip()
-        if not effective_message and image_data_urls:
-            effective_message = "Analyze this image and describe what is visible in detail."
-
-        logger.info(f"[PML Vision] User message received: {effective_message[:120]}")
-        if image_data_urls:
-            logger.info(f"[PML Vision] Sending {len(image_data_urls)} image(s) to vision-capable model ({settings.AI_MODEL})")
-
-        # 2. Check for explicit memory commands ("Remember that...", "Forget that...")
-        if request.memory_enabled and effective_message:
+        # 4. Explicit Memory Write Commands
+        if plan.intent == "memory_write" and effective_message:
             explicit_reply = await MemoryService.handle_explicit_commands(
                 user_message=effective_message,
                 user_id=user_id,
@@ -64,7 +72,6 @@ class ChatService:
                 user_token=user_token
             )
             if explicit_reply:
-                # Save user prompt
                 await DatabaseService.save_message(
                     conversation_id=conv_id,
                     role="user",
@@ -72,7 +79,6 @@ class ChatService:
                     user_id=user_id,
                     user_token=user_token
                 )
-                # Save assistant confirmation
                 await DatabaseService.save_message(
                     conversation_id=conv_id,
                     role="assistant",
@@ -87,10 +93,10 @@ class ChatService:
                     memories_used=["Explicit Memory Operation"],
                     sources=None,
                     web_sources=None,
-                    tools_called=None
+                    tools_called=["memory"]
                 )
 
-        # 3. Save user prompt message to Database
+        # 5. Save user prompt message to Database
         await DatabaseService.save_message(
             conversation_id=conv_id,
             role="user",
@@ -99,20 +105,20 @@ class ChatService:
             user_token=user_token
         )
 
-        # 4. Retrieve relevant long-term memories (Phase 6)
+        # 6. Retrieve relevant long-term memories if needed
         relevant_memories_list: List[str] = []
-        if request.memory_enabled and effective_message:
+        if request.memory_enabled and ("memory" in plan.required_tools or plan.intent in ("memory_read", "multi_tool", "general_ai")):
             matched_memories = await MemoryService.retrieve_relevant_memories(
                 user_id=user_id,
                 query=effective_message,
                 user_token=user_token,
-                max_memories=6
+                max_memories=5
             )
             relevant_memories_list = [m["memory"] for m in matched_memories if m.get("memory")]
 
-        # 5. Retrieve relevant document chunks (Phase 7 RAG)
+        # 7. Retrieve relevant document chunks (RAG) if needed
         document_chunks = []
-        if effective_message:
+        if "rag" in plan.required_tools or request.document_id:
             document_chunks = await RAGService.retrieve_relevant_chunks(
                 user_id=user_id,
                 query=effective_message,
@@ -133,7 +139,7 @@ class ChatService:
                 for c in document_chunks
             ]
 
-        # 6. Retrieve history context from Database (strictly for this user)
+        # 8. Retrieve history context from Database (strictly for this user)
         db_messages = await DatabaseService.get_messages(
             conversation_id=conv_id, 
             user_id=user_id, 
@@ -143,7 +149,6 @@ class ChatService:
         
         formatted_history: List[Dict[str, str]] = []
         if db_messages:
-            # Exclude the very last user message we just inserted
             for m in db_messages[:-1]:
                 formatted_history.append({
                     "role": m.get("role", "user"),
@@ -153,19 +158,28 @@ class ChatService:
             raw = request.history or request.messages or []
             formatted_history = [{"role": m.role, "content": m.content} for m in raw]
 
-        # 7. Generate response from AI Service with Vision, Memory, Document RAG, and Tool Calling Loop
+        # 9. Execute AI Response Generation with Tool Execution Loop
+        enable_tools = True
         ai_res = await AIService.generate_response(
             user_message=effective_message,
             images=image_data_urls if image_data_urls else None,
             history=formatted_history,
             relevant_memories=relevant_memories_list if relevant_memories_list else None,
             document_context=document_chunks if document_chunks else None,
-            enable_tools=True
+            enable_tools=enable_tools
         )
 
         ai_reply = ai_res.get("content", "")
         raw_web_sources = ai_res.get("web_sources", [])
-        tools_called = ai_res.get("tools_called", [])
+        tools_called = list(set(ai_res.get("tools_called", [])))
+
+        # Add explicit tracking for Vision, RAG, and Memory if active
+        if image_data_urls and "vision" not in tools_called:
+            tools_called.append("vision")
+        if document_chunks and "rag" not in tools_called:
+            tools_called.append("rag")
+        if relevant_memories_list and "memory" not in tools_called and plan.intent in ("memory_read", "multi_tool"):
+            tools_called.append("memory")
 
         web_citations: Optional[List[WebSourceCitation]] = None
         if raw_web_sources:
@@ -179,7 +193,7 @@ class ChatService:
                 for s in raw_web_sources
             ]
 
-        # 8. Save AI response message to Database
+        # 10. Save AI response message to Database
         await DatabaseService.save_message(
             conversation_id=conv_id,
             role="assistant",
@@ -188,7 +202,7 @@ class ChatService:
             user_token=user_token
         )
 
-        # 9. Trigger background long-term memory extraction (Fire & Forget)
+        # 11. Background Memory Extraction
         if request.memory_enabled and effective_message:
             asyncio.create_task(
                 MemoryService.analyze_and_extract_memory(
