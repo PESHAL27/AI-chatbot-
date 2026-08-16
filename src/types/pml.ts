@@ -130,7 +130,8 @@ export interface DocumentChunk {
 
 export interface FastApiChatRequest {
   conversation_id?: string;
-  message: string;
+  message?: string;
+  images?: string[];
   memory_enabled?: boolean;
   document_id?: string;
   history?: {
@@ -146,4 +147,6 @@ export interface FastApiChatResponse {
   status: string;
   memories_used?: string[];
   sources?: DocumentSourceCitation[];
+  web_sources?: WebSourceCitation[];
+  tools_called?: string[];
 }

@@ -9,7 +9,8 @@ import {
   X, 
   FileText,
   Plus,
-  BookOpen
+  BookOpen,
+  Camera
 } from 'lucide-react';
 import type { Attachment, AttachmentType, DocumentItem } from '../types/pml';
 
@@ -101,27 +102,64 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
     }
   };
 
-  // Attachment File Upload Handler
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Helper to read file as Data URL
+  const readFileAsDataURL = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // Attachment & Image File Upload Handler
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    const newAttachments: Attachment[] = Array.from(files).map(file => {
-      let type: AttachmentType = 'txt';
-      if (file.type.startsWith('image/')) type = 'image';
-      else if (file.type.includes('pdf')) type = 'pdf';
-      else if (file.type.includes('csv')) type = 'csv';
-      else if (file.type.includes('word') || file.name.endsWith('.doc') || file.name.endsWith('.docx')) type = 'doc';
+    const fileList = Array.from(files);
+    const newAttachments: Attachment[] = [];
 
-      return {
+    for (const file of fileList) {
+      let type: AttachmentType = 'txt';
+      const isImg = file.type.startsWith('image/');
+      
+      if (isImg) {
+        // Validate image format
+        const validExtensions = ['jpg', 'jpeg', 'png', 'webp'];
+        const ext = file.name.split('.').pop()?.toLowerCase();
+        if (!validExtensions.includes(ext || '')) {
+          alert(`Unsupported image format (.${ext}). Please upload JPG, JPEG, PNG, or WEBP.`);
+          continue;
+        }
+        type = 'image';
+      } else if (file.type.includes('pdf')) {
+        type = 'pdf';
+      } else if (file.type.includes('csv')) {
+        type = 'csv';
+      } else if (file.type.includes('word') || file.name.endsWith('.doc') || file.name.endsWith('.docx')) {
+        type = 'doc';
+      }
+
+      let dataUrl: string | undefined = undefined;
+      if (isImg) {
+        try {
+          dataUrl = await readFileAsDataURL(file);
+        } catch {
+          dataUrl = URL.createObjectURL(file);
+        }
+      }
+
+      newAttachments.push({
         id: Math.random().toString(36).substring(2, 9),
         name: file.name,
         size: file.size,
         type,
         mimeType: file.type || 'application/octet-stream',
-        previewUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
-      };
-    });
+        previewUrl: dataUrl,
+        content: dataUrl,
+      });
+    }
 
     setAttachments(prev => [...prev, ...newAttachments]);
     if (e.target) e.target.value = '';
@@ -173,15 +211,27 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       const file = e.dataTransfer.files[0];
       const ext = file.name.split('.').pop()?.toLowerCase();
+
       if (['pdf', 'docx', 'doc', 'txt'].includes(ext || '') && onUploadDocument) {
         await onUploadDocument(file);
-      } else {
-        // Add as regular attachment
+      } else if (file.type.startsWith('image/')) {
+        const dataUrl = await readFileAsDataURL(file);
         const newAtt: Attachment = {
           id: Math.random().toString(36).substring(2, 9),
           name: file.name,
           size: file.size,
-          type: ext === 'pdf' ? 'pdf' : ext === 'docx' ? 'doc' : 'txt',
+          type: 'image',
+          mimeType: file.type || 'image/jpeg',
+          previewUrl: dataUrl,
+          content: dataUrl,
+        };
+        setAttachments(prev => [...prev, newAtt]);
+      } else {
+        const newAtt: Attachment = {
+          id: Math.random().toString(36).substring(2, 9),
+          name: file.name,
+          size: file.size,
+          type: 'txt',
           mimeType: file.type || 'application/octet-stream'
         };
         setAttachments(prev => [...prev, newAtt]);
@@ -200,7 +250,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
       {isDraggingFile && (
         <div className="absolute inset-x-4 inset-y-2 rounded-2xl border-2 border-dashed border-violet-400 bg-violet-950/80 backdrop-blur-md z-40 flex items-center justify-center gap-3 text-violet-200 animate-fadeIn">
           <span className="text-2xl">📥</span>
-          <span className="font-semibold text-sm">Drop document here to ingest into PML RAG</span>
+          <span className="font-semibold text-sm">Drop file or image to process with PML AI</span>
         </div>
       )}
 
@@ -216,7 +266,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
           </div>
           <button
             onClick={onClearDocumentScope}
-            className="text-violet-400 hover:text-white flex items-center gap-1 text-[11px] font-semibold transition-colors"
+            className="text-violet-400 hover:text-white flex items-center gap-1 text-[11px] font-semibold transition-colors cursor-pointer"
             title="Clear document filter to search all documents"
           >
             <span>Search All Docs</span>
@@ -225,23 +275,36 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
         </div>
       )}
 
-      {/* File Attachment Previews */}
+      {/* File & Image Attachment Previews */}
       {attachments.length > 0 && (
-        <div className="mb-2 flex flex-wrap gap-2 p-2 rounded-2xl glass-panel bg-black/90 border-purple-500/30">
+        <div className="mb-2 flex flex-wrap gap-2 p-2.5 rounded-2xl glass-panel bg-black/90 border border-purple-500/30 shadow-lg animate-fadeIn">
           {attachments.map(att => (
             <div
               key={att.id}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-purple-950/40 border border-purple-500/40 text-xs text-white"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-purple-950/60 border border-purple-500/40 text-xs text-white shadow-sm"
             >
-              {att.previewUrl ? (
-                <img src={att.previewUrl} alt={att.name} className="w-5 h-5 object-cover rounded border border-purple-500/50" />
+              {att.type === 'image' && att.previewUrl ? (
+                <div className="flex items-center gap-2">
+                  <img 
+                    src={att.previewUrl} 
+                    alt={att.name} 
+                    className="w-7 h-7 object-cover rounded-lg border border-purple-400/60 shadow-sm" 
+                  />
+                  <div className="flex flex-col">
+                    <span className="truncate max-w-[140px] font-mono text-[11px] font-semibold text-purple-200">{att.name}</span>
+                    <span className="text-[9px] text-purple-400 font-mono">Vision Attachment</span>
+                  </div>
+                </div>
               ) : (
-                <FileText className="w-4 h-4 text-purple-400" />
+                <>
+                  <FileText className="w-4 h-4 text-purple-400" />
+                  <span className="truncate max-w-[140px] font-mono">{att.name}</span>
+                </>
               )}
-              <span className="truncate max-w-[140px] font-mono">{att.name}</span>
               <button
                 onClick={() => removeAttachment(att.id)}
-                className="text-slate-400 hover:text-purple-400 transition-colors"
+                className="text-slate-400 hover:text-rose-400 transition-colors ml-1 p-0.5 rounded cursor-pointer"
+                title="Remove attachment"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -257,7 +320,13 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={selectedDocument ? `Ask questions about ${selectedDocument.file_name}...` : "Message PML or ask questions about your documents..."}
+          placeholder={
+            attachments.some(a => a.type === 'image')
+              ? "Ask a question about this image (e.g. 'Solve this', 'Find error in code')..."
+              : selectedDocument 
+                ? `Ask questions about ${selectedDocument.file_name}...` 
+                : "Message PML, upload code screenshots, solve math images, or search web..."
+          }
           rows={1}
           className="w-full bg-transparent px-3 py-2.5 text-base text-white placeholder-slate-400 focus:outline-none resize-none cosmic-scroll max-h-[180px] font-main"
         />
@@ -265,42 +334,61 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
         {/* Console Action Bar */}
         <div className="flex items-center justify-between border-t border-white/10 pt-2 px-2">
           <div className="flex items-center gap-2.5">
-            {/* Plus Button Menu for RAG & Uploads */}
+            {/* Plus Button Menu for Vision, RAG & Uploads */}
             <div className="relative" ref={plusMenuRef}>
               <button
                 onClick={() => setShowPlusMenu(prev => !prev)}
-                className={`p-2 rounded-xl border transition-all ${
+                className={`p-2 rounded-xl border transition-all cursor-pointer ${
                   showPlusMenu 
                     ? 'bg-violet-600/40 text-violet-200 border-violet-400 shadow-[0_0_12px_rgba(139,92,246,0.4)]' 
                     : 'hover:bg-white/10 text-slate-400 hover:text-violet-300 border-transparent'
                 }`}
-                title="Add Document or Open RAG Library"
+                title="Upload Image (Vision) or Document (RAG)"
               >
                 <Plus className="w-4.5 h-4.5" />
               </button>
 
               {showPlusMenu && (
-                <div className="absolute bottom-full left-0 mb-2 w-56 p-1.5 rounded-xl bg-[#130d29]/95 border border-violet-500/40 shadow-xl shadow-violet-950/80 backdrop-blur-md z-50 animate-fadeIn text-xs text-violet-200 space-y-1">
+                <div className="absolute bottom-full left-0 mb-2 w-64 p-1.5 rounded-xl bg-[#130d29]/95 border border-violet-500/40 shadow-xl shadow-violet-950/80 backdrop-blur-md z-50 animate-fadeIn text-xs text-violet-200 space-y-1">
+                  {/* Vision Upload Option */}
+                  <button
+                    onClick={() => {
+                      setShowPlusMenu(false);
+                      imageInputRef.current?.click();
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-violet-600/30 hover:text-white transition-colors text-left cursor-pointer"
+                  >
+                    <Camera className="w-4 h-4 text-purple-400" />
+                    <div>
+                      <div className="font-semibold text-purple-100">Upload Image (Vision)</div>
+                      <div className="text-[10px] text-purple-300">Code screenshot, math, diagrams (JPG, PNG, WEBP)</div>
+                    </div>
+                  </button>
+
+                  <div className="h-[1px] bg-violet-500/20 my-1" />
+
+                  {/* Document RAG Upload Option */}
                   <button
                     onClick={() => {
                       setShowPlusMenu(false);
                       docRAGInputRef.current?.click();
                     }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-violet-600/30 hover:text-white transition-colors text-left"
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-violet-600/30 hover:text-white transition-colors text-left cursor-pointer"
                   >
                     <span>📄</span>
                     <div>
                       <div className="font-semibold text-violet-100">Upload Document (RAG)</div>
-                      <div className="text-[10px] text-violet-400">PDF, DOCX, TXT</div>
+                      <div className="text-[10px] text-violet-400">PDF, DOCX, TXT vector search</div>
                     </div>
                   </button>
 
+                  {/* Document Library Option */}
                   <button
                     onClick={() => {
                       setShowPlusMenu(false);
                       if (onOpenDocumentLibrary) onOpenDocumentLibrary();
                     }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-violet-600/30 hover:text-white transition-colors text-left"
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-violet-600/30 hover:text-white transition-colors text-left cursor-pointer"
                   >
                     <BookOpen className="w-4 h-4 text-violet-400" />
                     <div>
@@ -312,28 +400,28 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
               )}
             </div>
 
+            {/* Image Upload Trigger (Vision) */}
+            <button
+              onClick={() => imageInputRef.current?.click()}
+              className="p-2 rounded-xl hover:bg-white/10 text-slate-400 hover:text-purple-400 transition-colors cursor-pointer"
+              title="Attach Image (JPG, PNG, WEBP for Vision)"
+            >
+              <ImageIcon className="w-4.5 h-4.5" />
+            </button>
+
             {/* General File Upload Trigger */}
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="p-2 rounded-xl hover:bg-white/10 text-slate-400 hover:text-purple-400 transition-colors"
-              title="Attach Document"
+              className="p-2 rounded-xl hover:bg-white/10 text-slate-400 hover:text-purple-400 transition-colors cursor-pointer"
+              title="Attach Document (PDF, DOCX)"
             >
               <Paperclip className="w-4.5 h-4.5" />
-            </button>
-
-            {/* Image Upload Trigger */}
-            <button
-              onClick={() => imageInputRef.current?.click()}
-              className="p-2 rounded-xl hover:bg-white/10 text-slate-400 hover:text-purple-400 transition-colors"
-              title="Attach Image"
-            >
-              <ImageIcon className="w-4.5 h-4.5" />
             </button>
 
             {/* Voice Input Trigger */}
             <button
               onClick={toggleVoiceInput}
-              className={`p-2 rounded-xl transition-all ${
+              className={`p-2 rounded-xl transition-all cursor-pointer ${
                 isRecording
                   ? 'bg-purple-600/30 text-purple-400 animate-pulse border border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.5)]'
                   : 'hover:bg-white/10 text-slate-400 hover:text-white'
@@ -348,7 +436,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
               ref={fileInputRef}
               type="file"
               multiple
-              accept=".pdf,.doc,.docx,.txt,.csv,image/*"
+              accept=".pdf,.doc,.docx,.txt,.csv,image/jpeg,image/png,image/webp"
               className="hidden"
               onChange={handleFileUpload}
             />
@@ -363,7 +451,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
               ref={imageInputRef}
               type="file"
               multiple
-              accept="image/*"
+              accept="image/jpeg,image/png,image/webp"
               className="hidden"
               onChange={handleFileUpload}
             />
@@ -373,7 +461,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
             {isStreaming ? (
               <button
                 onClick={onStopGeneration}
-                className="px-4 py-2 rounded-xl bg-purple-950/80 border border-purple-500/60 hover:bg-purple-900 text-purple-300 text-sm font-bold font-display flex items-center gap-2 transition-all shadow-[0_0_15px_rgba(168,85,247,0.3)]"
+                className="px-4 py-2 rounded-xl bg-purple-950/80 border border-purple-500/60 hover:bg-purple-900 text-purple-300 text-sm font-bold font-display flex items-center gap-2 transition-all shadow-[0_0_15px_rgba(168,85,247,0.3)] cursor-pointer"
               >
                 <Square className="w-4 h-4 fill-current" />
                 <span>ABORT</span>
@@ -382,7 +470,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
               <button
                 onClick={handleSend}
                 disabled={!input.trim() && attachments.length === 0}
-                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 via-indigo-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-display font-bold text-sm uppercase tracking-wider shadow-[0_0_25px_rgba(139,92,246,0.5)] hover:shadow-[0_0_35px_rgba(168,85,247,0.7)] disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-300 active:scale-95 flex items-center justify-center gap-2 border border-white/20"
+                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 via-indigo-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-display font-bold text-sm uppercase tracking-wider shadow-[0_0_25px_rgba(139,92,246,0.5)] hover:shadow-[0_0_35px_rgba(168,85,247,0.7)] disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-300 active:scale-95 flex items-center justify-center gap-2 border border-white/20 cursor-pointer"
                 title="Send to PML AI"
               >
                 <span>SEND</span>

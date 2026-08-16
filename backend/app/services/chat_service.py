@@ -7,6 +7,7 @@ from app.services.ai_service import AIService
 from app.services.database_service import DatabaseService
 from app.services.memory_service import MemoryService
 from app.services.rag_service import RAGService
+from app.services.vision_service import VisionService
 
 logger = logging.getLogger("pml.chat_service")
 
@@ -18,23 +19,36 @@ class ChatService:
         user_token: Optional[str] = None
     ) -> ChatResponse:
         """
-        Processes chat requests with full Phase 6 Memory, Phase 7 Document RAG, and Phase 8 AI Tool Calling:
-        1. Checks for explicit memory commands ("Remember that...", "Forget that...").
-        2. Saves user prompt message with ownership.
-        3. Retrieves relevant long-term memories if memory_enabled is True.
-        4. Retrieves relevant document RAG chunks (Phase 7).
-        5. Retrieves stored history context for that user.
-        6. Calls AIService with Tool Calling Loop (Phase 8: Web Search + Calculator).
-        7. Saves AI response to database.
-        8. Analyzes conversation in background to extract new stable memories.
-        9. Returns structured response with memory indicators, document citations, web citations, and tools called.
+        Processes chat requests with full Phase 6 Memory, Phase 7 Document RAG, Phase 8 AI Tool Calling, and Phase 9 Vision:
+        1. Validates and preprocesses any attached images (Phase 9 Vision).
+        2. Checks for explicit memory commands ("Remember that...", "Forget that...").
+        3. Saves user prompt message with ownership.
+        4. Retrieves relevant long-term memories if memory_enabled is True.
+        5. Retrieves relevant document RAG chunks (Phase 7).
+        6. Retrieves stored history context for that user.
+        7. Calls AIService with Vision and Tool Calling Loop (Phase 8: Web Search + Calculator).
+        8. Saves AI response to database.
+        9. Analyzes conversation in background to extract new stable memories.
+        10. Returns structured response with memory indicators, document citations, web citations, and tools called.
         """
         conv_id = request.conversation_id or f"pml-conv-{uuid.uuid4().hex[:12]}"
         
-        # 1. Check for explicit memory commands ("Remember that...", "Forget that...")
-        if request.memory_enabled:
+        # 1. Validate and process any attached images (Phase 9 Vision)
+        validated_images: List[Dict[str, Any]] = []
+        image_data_urls: List[str] = []
+        if request.images and len(request.images) > 0:
+            validated_images = VisionService.validate_image_batch(request.images)
+            image_data_urls = [img["data_url"] for img in validated_images]
+            logger.info(f"[ChatService] Successfully validated {len(validated_images)} image(s) for Vision processing.")
+
+        effective_message = (request.message or "").strip()
+        if not effective_message and image_data_urls:
+            effective_message = "Analyze this image and describe what is visible in detail."
+
+        # 2. Check for explicit memory commands ("Remember that...", "Forget that...")
+        if request.memory_enabled and effective_message:
             explicit_reply = await MemoryService.handle_explicit_commands(
-                user_message=request.message,
+                user_message=effective_message,
                 user_id=user_id,
                 conversation_id=conv_id,
                 user_token=user_token
@@ -44,7 +58,7 @@ class ChatService:
                 await DatabaseService.save_message(
                     conversation_id=conv_id,
                     role="user",
-                    content=request.message,
+                    content=effective_message,
                     user_id=user_id,
                     user_token=user_token
                 )
@@ -66,34 +80,36 @@ class ChatService:
                     tools_called=None
                 )
 
-        # 2. Save user prompt message to Database
+        # 3. Save user prompt message to Database
         await DatabaseService.save_message(
             conversation_id=conv_id,
             role="user",
-            content=request.message,
+            content=request.message if request.message else "🖼️ [Image Uploaded]",
             user_id=user_id,
             user_token=user_token
         )
 
-        # 3. Retrieve relevant long-term memories (Phase 6)
+        # 4. Retrieve relevant long-term memories (Phase 6)
         relevant_memories_list: List[str] = []
-        if request.memory_enabled:
+        if request.memory_enabled and effective_message:
             matched_memories = await MemoryService.retrieve_relevant_memories(
                 user_id=user_id,
-                query=request.message,
+                query=effective_message,
                 user_token=user_token,
                 max_memories=6
             )
             relevant_memories_list = [m["memory"] for m in matched_memories if m.get("memory")]
 
-        # 4. Retrieve relevant document chunks (Phase 7 RAG)
-        document_chunks = await RAGService.retrieve_relevant_chunks(
-            user_id=user_id,
-            query=request.message,
-            document_id=request.document_id,
-            top_k=4,
-            user_token=user_token
-        )
+        # 5. Retrieve relevant document chunks (Phase 7 RAG)
+        document_chunks = []
+        if effective_message:
+            document_chunks = await RAGService.retrieve_relevant_chunks(
+                user_id=user_id,
+                query=effective_message,
+                document_id=request.document_id,
+                top_k=4,
+                user_token=user_token
+            )
 
         citations: Optional[List[DocumentSourceCitation]] = None
         if document_chunks:
@@ -107,7 +123,7 @@ class ChatService:
                 for c in document_chunks
             ]
 
-        # 5. Retrieve history context from Database (strictly for this user)
+        # 6. Retrieve history context from Database (strictly for this user)
         db_messages = await DatabaseService.get_messages(
             conversation_id=conv_id, 
             user_id=user_id, 
@@ -127,9 +143,10 @@ class ChatService:
             raw = request.history or request.messages or []
             formatted_history = [{"role": m.role, "content": m.content} for m in raw]
 
-        # 6. Generate response from AI Service with Memory, Document RAG, and Tool Calling Loop
+        # 7. Generate response from AI Service with Vision, Memory, Document RAG, and Tool Calling Loop
         ai_res = await AIService.generate_response(
-            user_message=request.message,
+            user_message=effective_message,
+            images=image_data_urls if image_data_urls else None,
             history=formatted_history,
             relevant_memories=relevant_memories_list if relevant_memories_list else None,
             document_context=document_chunks if document_chunks else None,
@@ -144,15 +161,15 @@ class ChatService:
         if raw_web_sources:
             web_citations = [
                 WebSourceCitation(
-                    title=ws.get("title", "Web Source"),
-                    url=ws.get("url", "#"),
-                    snippet=ws.get("snippet"),
-                    source=ws.get("source")
+                    title=s.get("title", "Web Source"),
+                    url=s.get("url", "#"),
+                    snippet=s.get("snippet"),
+                    source=s.get("source")
                 )
-                for ws in raw_web_sources
+                for s in raw_web_sources
             ]
 
-        # 7. Save assistant response to Database
+        # 8. Save AI response message to Database
         await DatabaseService.save_message(
             conversation_id=conv_id,
             role="assistant",
@@ -161,11 +178,11 @@ class ChatService:
             user_token=user_token
         )
 
-        # 8. Asynchronously analyze exchange to extract durable long-term memory
-        if request.memory_enabled:
+        # 9. Trigger background long-term memory extraction (Fire & Forget)
+        if request.memory_enabled and effective_message:
             asyncio.create_task(
                 MemoryService.analyze_and_extract_memory(
-                    user_message=request.message,
+                    user_message=effective_message,
                     assistant_response=ai_reply,
                     user_id=user_id,
                     conversation_id=conv_id,

@@ -51,6 +51,7 @@ class AIService:
     async def generate_response(
         cls,
         user_message: str,
+        images: Optional[List[str]] = None,
         history: Optional[List[Dict[str, str]]] = None,
         relevant_memories: Optional[List[str]] = None,
         document_context: Optional[List[Dict[str, Any]]] = None,
@@ -64,6 +65,7 @@ class AIService:
         - Long-Term User Memory (Phase 6)
         - Document Intelligence & RAG Excerpts (Phase 7)
         - OpenAI Function Calling & Tool Execution Loop (Phase 8: Web Search + Calculator)
+        - Vision / Multimodal Image Understanding (Phase 9)
         """
         client = cls.get_client()
         model_name = model_override or settings.AI_MODEL
@@ -127,8 +129,23 @@ DIRECTIVES FOR DOCUMENT RAG:
                 if content and role in ("user", "assistant", "system"):
                     messages.append({"role": role, "content": content})
 
-        # Append current user prompt message
-        messages.append({"role": "user", "content": user_message})
+        # Append current user message (multimodal if images are attached)
+        if images and len(images) > 0:
+            user_text_prompt = user_message.strip() if user_message and user_message.strip() else "Analyze this image and describe what is visible in detail."
+            multimodal_parts: List[Dict[str, Any]] = [
+                {"type": "text", "text": user_text_prompt}
+            ]
+            for img_url in images:
+                multimodal_parts.append({
+                    "type": "image_url",
+                    "image_url": {
+                        "url": img_url,
+                        "detail": "high"
+                    }
+                })
+            messages.append({"role": "user", "content": multimodal_parts})
+        else:
+            messages.append({"role": "user", "content": user_message})
 
         tools_schema = tool_registry.get_openai_tools_schema() if enable_tools else None
         web_sources: List[Dict[str, str]] = []

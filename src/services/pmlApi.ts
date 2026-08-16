@@ -75,7 +75,7 @@ export class PMLApiService {
    */
   async sendMessageStream(
     userMessage: string,
-    _attachments: Attachment[],
+    attachments: Attachment[],
     conversationId: string,
     settings: PMLSettings,
     callbacks: StreamCallbacks,
@@ -85,8 +85,19 @@ export class PMLApiService {
     try {
       const apiBase = this.endpoint || DEFAULT_API_ENDPOINT;
 
+      // Extract image attachments for Multimodal Vision (Phase 9)
+      const imagePayloads: string[] = [];
+      if (attachments && attachments.length > 0) {
+        for (const att of attachments) {
+          if (att.type === 'image' && (att.previewUrl || att.content)) {
+            imagePayloads.push(att.previewUrl || att.content || '');
+          }
+        }
+      }
+
       const payload: FastApiChatRequest & { history?: any[]; document_id?: string } = {
         message: userMessage,
+        images: imagePayloads.length > 0 ? imagePayloads : undefined,
         conversation_id: conversationId,
         memory_enabled: settings.memoryEnabled ?? true,
         document_id: documentId,

@@ -104,20 +104,37 @@ export const MessageItem: React.FC<MessageItemProps> = ({
               : 'bg-black/60 border-purple-500/30 text-white shadow-[0_8px_30px_rgba(0,0,0,0.8)] font-main'
           }`}
         >
-          {/* User Attached File Cards */}
+          {/* User Attached File & Vision Image Cards */}
           {isUser && message.attachments && message.attachments.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-3">
+            <div className="flex flex-wrap gap-2.5 mb-3">
               {message.attachments.map((att: Attachment) => (
-                <div
-                  key={att.id}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-purple-950/60 border border-purple-500/40 text-xs text-purple-200"
-                >
-                  <FileText className="w-3.5 h-3.5 text-purple-400" />
-                  <span className="truncate max-w-[150px] font-mono">{att.name}</span>
-                  <span className="text-[10px] text-slate-400">
-                    ({Math.round(att.size / 1024)}KB)
-                  </span>
-                </div>
+                att.type === 'image' && (att.previewUrl || att.content) ? (
+                  <div
+                    key={att.id}
+                    className="relative group/img rounded-xl overflow-hidden border border-purple-500/50 bg-black/80 shadow-[0_4px_15px_rgba(139,92,246,0.3)] max-w-xs"
+                  >
+                    <img
+                      src={att.previewUrl || att.content}
+                      alt={att.name}
+                      className="max-h-52 w-auto object-contain rounded-xl hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute bottom-0 inset-x-0 p-1.5 bg-gradient-to-t from-black/90 via-black/60 to-transparent text-[10px] text-purple-200 truncate font-mono flex items-center gap-1">
+                      <span>📷</span>
+                      <span className="truncate">{att.name}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    key={att.id}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-purple-950/60 border border-purple-500/40 text-xs text-purple-200"
+                  >
+                    <FileText className="w-3.5 h-3.5 text-purple-400" />
+                    <span className="truncate max-w-[150px] font-mono">{att.name}</span>
+                    <span className="text-[10px] text-slate-400">
+                      ({Math.round(att.size / 1024)}KB)
+                    </span>
+                  </div>
+                )
               ))}
             </div>
           )}
