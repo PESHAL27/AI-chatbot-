@@ -194,6 +194,45 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
     }
   };
 
+  // Clipboard Paste Handler (Screenshots & Copied Images)
+  const handlePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement | HTMLDivElement>) => {
+    const items = e.clipboardData?.items;
+    if (!items || items.length === 0) return;
+
+    const imageFiles: File[] = [];
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.type.startsWith('image/')) {
+        const file = item.getAsFile();
+        if (file) {
+          imageFiles.push(file);
+        }
+      }
+    }
+
+    if (imageFiles.length > 0) {
+      // Prevent pasting raw image binary characters into text input
+      e.preventDefault();
+      const newAttachments: Attachment[] = [];
+      for (const file of imageFiles) {
+        const dataUrl = await readFileAsDataURL(file);
+        const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }).replace(/:/g, '');
+        const filename = file.name && file.name !== 'image.png' ? file.name : `Pasted_Screenshot_${timestamp}.png`;
+
+        newAttachments.push({
+          id: Math.random().toString(36).substring(2, 9),
+          name: filename,
+          size: file.size,
+          type: 'image',
+          mimeType: file.type || 'image/png',
+          previewUrl: dataUrl,
+          content: dataUrl,
+        });
+      }
+      setAttachments(prev => [...prev, ...newAttachments]);
+    }
+  };
+
   // Drag & drop handlers
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -245,6 +284,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
+      onPaste={handlePaste}
     >
       {/* Drag overlay feedback */}
       {isDraggingFile && (
@@ -320,12 +360,13 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
+          onPaste={handlePaste}
           placeholder={
             attachments.some(a => a.type === 'image')
               ? "Ask a question about this image (e.g. 'Solve this', 'Find error in code')..."
               : selectedDocument 
                 ? `Ask questions about ${selectedDocument.file_name}...` 
-                : "Message PML, upload code screenshots, solve math images, or search web..."
+                : "Message PML, paste/upload code screenshots, solve math images, or search web..."
           }
           rows={1}
           className="w-full bg-transparent px-3 py-2.5 text-base text-white placeholder-slate-400 focus:outline-none resize-none cosmic-scroll max-h-[180px] font-main"
