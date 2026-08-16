@@ -1,12 +1,11 @@
 import React from 'react';
 import { 
   Code2, 
-  Sparkles,
   Globe, 
-  Camera
+  Camera,
+  Sparkles
 } from 'lucide-react';
 import type { Attachment, DocumentItem } from '../types/pml';
-import { PMLCore } from './PMLCore';
 import { MessageComposer } from './MessageComposer';
 
 interface WelcomeExperienceProps {
@@ -39,23 +38,18 @@ export const WelcomeExperience: React.FC<WelcomeExperienceProps> = ({
 }) => {
   return (
     <div className="w-full max-w-4xl mx-auto flex flex-col items-center justify-center text-center px-4 py-8 md:py-12 my-auto">
-      {/* Branding Header */}
+      {/* Welcome Header */}
       <div className="flex flex-col items-center mb-6">
-        <div className="mb-3 animate-float">
-          <PMLCore size="large" state="idle" />
-        </div>
-
-        <h1 className="font-display font-black text-4xl md:text-6xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-300 to-pink-500 mb-2 drop-shadow-[0_0_30px_rgba(168,85,247,0.5)]">
-          PML AI
+        <h1 className="font-sans font-bold text-3xl md:text-5xl text-white tracking-tight mb-2">
+          Welcome to <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-300 to-pink-500">PML AI</span>
         </h1>
 
-        <p className="font-sans font-bold text-xs tracking-widest text-purple-200 uppercase bg-[#0d071a]/80 px-5 py-1.5 rounded-full border border-purple-500/30 inline-flex items-center gap-2 shadow-[0_0_15px_rgba(147,51,234,0.3)] backdrop-blur-xl">
-          <Sparkles className="w-3 h-3 text-purple-400 animate-pulse" />
-          <span>ADVANCED COSMIC INTELLIGENCE</span>
+        <p className="font-sans text-sm md:text-base text-slate-400">
+          How can I help you today?
         </p>
 
         {/* Suggestion Chips */}
-        <div className="flex flex-wrap items-center justify-center gap-2 mt-4 max-w-2xl">
+        <div className="flex flex-wrap items-center justify-center gap-2 mt-5 max-w-2xl">
           {PROMPT_CHIPS.map((chip, idx) => (
             <button
               key={idx}
