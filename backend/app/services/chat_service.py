@@ -169,13 +169,22 @@ class ChatService:
         )
 
         # 9. Execute AI Response Generation with Tool Execution Loop
+        forced_tool_name = None
+        if "web_search" in plan.required_tools:
+            forced_tool_name = "web_search"
+        elif "calculator" in plan.required_tools:
+            forced_tool_name = "calculator"
+        elif "wikipedia_search" in plan.required_tools:
+            forced_tool_name = "wikipedia_search"
+
         ai_res = await AIService.generate_response(
             user_message=effective_message,
             images=image_data_urls if image_data_urls else None,
             history=optimized_history,
             relevant_memories=relevant_memories_list if relevant_memories_list else None,
             document_context=document_chunks if document_chunks else None,
-            enable_tools=True
+            enable_tools=True,
+            forced_tool=forced_tool_name
         )
 
         ai_reply = ai_res.get("content", "")
