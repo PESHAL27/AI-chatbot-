@@ -56,7 +56,7 @@ class AIService:
                 raise ValueError("AI API key is missing in server environment.")
             
             headers = {
-                "HTTP-Referer": "http://localhost:5174",
+                "HTTP-Referer": settings.FRONTEND_URL or "https://pml.universe",
                 "X-Title": "PML Space AI Assistant"
             }
             

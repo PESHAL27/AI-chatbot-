@@ -237,7 +237,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 particleDensity: 'medium',
                 soundEffects: true,
                 streamSpeed: 18,
-                apiEndpoint: 'http://localhost:8000',
+                apiEndpoint: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) ? import.meta.env.VITE_API_URL : 'http://localhost:8000',
               })
             }
             className="text-xs text-slate-400 hover:text-purple-300 flex items-center gap-1.5 transition-colors font-mono cursor-pointer"

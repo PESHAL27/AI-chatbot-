@@ -32,7 +32,7 @@ const DEFAULT_SETTINGS: PMLSettings = {
   particleDensity: 'medium',
   soundEffects: true,
   streamSpeed: 18,
-  apiEndpoint: 'http://localhost:8000',
+  apiEndpoint: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) ? import.meta.env.VITE_API_URL : 'http://localhost:8000',
   autoReadAloud: false,
   memoryEnabled: true,
 };

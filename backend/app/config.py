@@ -14,9 +14,10 @@ class Settings:
     # Parse CORS origins list
     raw_cors = os.getenv(
         "CORS_ORIGINS",
-        "http://localhost:5174,http://localhost:5173,http://127.0.0.1:5174,http://127.0.0.1:5173,http://localhost:3000"
+        "http://localhost:5174,http://localhost:5173,http://127.0.0.1:5174,http://127.0.0.1:5173,http://localhost:3000,https://pml.universe"
     )
     CORS_ORIGINS: list[str] = [origin.strip() for origin in raw_cors.split(",") if origin.strip()]
+    FRONTEND_URL: str = os.getenv("FRONTEND_URL", "https://pml.universe")
 
     # AI Model Configuration
     AI_PROVIDER: str = os.getenv("AI_PROVIDER", "openrouter")
