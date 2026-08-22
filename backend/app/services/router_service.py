@@ -58,9 +58,17 @@ class RouterService:
     ]
 
     CURRENT_INFO_PATTERNS = [
-        r"\b(current|latest|recent|today|news|update|developments|price|exchange\s+rate|weather|forecast|who\s+is\s+the\s+current)\b",
-        r"\b(2025|2026|live\s+score|stock\s+price|market\s+cap|release\s+date)\b",
-        r"\b(search\s+the\s+web|search\s+for|google|lookup\s+online)\b"
+        r"\b(current|latest|recent|today|news|update|developments|price|exchange\s+rate|weather|forecast)\b",
+        r"\b(2025|2026|live\s+score|stock\s+price|market\s+cap|release\s+date|election\s+result)\b",
+        r"\b(search\s+the\s+web|search\s+for\s+current|google\s+this|lookup\s+online|find\s+online)\b",
+        r"\bwho\s+is\s+the\s+(current|present|new)\b",
+        r"\bwhat\s+is\s+the\s+(current|latest|present|new)\b"
+    ]
+
+    WIKIPEDIA_PATTERNS = [
+        r"\b(wikipedia|wiki\s+page|encyclopedia|encyclopedic)\b",
+        r"^(search\s+wikipedia|look\s+up\s+on\s+wikipedia|check\s+wikipedia|wiki\s+search)\b",
+        r"\b(encyclopedic\s+entry\s+for|wikipedia\s+article\s+on|wiki\s+lookup)\s+[\w\s\.\-]+",
     ]
 
     RAG_PATTERNS = [
@@ -138,7 +146,7 @@ class RouterService:
                         tools.append("rag")
                     break
 
-        # 6. Web Search detection
+        # 6. Web Search detection (real-time news, current events, recent tech)
         needs_web = False
         for pat in cls.CURRENT_INFO_PATTERNS:
             if re.search(pat, lower_text):
@@ -147,7 +155,17 @@ class RouterService:
                     tools.append("web_search")
                 break
 
-        # 7. Calculator detection
+        # 7. Wikipedia detection (established facts, history, science, biography)
+        needs_wiki = False
+        if not needs_web and not needs_rag:
+            for pat in cls.WIKIPEDIA_PATTERNS:
+                if re.search(pat, lower_text):
+                    needs_wiki = True
+                    if "wikipedia_search" not in tools:
+                        tools.append("wikipedia_search")
+                    break
+
+        # 8. Calculator detection
         needs_calc = False
         extracted_expr = None
         for pat in cls.CALC_PATTERNS:
@@ -159,7 +177,7 @@ class RouterService:
                     tools.append("calculator")
                 break
 
-        # 8. Determine overall intent
+        # 9. Determine overall intent
         if len(tools) > 1:
             intent = "multi_tool"
         elif "vision" in tools:
@@ -168,6 +186,8 @@ class RouterService:
             intent = "rag"
         elif "web_search" in tools:
             intent = "web_search"
+        elif "wikipedia_search" in tools:
+            intent = "wikipedia"
         elif "calculator" in tools:
             intent = "calculation"
         elif "memory" in tools:

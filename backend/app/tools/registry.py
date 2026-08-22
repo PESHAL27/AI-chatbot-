@@ -3,6 +3,7 @@ from typing import Dict, Any, List, Optional
 from app.tools.base import BaseTool, ToolResult
 from app.tools.calculator import CalculatorTool
 from app.tools.web_search import WebSearchTool
+from app.tools.wikipedia import WikipediaTool
 
 logger = logging.getLogger(__name__)
 
@@ -68,9 +69,10 @@ class ToolRegistry:
             )
 
     def _register_default_tools(self):
-        """Registers default core tools: web_search and calculator."""
+        """Registers default core tools: web_search, calculator, and wikipedia_search."""
         self.register_tool(WebSearchTool())
         self.register_tool(CalculatorTool())
+        self.register_tool(WikipediaTool())
 
 
 # Global Singleton Accessor

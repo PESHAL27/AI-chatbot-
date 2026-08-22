@@ -1,7 +1,7 @@
 import React from 'react';
 import { Globe, Calculator, BookOpen, Eye, Mic, Brain, CheckCircle2 } from 'lucide-react';
 
-export type ToolType = 'web_search' | 'calculator' | 'rag' | 'vision' | 'voice' | 'memory';
+export type ToolType = 'web_search' | 'calculator' | 'rag' | 'vision' | 'voice' | 'memory' | 'wikipedia_search' | 'wikipedia';
 
 interface PMLToolStatusProps {
   tool: ToolType | string;
@@ -18,6 +18,17 @@ export const PMLToolStatus: React.FC<PMLToolStatusProps> = ({
 }) => {
   const getToolConfig = () => {
     switch (tool) {
+      case 'wikipedia_search':
+      case 'wikipedia':
+        return {
+          icon: <BookOpen className="w-3.5 h-3.5 text-blue-400" />,
+          label: customLabel || 'Wikipedia Knowledge Retrieved',
+          badge: 'Wikipedia',
+          borderColor: 'border-blue-500/40',
+          bgColor: 'bg-blue-950/40',
+          textColor: 'text-blue-200',
+          glow: 'shadow-[0_0_12px_rgba(59,130,246,0.25)]',
+        };
       case 'web_search':
         return {
           icon: <Globe className="w-3.5 h-3.5 text-cyan-400" />,

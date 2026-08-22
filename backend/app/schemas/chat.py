@@ -17,6 +17,14 @@ class WebSourceCitation(BaseModel):
     snippet: Optional[str] = Field(None, description="Relevant text snippet")
     source: Optional[str] = Field(None, description="Domain source name")
 
+class WikipediaSourceCitation(BaseModel):
+    title: str = Field(..., description="Wikipedia Article Title")
+    url: str = Field(..., description="Clickable Wikipedia URL")
+    snippet: Optional[str] = Field(None, description="Relevant excerpt summary from Wikipedia")
+    description: Optional[str] = Field(None, description="Short Wikipedia topic description")
+    thumbnail: Optional[str] = Field(None, description="Optional article thumbnail image URL")
+    source: str = Field("wikipedia", description="Source identifier")
+
 class ChatRequest(BaseModel):
     message: Optional[str] = Field(default="", description="The user's prompt message")
     images: Optional[List[str]] = Field(default=None, description="Optional list of base64 data URIs or image URLs for vision understanding")
@@ -44,6 +52,7 @@ class ChatResponse(BaseModel):
     memories_used: Optional[List[str]] = Field(None, description="List of relevant memory statements utilized")
     sources: Optional[List[DocumentSourceCitation]] = Field(None, description="List of document citations utilized for RAG")
     web_sources: Optional[List[WebSourceCitation]] = Field(None, description="List of live web sources utilized for answer grounding")
+    wikipedia_sources: Optional[List[WikipediaSourceCitation]] = Field(None, description="List of Wikipedia sources utilized for encyclopedia grounding")
     tools_called: Optional[List[str]] = Field(None, description="List of tool names executed during response generation")
 
 class HealthCheckResponse(BaseModel):

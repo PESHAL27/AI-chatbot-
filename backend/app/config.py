@@ -36,4 +36,9 @@ class Settings:
     SUPABASE_URL: str = os.getenv("SUPABASE_URL", "https://axvbjoaqkanowkjoftxc.supabase.co")
     SUPABASE_KEY: str = os.getenv("SUPABASE_KEY", "")
 
+    # Wikipedia API Configuration
+    WIKIPEDIA_USER_AGENT: str = os.getenv("WIKIPEDIA_USER_AGENT", "PML-AI-Assistant/1.0 (https://pml.ai; contact@pml.ai)")
+    WIKIPEDIA_LANGUAGE: str = os.getenv("WIKIPEDIA_LANGUAGE", "en")
+    WIKIPEDIA_MAX_RESULTS: int = int(os.getenv("WIKIPEDIA_MAX_RESULTS", "3"))
+
 settings = Settings()
