@@ -27,7 +27,15 @@ async def get_current_user(
             "token": None
         }
 
-    token = credentials.credentials
+    # Check if Supabase URL is placeholder or unconfigured
+    if not settings.SUPABASE_URL or "your-project-id" in settings.SUPABASE_URL or not settings.SUPABASE_KEY or "your-anon-key" in settings.SUPABASE_KEY:
+        return {
+            "id": "guest_user",
+            "email": "guest@pml.universe",
+            "full_name": "Guest Explorer",
+            "is_guest": True,
+            "token": None
+        }
 
     # Verify token with Supabase Auth API
     try:

@@ -86,7 +86,13 @@ class DatabaseService:
 
     @classmethod
     def _is_supabase_configured(cls) -> bool:
-        return bool(settings.SUPABASE_URL and settings.SUPABASE_KEY and len(settings.SUPABASE_KEY.strip()) > 10)
+        return bool(
+            settings.SUPABASE_URL 
+            and settings.SUPABASE_KEY 
+            and len(settings.SUPABASE_KEY.strip()) > 10
+            and "your-project-id" not in settings.SUPABASE_URL 
+            and "your-anon-key" not in settings.SUPABASE_KEY
+        )
 
     @staticmethod
     def _is_valid_uuid(val: Any) -> bool:

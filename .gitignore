@@ -33,3 +33,6 @@ backend/pml_storage.db
 __pycache__/
 *.py[cod]
 *$py.class
+scratch/
+backend/storage/documents/*
+!backend/storage/documents/.gitkeep
