@@ -1,26 +1,23 @@
 import React, { useState } from 'react';
 import { 
-  Menu, 
   Sun, 
   Moon, 
   Settings, 
-  Edit2, 
-  Check, 
-  RefreshCw, 
-  LogIn, 
+  Menu,
   ChevronDown,
-  Cpu,
   FileText,
-  X
+  X,
+  LogOut,
+  User as UserIcon,
+  Plus
 } from 'lucide-react';
-import type { Conversation, PMLCoreState, ThemeMode, DocumentItem } from '../types/pml';
-import { PMLButton } from './ui/PMLButton';
+import type { Conversation, PMLCoreState, ThemeMode, DocumentItem, UserProfile } from '../types/pml';
 
 interface TopHeaderProps {
   navOpen?: boolean;
   onToggleNav: () => void;
-  activeConversation: Conversation | null;
-  onRenameConversation: (id: string, newTitle: string) => void;
+  activeConversation?: Conversation | null;
+  onRenameConversation?: (id: string, newTitle: string) => void;
   coreState?: PMLCoreState;
   theme: ThemeMode;
   onToggleTheme: () => void;
@@ -29,193 +26,191 @@ interface TopHeaderProps {
   onToggleStar?: () => void;
   isAuthenticated?: boolean;
   onOpenAuth?: () => void;
+  onOpenProfile?: () => void;
+  onOpenDocuments?: () => void;
+  onOpenMemory?: () => void;
+  onSignOut?: () => void;
+  userProfile?: UserProfile;
   selectedDocument?: DocumentItem | null;
   onClearDocumentScope?: () => void;
+  currentView?: 'home' | 'chat';
+  onNavigateView?: (view: 'home' | 'chat', sectionId?: string) => void;
 }
 
 export const TopHeader: React.FC<TopHeaderProps> = ({
+  navOpen = false,
   onToggleNav,
-  activeConversation,
-  onRenameConversation,
   theme,
   onToggleTheme,
   onOpenSettings,
   onClearChat,
   isAuthenticated = false,
   onOpenAuth,
+  onOpenProfile,
+  onSignOut,
+  userProfile,
   selectedDocument,
   onClearDocumentScope,
+  onNavigateView,
 }) => {
-  const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [titleInput, setTitleInput] = useState(activeConversation?.title || '');
-  const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
-  const [selectedModel, setSelectedModel] = useState('PML AI v1.0 (GPT-4o)');
-
-  const handleSaveTitle = () => {
-    if (activeConversation && titleInput.trim()) {
-      onRenameConversation(activeConversation.id, titleInput.trim());
-    }
-    setIsEditingTitle(false);
-  };
-
-  const MODELS = [
-    { id: 'pml-v1', name: 'PML AI v1.0 (GPT-4o)', desc: 'Fast multimodal reasoning & tool orchestration' },
-    { id: 'pml-adv', name: 'PML Advanced Intelligence', desc: 'Deep scientific & code synthesis' },
-  ];
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
 
   return (
-    <header className="h-14 px-4 md:px-6 flex items-center justify-between z-30 pointer-events-auto border-b border-purple-500/15 bg-[#080512]/90 backdrop-blur-xl w-full flex-shrink-0">
-      {/* Left: Hamburger & Breadcrumbs */}
-      <div className="flex items-center gap-3 min-w-0">
+    <header className="pml-navbar h-16 px-4 sm:px-6 lg:px-8 flex items-center justify-between z-40 w-full transition-all duration-200">
+      {/* LEFT: Sidebar Toggle Button + PML Logo */}
+      <div className="flex items-center gap-3">
+        {/* Modern Sidebar Toggle Button */}
         <button
           onClick={onToggleNav}
-          className="p-2 rounded-xl hover:bg-white/10 text-purple-300 hover:text-white transition-colors cursor-pointer flex items-center justify-center border border-purple-500/20 bg-purple-950/30"
-          title="Open Menu Bar"
+          className={`p-2 rounded-xl transition-all duration-200 cursor-pointer flex items-center justify-center ${
+            navOpen 
+              ? 'bg-[#122814] text-[#9CFF45] border border-[rgba(180,255,100,0.3)] shadow-[0_0_15px_rgba(156,255,69,0.2)]' 
+              : 'text-[#A8B0A5] hover:text-white hover:bg-white/5 border border-transparent'
+          }`}
+          title="Toggle Sidebar (Chats & Tools)"
         >
-          <Menu className="w-4.5 h-4.5" />
+          <Menu className="w-5 h-5" />
         </button>
 
-        {/* Breadcrumb / Title */}
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="text-xs font-mono text-purple-400/80 uppercase tracking-wider hidden sm:inline">
-            PML AI /
+        {/* Brand Logo & Home Trigger */}
+        <button 
+          onClick={() => onNavigateView && onNavigateView('home')}
+          className="flex items-center gap-2.5 group cursor-pointer focus:outline-none"
+          title="PML AI Home"
+        >
+          {/* Radial Dotted PML Symbol Icon */}
+          <div className="relative w-7 h-7 flex items-center justify-center">
+            <svg viewBox="0 0 32 32" className="w-7 h-7 text-[#9CFF45] fill-current group-hover:scale-105 transition-transform">
+              <circle cx="16" cy="16" r="3.2" fill="#9CFF45" />
+              <circle cx="16" cy="6" r="2.2" fill="#9CFF45" opacity="0.9" />
+              <circle cx="16" cy="26" r="2.2" fill="#9CFF45" opacity="0.9" />
+              <circle cx="6" cy="16" r="2.2" fill="#9CFF45" opacity="0.9" />
+              <circle cx="26" cy="16" r="2.2" fill="#9CFF45" opacity="0.9" />
+              <circle cx="9" cy="9" r="1.8" fill="#9CFF45" opacity="0.75" />
+              <circle cx="23" cy="9" r="1.8" fill="#9CFF45" opacity="0.75" />
+              <circle cx="9" cy="23" r="1.8" fill="#9CFF45" opacity="0.75" />
+              <circle cx="23" cy="23" r="1.8" fill="#9CFF45" opacity="0.75" />
+            </svg>
+          </div>
+          <span className="text-lg sm:text-xl font-black tracking-tight text-white group-hover:text-[#9CFF45] transition-colors">
+            PML
           </span>
+        </button>
 
-          {activeConversation ? (
-            isEditingTitle ? (
-              <div className="flex items-center gap-1.5">
-                <input
-                  type="text"
-                  value={titleInput}
-                  onChange={e => setTitleInput(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleSaveTitle()}
-                  autoFocus
-                  className="px-2.5 py-0.5 text-xs font-sans font-semibold rounded-lg bg-[#0e081e] border border-purple-400 text-white focus:outline-none focus:ring-1 focus:ring-purple-400"
-                />
-                <button
-                  onClick={handleSaveTitle}
-                  className="p-1 rounded bg-purple-600/30 text-purple-200 hover:text-white transition-colors cursor-pointer"
-                >
-                  <Check className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-1.5 min-w-0 group">
-                <h2 className="font-sans font-semibold text-xs md:text-sm text-white truncate max-w-[200px] sm:max-w-[320px]">
-                  {activeConversation.title === 'New Cosmic Thread' ? 'New Chat' : (activeConversation.title || 'New Chat')}
-                </h2>
-                <button
-                  onClick={() => {
-                    setTitleInput(activeConversation.title === 'New Cosmic Thread' ? 'New Chat' : (activeConversation.title || 'New Chat'));
-                    setIsEditingTitle(true);
-                  }}
-                  className="opacity-0 group-hover:opacity-100 p-0.5 text-slate-400 hover:text-purple-300 transition-opacity cursor-pointer"
-                  title="Rename Chat"
-                >
-                  <Edit2 className="w-3 h-3" />
-                </button>
-              </div>
-            )
-          ) : (
-            <span className="font-sans font-semibold text-xs md:text-sm text-slate-200">
-              New Chat
-            </span>
-          )}
-        </div>
+        {/* Quick New Chat Button in Header */}
+        {onClearChat && (
+          <button
+            onClick={onClearChat}
+            className="hidden sm:flex items-center gap-1.5 ml-2 px-3 py-1.5 rounded-full bg-white/[0.04] hover:bg-[#122814] border border-white/10 hover:border-[rgba(180,255,100,0.3)] text-xs text-[#A8B0A5] hover:text-[#9CFF45] transition-all cursor-pointer"
+            title="Start New Chat"
+          >
+            <Plus className="w-3.5 h-3.5 text-[#9CFF45]" />
+            <span>New Chat</span>
+          </button>
+        )}
       </div>
 
-      {/* Right: Model Selector, Document Scope, Theme, Settings, Sign In */}
-      <div className="flex items-center gap-2 flex-shrink-0">
-        {/* Active Document Scope Tag */}
+      {/* RIGHT: Selected Doc indicator, Theme toggle, Settings, User Profile */}
+      <div className="flex items-center gap-2 sm:gap-3">
+        {/* Scoped Document Indicator */}
         {selectedDocument && (
-          <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-cyan-950/60 border border-cyan-500/40 text-cyan-200 text-xs font-mono">
-            <FileText className="w-3 h-3 text-cyan-400" />
-            <span className="truncate max-w-[120px]">{selectedDocument.file_name}</span>
+          <div className="hidden md:flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#0d200f] border border-[rgba(180,255,100,0.3)] text-xs text-[#9CFF45]">
+            <FileText className="w-3.5 h-3.5" />
+            <span className="truncate max-w-[140px]">{selectedDocument.file_name}</span>
             {onClearDocumentScope && (
-              <button onClick={onClearDocumentScope} className="hover:text-white cursor-pointer ml-0.5">
+              <button
+                onClick={onClearDocumentScope}
+                className="hover:text-rose-400 cursor-pointer ml-0.5"
+                title="Clear scoped document"
+              >
                 <X className="w-3 h-3" />
               </button>
             )}
           </div>
         )}
 
-        {/* AI Model Selector Dropdown */}
-        <div className="relative">
-          <button
-            onClick={() => setModelDropdownOpen(!modelDropdownOpen)}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-[#120a22]/80 hover:bg-[#1a0f32] border border-purple-500/30 text-xs font-sans text-purple-200 hover:text-white transition-all cursor-pointer shadow-sm"
-          >
-            <Cpu className="w-3.5 h-3.5 text-purple-400" />
-            <span className="hidden sm:inline font-medium">{selectedModel}</span>
-            <span className="sm:hidden font-medium">GPT-4o</span>
-            <ChevronDown className="w-3 h-3 text-purple-400" />
-          </button>
-
-          {modelDropdownOpen && (
-            <div className="absolute right-0 mt-2 w-64 p-2 rounded-2xl bg-[#0c0618]/95 border border-purple-500/30 backdrop-blur-2xl shadow-[0_15px_40px_rgba(0,0,0,0.9)] z-50 animate-in fade-in zoom-in-95 duration-150">
-              <div className="px-2 py-1 text-[10px] font-mono text-purple-400 uppercase tracking-widest font-semibold border-b border-white/10 mb-1">
-                Select AI Engine
-              </div>
-              {MODELS.map(m => (
-                <button
-                  key={m.id}
-                  onClick={() => {
-                    setSelectedModel(m.name);
-                    setModelDropdownOpen(false);
-                  }}
-                  className={`w-full text-left p-2 rounded-xl text-xs transition-colors cursor-pointer ${
-                    selectedModel === m.name
-                      ? 'bg-purple-600/30 border border-purple-400/50 text-white font-semibold'
-                      : 'hover:bg-white/[0.06] text-slate-300 hover:text-white'
-                  }`}
-                >
-                  <p className="font-sans font-medium">{m.name}</p>
-                  <p className="text-[10px] text-slate-400 font-sans mt-0.5">{m.desc}</p>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Clear / New Chat Trigger */}
-        {activeConversation && onClearChat && (
-          <button
-            onClick={onClearChat}
-            className="p-2 rounded-xl hover:bg-white/10 text-slate-400 hover:text-purple-300 transition-colors cursor-pointer"
-            title="Reset Workspace"
-          >
-            <RefreshCw className="w-4 h-4" />
-          </button>
-        )}
-
-        {/* Theme Mode Toggle */}
+        {/* Dark / Light Theme Toggle */}
         <button
           onClick={onToggleTheme}
-          className="p-2 rounded-xl hover:bg-white/10 text-slate-300 hover:text-purple-300 transition-colors cursor-pointer"
-          title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
+          className="p-2 rounded-xl text-[#A8B0A5] hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+          title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
         >
-          {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          {theme === 'dark' ? <Moon className="w-4 h-4 text-[#9CFF45]" /> : <Sun className="w-4 h-4 text-[#9CFF45]" />}
         </button>
 
-        {/* Settings Control */}
+        {/* Settings Button */}
         <button
           onClick={onOpenSettings}
-          className="p-2 rounded-xl hover:bg-white/10 text-slate-300 hover:text-purple-300 transition-colors cursor-pointer"
+          className="p-2 rounded-xl text-[#A8B0A5] hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
           title="Settings"
         >
           <Settings className="w-4 h-4" />
         </button>
 
-        {/* Auth Button */}
-        {!isAuthenticated && onOpenAuth && (
-          <PMLButton
+        {/* User Account / Sign in Button */}
+        {isAuthenticated && userProfile ? (
+          <div className="relative">
+            <button
+              onClick={() => setUserDropdownOpen(prev => !prev)}
+              className="flex items-center gap-2 pl-2 pr-1 py-1 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 transition-colors cursor-pointer"
+            >
+              <div className="w-6 h-6 rounded-full bg-[#9CFF45] text-[#050805] text-xs font-bold flex items-center justify-center">
+                {userProfile.name?.charAt(0).toUpperCase() || 'U'}
+              </div>
+              <span className="hidden sm:inline-block text-xs font-medium text-white max-w-[100px] truncate">
+                {userProfile.name}
+              </span>
+              <ChevronDown className="w-3.5 h-3.5 text-[#A8B0A5]" />
+            </button>
+
+            {userDropdownOpen && (
+              <div 
+                className="absolute right-0 mt-2 w-48 py-1.5 rounded-2xl bg-[#09120a] border border-[rgba(180,255,100,0.25)] shadow-2xl backdrop-blur-xl z-50 text-xs text-[#A8B0A5]"
+                onMouseLeave={() => setUserDropdownOpen(false)}
+              >
+                <button
+                  onClick={() => {
+                    setUserDropdownOpen(false);
+                    if (onOpenProfile) onOpenProfile();
+                  }}
+                  className="w-full flex items-center gap-2 px-3.5 py-2 hover:bg-white/10 hover:text-white text-left cursor-pointer"
+                >
+                  <UserIcon className="w-3.5 h-3.5 text-[#9CFF45]" />
+                  <span>Profile & Account</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setUserDropdownOpen(false);
+                    onOpenSettings();
+                  }}
+                  className="w-full flex items-center gap-2 px-3.5 py-2 hover:bg-white/10 hover:text-white text-left cursor-pointer"
+                >
+                  <Settings className="w-3.5 h-3.5 text-[#9CFF45]" />
+                  <span>Settings</span>
+                </button>
+                <div className="h-[1px] bg-white/10 my-1" />
+                {onSignOut && (
+                  <button
+                    onClick={() => {
+                      setUserDropdownOpen(false);
+                      onSignOut();
+                    }}
+                    className="w-full flex items-center gap-2 px-3.5 py-2 hover:bg-rose-950/40 text-rose-300 hover:text-rose-200 text-left cursor-pointer"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span>Sign Out</span>
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        ) : (
+          <button
             onClick={onOpenAuth}
-            variant="primary"
-            size="sm"
-            icon={<LogIn className="w-3.5 h-3.5" />}
+            className="btn-lime px-4 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1 cursor-pointer shadow-[0_0_15px_rgba(156,255,69,0.25)]"
           >
-            <span className="hidden sm:inline">Sign In</span>
-          </PMLButton>
+            <span>Sign In</span>
+          </button>
         )}
       </div>
     </header>

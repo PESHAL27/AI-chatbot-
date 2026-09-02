@@ -352,17 +352,17 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
 
       {/* Active Document Scoping Pill */}
       {selectedDocument && (
-        <div className="mb-2 flex items-center justify-between px-3.5 py-1.5 rounded-xl bg-violet-900/40 border border-violet-500/40 backdrop-blur-md text-xs text-violet-200 animate-fadeIn shadow-[0_0_15px_rgba(139,92,246,0.2)]">
+        <div className="mb-2 flex items-center justify-between px-3.5 py-1.5 rounded-xl bg-[#0d2210] border border-[rgba(180,255,100,0.3)] backdrop-blur-md text-xs text-[#9CFF45] animate-fadeIn shadow-[0_0_15px_rgba(156,255,69,0.15)]">
           <div className="flex items-center gap-2">
             <span className="text-base">📄</span>
-            <span className="font-semibold truncate max-w-[280px] font-mono">{selectedDocument.file_name}</span>
-            <span className="px-2 py-0.5 text-[10px] font-bold uppercase rounded-full bg-violet-500/20 text-violet-300 border border-violet-400/30 font-mono">
+            <span className="font-semibold truncate max-w-[280px]">{selectedDocument.file_name}</span>
+            <span className="px-2 py-0.5 text-[10px] font-bold uppercase rounded-full bg-[#153218] text-[#9CFF45] border border-[rgba(180,255,100,0.2)]">
               Scoped RAG Document
             </span>
           </div>
           <button
             onClick={onClearDocumentScope}
-            className="text-violet-400 hover:text-white flex items-center gap-1 text-[11px] font-semibold transition-colors cursor-pointer"
+            className="text-[#A8B0A5] hover:text-white flex items-center gap-1 text-[11px] font-semibold transition-colors cursor-pointer"
             title="Clear document filter to search all documents"
           >
             <span>Search All Docs</span>
@@ -373,7 +373,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
 
       {/* File & Image Attachment Previews */}
       {attachments.length > 0 && (
-        <div className="mb-2 flex flex-wrap gap-2 p-2.5 rounded-2xl bg-[#0d071a]/85 border border-purple-500/30 backdrop-blur-xl shadow-lg animate-fadeIn">
+        <div className="mb-2 flex flex-wrap gap-2 p-2.5 rounded-2xl bg-[#081209]/90 border border-[rgba(180,255,100,0.25)] backdrop-blur-xl shadow-lg animate-fadeIn">
           {attachments.map(att => (
             <PMLFileCard
               key={att.id}
@@ -385,8 +385,59 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
         </div>
       )}
 
-      {/* Futuristic Floating Command Console */}
-      <div className="relative glitter-glass-search rounded-3xl p-3.5 flex flex-col gap-2 transition-all duration-300 focus-within:border-purple-400 focus-within:shadow-[0_0_35px_rgba(168,85,247,0.45),inset_0_0_20px_rgba(168,85,247,0.2)]">
+      {/* Ultra-Modern Model-Version Command Console */}
+      <div className="relative pml-modern-console p-3.5 sm:p-4 flex flex-col gap-2 transition-all duration-300">
+        {/* Top Model & Tool Switcher Bar */}
+        <div className="flex items-center justify-between gap-2 border-b border-white/5 pb-2 overflow-x-auto">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="pml-mode-pill active px-2.5 py-0.5 rounded-full text-[11px] font-medium flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#9CFF45] animate-pulse" />
+              <span>Auto-Route</span>
+            </span>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (!input.toLowerCase().startsWith('search')) {
+                  setInput(prev => prev ? `Search web: ${prev}` : 'Search web: ');
+                  textareaRef.current?.focus();
+                }
+              }}
+              className="pml-mode-pill px-2.5 py-0.5 rounded-full text-[11px] font-medium flex items-center gap-1 cursor-pointer"
+            >
+              <span>🌐 Web</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (onOpenDocumentLibrary) onOpenDocumentLibrary();
+              }}
+              className="pml-mode-pill px-2.5 py-0.5 rounded-full text-[11px] font-medium flex items-center gap-1 cursor-pointer"
+            >
+              <span>📄 Docs</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (!input.toLowerCase().startsWith('calculate')) {
+                  setInput(prev => prev ? `Calculate: ${prev}` : 'Calculate: ');
+                  textareaRef.current?.focus();
+                }
+              }}
+              className="pml-mode-pill px-2.5 py-0.5 rounded-full text-[11px] font-medium flex items-center gap-1 cursor-pointer"
+            >
+              <span>🧮 Math</span>
+            </button>
+          </div>
+
+          <div className="flex items-center gap-1 text-[10.5px] font-mono text-[#A8B0A5] px-2 py-0.5 rounded bg-white/5 border border-white/5 flex-shrink-0">
+            <Radio className="w-2.5 h-2.5 text-[#9CFF45] animate-pulse" />
+            <span>PML 4.5 Pro</span>
+          </div>
+        </div>
+
         <textarea
           ref={textareaRef}
           value={interimTranscript ? `${input} ${interimTranscript}` : input}
@@ -395,26 +446,26 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
           onPaste={handlePaste}
           placeholder={
             isRecording
-              ? "Listening to speech (words appearing live)..."
+              ? "🎙️ Listening to voice speech (words appearing live)..."
               : selectedDocument 
                 ? `Ask questions about ${selectedDocument.file_name}...` 
                 : ROTATING_PLACEHOLDERS[placeholderIndex]
           }
           rows={1}
-          className="w-full bg-transparent px-3 py-2 text-sm md:text-base text-white placeholder-slate-400/80 focus:outline-none resize-none cosmic-scroll max-h-[180px] font-sans leading-relaxed"
+          className="w-full bg-transparent px-2 py-1 text-sm md:text-base text-white placeholder-[#758072] focus:outline-none resize-none max-h-[160px] font-sans leading-relaxed"
         />
 
         {/* Action Controls Bar */}
-        <div className="flex items-center justify-between border-t border-white/10 pt-2 px-1">
-          <div className="flex items-center gap-1.5">
+        <div className="flex items-center justify-between border-t border-white/5 pt-2 px-1">
+          <div className="flex items-center gap-1">
             {/* Plus Hub Menu */}
             <div className="relative" ref={plusMenuRef}>
               <button
                 onClick={() => setShowPlusMenu(prev => !prev)}
                 className={`p-2 rounded-xl border transition-all cursor-pointer ${
                   showPlusMenu 
-                    ? 'bg-purple-600/40 text-purple-200 border-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.5)]' 
-                    : 'hover:bg-white/10 text-slate-300 hover:text-white border-transparent'
+                    ? 'bg-[#153218] text-[#9CFF45] border-[rgba(180,255,100,0.4)] shadow-[0_0_15px_rgba(156,255,69,0.25)]' 
+                    : 'hover:bg-white/10 text-[#A8B0A5] hover:text-white border-transparent'
                 }`}
                 title="Attach Image (Vision) or Document (RAG)"
               >
@@ -422,23 +473,23 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
               </button>
 
               {showPlusMenu && (
-                <div className="absolute bottom-full left-0 mb-2 w-64 p-1.5 rounded-2xl bg-[#0f091f]/95 border border-purple-500/40 shadow-2xl shadow-black/90 backdrop-blur-2xl z-50 animate-fadeIn text-xs text-purple-200 space-y-1">
+                <div className="absolute bottom-full left-0 mb-2 w-64 p-1.5 rounded-2xl bg-[#09120a]/95 border border-[rgba(180,255,100,0.25)] shadow-2xl shadow-black/90 backdrop-blur-2xl z-50 animate-fadeIn text-xs text-[#A8B0A5] space-y-1">
                   {/* Vision Upload */}
                   <button
                     onClick={() => {
                       setShowPlusMenu(false);
                       imageInputRef.current?.click();
                     }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-purple-600/30 hover:text-white transition-colors text-left cursor-pointer"
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-white/10 hover:text-white transition-colors text-left cursor-pointer"
                   >
-                    <Camera className="w-4 h-4 text-purple-400" />
+                    <Camera className="w-4 h-4 text-[#9CFF45]" />
                     <div>
-                      <div className="font-semibold text-purple-100">Upload Image (Vision)</div>
-                      <div className="text-[10px] text-purple-300">Code screenshot, math, diagrams</div>
+                      <div className="font-semibold text-white">Upload Image (Vision)</div>
+                      <div className="text-[10px] text-[#A8B0A5]">Code screenshot, math, diagrams</div>
                     </div>
                   </button>
 
-                  <div className="h-[1px] bg-purple-500/20 my-1" />
+                  <div className="h-[1px] bg-white/10 my-1" />
 
                   {/* Document RAG Upload */}
                   <button
@@ -446,12 +497,12 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
                       setShowPlusMenu(false);
                       docRAGInputRef.current?.click();
                     }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-purple-600/30 hover:text-white transition-colors text-left cursor-pointer"
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-white/10 hover:text-white transition-colors text-left cursor-pointer"
                   >
-                    <span>📄</span>
+                    <span className="text-[#9CFF45]">📄</span>
                     <div>
-                      <div className="font-semibold text-violet-100">Upload Document (RAG)</div>
-                      <div className="text-[10px] text-violet-400">PDF, DOCX, TXT vector search</div>
+                      <div className="font-semibold text-white">Upload Document (RAG)</div>
+                      <div className="text-[10px] text-[#A8B0A5]">PDF, DOCX, TXT vector search</div>
                     </div>
                   </button>
 
@@ -461,33 +512,29 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
                       setShowPlusMenu(false);
                       if (onOpenDocumentLibrary) onOpenDocumentLibrary();
                     }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-purple-600/30 hover:text-white transition-colors text-left cursor-pointer"
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-white/10 hover:text-white transition-colors text-left cursor-pointer"
                   >
-                    <BookOpen className="w-4 h-4 text-violet-400" />
+                    <BookOpen className="w-4 h-4 text-[#9CFF45]" />
                     <div>
-                      <div className="font-semibold text-violet-100">Document Library</div>
-                      <div className="text-[10px] text-violet-400">Manage vector documents</div>
+                      <div className="font-semibold text-white">Document Library</div>
+                      <div className="text-[10px] text-[#A8B0A5]">Manage vector documents</div>
                     </div>
                   </button>
                 </div>
               )}
             </div>
 
-            {/* Microphone Button with 3-Ring Orbital Energy Field */}
+            {/* Microphone Button */}
             <div className="relative flex items-center justify-center">
               {isRecording && (
-                <>
-                  <span className="pointer-events-none absolute w-9 h-9 rounded-full border border-rose-500/80 animate-ping" />
-                  <span className="pointer-events-none absolute w-11 h-11 rounded-full border border-purple-500/50 animate-pulse [animation-duration:1.5s]" />
-                  <span className="pointer-events-none absolute w-13 h-13 rounded-full border border-violet-500/30 animate-spin [animation-duration:3s]" />
-                </>
+                <span className="pointer-events-none absolute w-9 h-9 rounded-full border border-rose-500/80 animate-ping" />
               )}
               <button
                 onClick={toggleVoiceInput}
-                className={`relative p-2.5 rounded-xl transition-all duration-200 cursor-pointer z-10 ${
+                className={`relative p-2 rounded-xl transition-all duration-200 cursor-pointer z-10 ${
                   isRecording
                     ? 'bg-rose-600/40 text-rose-300 border border-rose-400 shadow-[0_0_25px_rgba(244,63,94,0.8)] scale-105'
-                    : 'hover:bg-white/10 text-slate-300 hover:text-purple-300 border border-transparent'
+                    : 'hover:bg-white/10 text-[#A8B0A5] hover:text-[#9CFF45] border border-transparent'
                 }`}
                 title={isRecording ? 'Stop Voice Recording' : 'Voice Input (Speak to PML AI)'}
               >
@@ -498,7 +545,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
             {/* Image Trigger (Vision) */}
             <button
               onClick={() => imageInputRef.current?.click()}
-              className="p-2.5 rounded-xl hover:bg-white/10 text-slate-300 hover:text-purple-300 border border-transparent transition-colors cursor-pointer"
+              className="p-2 rounded-xl hover:bg-white/10 text-[#A8B0A5] hover:text-[#9CFF45] border border-transparent transition-colors cursor-pointer"
               title="Attach Image for Visual Analysis (Vision)"
             >
               <ImageIcon className="w-4 h-4" />
@@ -507,7 +554,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
             {/* Document Trigger (RAG) */}
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="p-2.5 rounded-xl hover:bg-white/10 text-slate-300 hover:text-purple-300 border border-transparent transition-colors cursor-pointer"
+              className="p-2 rounded-xl hover:bg-white/10 text-[#A8B0A5] hover:text-[#9CFF45] border border-transparent transition-colors cursor-pointer"
               title="Attach Document for Vector Knowledge (RAG)"
             >
               <Paperclip className="w-4 h-4" />
@@ -540,33 +587,33 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
           </div>
 
           {/* Send / Abort Controls */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            <span className="hidden sm:inline-block text-[10.5px] font-mono text-[#758072]">
+              Enter ↵
+            </span>
+
             {isStreaming ? (
               <button
                 onClick={onStopGeneration}
-                className="px-4 py-2 rounded-xl bg-purple-950/80 border border-purple-500/60 hover:bg-purple-900 text-purple-200 text-xs font-bold font-display flex items-center gap-1.5 transition-all shadow-[0_0_15px_rgba(168,85,247,0.4)] cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-rose-950/80 border border-rose-500/60 hover:bg-rose-900 text-rose-200 text-xs font-bold flex items-center gap-1.5 transition-all shadow-[0_0_15px_rgba(244,63,94,0.4)] cursor-pointer"
               >
                 <Square className="w-3.5 h-3.5 fill-current" />
-                <span>ABORT</span>
+                <span>STOP</span>
               </button>
             ) : (
               <button
                 onClick={handleSend}
                 disabled={!input.trim() && !interimTranscript.trim() && attachments.length === 0}
                 className="
-                  group relative flex items-center justify-center px-5 py-2.5 rounded-2xl
-                  bg-gradient-to-tr from-violet-600 via-indigo-600 to-purple-600 
-                  hover:from-violet-500 hover:to-purple-500 
-                  text-white font-display font-bold text-xs uppercase tracking-wider 
-                  shadow-[0_0_25px_rgba(139,92,246,0.55)] hover:shadow-[0_0_40px_rgba(168,85,247,0.85)] 
-                  hover:-translate-y-0.5 active:scale-95 active:translate-y-0.5
+                  pml-expand-btn flex items-center justify-center px-4 sm:px-5 py-2 rounded-xl
+                  text-xs font-bold
                   disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none
-                  transition-all duration-200 gap-2 border border-white/25 cursor-pointer
+                  transition-all duration-300 gap-1.5 cursor-pointer
                 "
                 title="Send Message to PML AI"
               >
-                <span>SEND</span>
-                <Send className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                <span>Send</span>
+                <Send className="w-3.5 h-3.5" />
               </button>
             )}
           </div>

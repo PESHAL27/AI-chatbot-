@@ -165,51 +165,38 @@ export const DocumentLibraryModal: React.FC<DocumentLibraryModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fadeIn">
-      <div 
-        className="w-full max-w-3xl rounded-2xl border border-violet-500/30 bg-[#0f0b1f]/95 text-white shadow-2xl shadow-violet-950/60 flex flex-col max-h-[90vh] overflow-hidden relative"
-        onClick={e => e.stopPropagation()}
-      >
-        {/* Header with glowing cosmic tab style */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-violet-500/20 bg-gradient-to-r from-violet-900/30 via-purple-900/20 to-transparent">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
+      <div className="relative w-full max-w-3xl rounded-3xl bg-[#071208] border border-[rgba(180,255,100,0.25)] shadow-2xl flex flex-col max-h-[88vh] overflow-hidden">
+        {/* Header */}
+        <div className="p-6 pb-4 border-b border-white/10 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-violet-600/20 border border-violet-500/40 flex items-center justify-center text-xl shadow-[0_0_15px_rgba(139,92,246,0.3)]">
-              📚
+            <div className="w-10 h-10 rounded-2xl bg-[#0f2412] border border-[rgba(180,255,100,0.3)] flex items-center justify-center text-[#9CFF45]">
+              <span className="text-xl">📄</span>
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-xl font-bold tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-violet-200 via-purple-100 to-indigo-200">
-                  Document Intelligence & RAG
-                </h2>
-                <span className="px-2 py-0.5 text-xs font-semibold uppercase tracking-wider text-violet-300 bg-violet-500/20 border border-violet-500/30 rounded-full">
-                  Phase 7
-                </span>
-              </div>
-              <p className="text-xs text-violet-300/70 mt-0.5">
-                Upload PDFs, DOCX, and text notes. PML extracts text, creates vector embeddings, and answers grounded questions.
-              </p>
+              <h2 className="text-lg font-bold text-white">Document Intelligence & RAG Library</h2>
+              <p className="text-xs text-[#A8B0A5]">Upload PDFs, DOCX, or text notes for semantic vector reasoning</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full flex items-center justify-center text-violet-400 hover:text-white hover:bg-violet-500/20 transition-all"
-            title="Close"
+            className="p-2 rounded-xl text-[#A8B0A5] hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
           >
             ✕
           </button>
         </div>
 
         {/* Upload Zone / Dropzone */}
-        <div className="p-6 pb-4 border-b border-violet-500/15 bg-violet-950/20">
+        <div className="p-6 pb-4 border-b border-white/5 bg-[#0a180b]/60">
           <div
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
             onClick={() => fileInputRef.current?.click()}
-            className={`cursor-pointer rounded-xl border-2 border-dashed transition-all p-5 flex flex-col items-center justify-center text-center ${
+            className={`cursor-pointer rounded-2xl border-2 border-dashed transition-all p-5 flex flex-col items-center justify-center text-center ${
               isDragging
-                ? 'border-violet-400 bg-violet-600/20 shadow-[0_0_20px_rgba(139,92,246,0.4)] scale-[0.99]'
-                : 'border-violet-500/30 bg-violet-900/10 hover:border-violet-400/60 hover:bg-violet-800/15'
+                ? 'border-[#9CFF45] bg-[#122814] shadow-[0_0_20px_rgba(156,255,69,0.3)] scale-[0.99]'
+                : 'border-[rgba(180,255,100,0.2)] bg-[#071208]/60 hover:border-[rgba(180,255,100,0.45)] hover:bg-[#0f2412]/40'
             }`}
           >
             <input
@@ -219,13 +206,13 @@ export const DocumentLibraryModal: React.FC<DocumentLibraryModalProps> = ({
               accept=".pdf,.docx,.doc,.txt,.md,.csv"
               className="hidden"
             />
-            <div className="w-12 h-12 rounded-full bg-violet-500/20 border border-violet-400/30 flex items-center justify-center text-2xl mb-2 text-violet-300">
+            <div className="w-12 h-12 rounded-full bg-[#122814] border border-[rgba(180,255,100,0.3)] flex items-center justify-center text-2xl mb-2 text-[#9CFF45]">
               {uploading ? '⏳' : '⬆️'}
             </div>
-            <div className="text-sm font-semibold text-violet-200">
+            <div className="text-sm font-semibold text-white">
               {uploading ? 'Uploading and parsing document...' : 'Click to Upload or Drag & Drop Document'}
             </div>
-            <div className="text-xs text-violet-400/80 mt-1 flex items-center gap-2">
+            <div className="text-xs text-[#A8B0A5] mt-1 flex items-center gap-2">
               <span>Supported: PDF, DOCX, TXT</span>
               <span>•</span>
               <span>Max 25MB</span>
@@ -233,44 +220,44 @@ export const DocumentLibraryModal: React.FC<DocumentLibraryModalProps> = ({
           </div>
 
           {uploadError && (
-            <div className="mt-3 p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center justify-between">
+            <div className="mt-3 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center justify-between">
               <span>⚠️ {uploadError}</span>
-              <button onClick={() => setUploadError(null)} className="text-rose-400 hover:text-rose-200">✕</button>
+              <button onClick={() => setUploadError(null)} className="text-rose-400 hover:text-rose-200 cursor-pointer">✕</button>
             </div>
           )}
         </div>
 
         {/* Search and Scope Filter Bar */}
-        <div className="px-6 py-3 flex items-center justify-between gap-3 border-b border-violet-500/15 bg-[#140e2b]">
+        <div className="px-6 py-3 flex items-center justify-between gap-3 border-b border-white/5 bg-[#050c06]">
           <div className="relative flex-1">
             <input
               type="text"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder="Search uploaded documents..."
-              className="w-full pl-9 pr-4 py-1.5 text-xs rounded-lg bg-violet-950/40 border border-violet-500/30 text-violet-100 placeholder-violet-400/50 focus:outline-none focus:border-violet-400"
+              className="w-full pl-9 pr-4 py-1.5 text-xs rounded-xl bg-[#0c180d] border border-[rgba(180,255,100,0.2)] text-white placeholder-[#758072] focus:outline-none focus:border-[#9CFF45]"
             />
-            <span className="absolute left-3 top-2 text-xs text-violet-400">🔍</span>
+            <span className="absolute left-3 top-2 text-xs text-[#9CFF45]">🔍</span>
           </div>
 
           <div className="flex items-center gap-2">
             {selectedDocumentId ? (
               <button
                 onClick={() => onSelectDocument(null)}
-                className="px-3 py-1.5 text-xs rounded-lg bg-violet-500/20 border border-violet-500/40 text-violet-200 hover:bg-violet-500/30 transition-all flex items-center gap-1.5"
+                className="px-3 py-1.5 text-xs rounded-xl bg-[#122814] border border-[#9CFF45]/40 text-[#9CFF45] hover:bg-[#153218] transition-all flex items-center gap-1.5 cursor-pointer"
                 title="Search all documents"
               >
                 <span>Scope: Selected Doc</span>
-                <span className="text-violet-400 hover:text-white font-bold">✕ Reset</span>
+                <span className="text-white font-bold">✕ Reset</span>
               </button>
             ) : (
-              <span className="px-3 py-1.5 text-xs rounded-lg bg-violet-900/30 border border-violet-500/20 text-violet-300/80">
+              <span className="px-3 py-1.5 text-xs rounded-xl bg-white/5 border border-white/10 text-[#A8B0A5]">
                 Scope: All Documents
               </span>
             )}
             <button
               onClick={loadDocuments}
-              className="p-1.5 text-xs rounded-lg bg-violet-950/40 border border-violet-500/30 text-violet-300 hover:text-white hover:bg-violet-800/30 transition-all"
+              className="p-1.5 text-xs rounded-xl bg-[#0c180d] border border-white/10 text-[#A8B0A5] hover:text-white transition-all cursor-pointer"
               title="Refresh Document List"
             >
               🔄
@@ -279,18 +266,18 @@ export const DocumentLibraryModal: React.FC<DocumentLibraryModalProps> = ({
         </div>
 
         {/* Document List */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-3 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto p-6 space-y-3">
           {loading ? (
-            <div className="py-12 flex flex-col items-center justify-center text-violet-400 gap-2">
-              <div className="w-8 h-8 rounded-full border-2 border-violet-500 border-t-transparent animate-spin"></div>
-              <span className="text-xs">Loading document library...</span>
+            <div className="py-12 flex flex-col items-center justify-center text-[#9CFF45] gap-2">
+              <div className="w-8 h-8 rounded-full border-2 border-[#9CFF45] border-t-transparent animate-spin"></div>
+              <span className="text-xs text-[#A8B0A5]">Loading document library...</span>
             </div>
           ) : filteredDocs.length === 0 ? (
-            <div className="py-12 flex flex-col items-center justify-center text-center text-violet-400/70">
+            <div className="py-12 flex flex-col items-center justify-center text-center text-[#A8B0A5]">
               <div className="text-4xl mb-2">📄</div>
-              <div className="text-sm font-semibold text-violet-200">No documents uploaded yet</div>
-              <p className="text-xs text-violet-400/70 max-w-sm mt-1">
-                Upload your course notes, assignment PDFs, or project specifications. PML will parse and index them for grounded AI reasoning.
+              <div className="text-sm font-semibold text-white">No documents uploaded yet</div>
+              <p className="text-xs text-[#A8B0A5] max-w-sm mt-1">
+                Upload notes, assignment PDFs, or project specifications. PML will parse and index them for grounded AI reasoning.
               </p>
             </div>
           ) : (
@@ -300,32 +287,32 @@ export const DocumentLibraryModal: React.FC<DocumentLibraryModalProps> = ({
                 <div
                   key={doc.id}
                   onClick={() => onSelectDocument(isSelected ? null : doc)}
-                  className={`p-4 rounded-xl border transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                  className={`p-4 rounded-2xl border transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
                     isSelected
-                      ? 'border-violet-400 bg-violet-600/20 shadow-[0_0_15px_rgba(139,92,246,0.3)]'
-                      : 'border-violet-500/20 bg-violet-950/30 hover:border-violet-500/40 hover:bg-violet-900/20'
+                      ? 'border-[#9CFF45] bg-[#122814] shadow-[0_0_15px_rgba(156,255,69,0.2)]'
+                      : 'border-white/10 bg-[#0a180b]/60 hover:border-[rgba(180,255,100,0.3)] hover:bg-[#0f2412]/40'
                   }`}
                 >
                   <div className="flex items-start gap-3">
                     <div className="text-2xl mt-0.5">{getFileIcon(doc.file_type)}</div>
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-semibold text-sm text-violet-100">{doc.file_name}</span>
+                        <span className="font-semibold text-sm text-white">{doc.file_name}</span>
                         {isSelected && (
-                          <span className="px-2 py-0.5 text-[10px] font-bold uppercase rounded-full bg-violet-500/30 text-violet-200 border border-violet-400/50">
+                          <span className="px-2 py-0.5 text-[10px] font-bold uppercase rounded-full bg-[#9CFF45] text-[#050805]">
                             Active Scope
                           </span>
                         )}
                       </div>
 
-                      <div className="flex items-center gap-3 text-xs text-violet-400/70 mt-1 flex-wrap">
+                      <div className="flex items-center gap-3 text-xs text-[#A8B0A5] mt-1 flex-wrap">
                         <span>{formatFileSize(doc.file_size)}</span>
                         <span>•</span>
                         <span>{doc.file_type.toUpperCase()}</span>
                         {doc.chunk_count > 0 && (
                           <>
                             <span>•</span>
-                            <span className="text-violet-300">{doc.chunk_count} chunks indexed</span>
+                            <span className="text-[#9CFF45]">{doc.chunk_count} chunks indexed</span>
                           </>
                         )}
                       </div>
@@ -342,12 +329,12 @@ export const DocumentLibraryModal: React.FC<DocumentLibraryModalProps> = ({
                   <div className="flex items-center gap-2 self-end sm:self-center">
                     {/* Status Badge */}
                     {doc.status === 'ready' && (
-                      <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 flex items-center gap-1">
+                      <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-[#122814] border border-[#9CFF45]/40 text-[#9CFF45] flex items-center gap-1">
                         <span>✓</span> Ready
                       </span>
                     )}
                     {doc.status === 'processing' && (
-                      <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 flex items-center gap-1.5">
+                      <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 flex items-center gap-1.5">
                         <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
                         Processing...
                       </span>
@@ -359,7 +346,7 @@ export const DocumentLibraryModal: React.FC<DocumentLibraryModalProps> = ({
                         </span>
                         <button
                           onClick={e => handleRetry(doc.id, e)}
-                          className="px-2 py-1 text-xs rounded-lg bg-violet-600/30 hover:bg-violet-600/50 border border-violet-500/40 text-violet-200"
+                          className="px-2 py-1 text-xs rounded-lg bg-rose-600/30 hover:bg-rose-600/50 border border-rose-500/40 text-rose-200 cursor-pointer"
                           title="Retry processing"
                         >
                           Retry
@@ -374,7 +361,7 @@ export const DocumentLibraryModal: React.FC<DocumentLibraryModalProps> = ({
                         onSelectDocument(doc);
                         onClose();
                       }}
-                      className="px-3 py-1 text-xs rounded-lg bg-violet-600/40 hover:bg-violet-600 border border-violet-400/40 text-violet-100 hover:text-white transition-all shadow-[0_0_10px_rgba(139,92,246,0.2)]"
+                      className="px-3 py-1 text-xs rounded-lg bg-[#9CFF45] hover:bg-[#85e03b] text-[#050805] font-bold transition-all cursor-pointer"
                       title="Ask question about this document"
                     >
                       💬 Ask PML
@@ -383,7 +370,7 @@ export const DocumentLibraryModal: React.FC<DocumentLibraryModalProps> = ({
                     {/* Delete Button */}
                     <button
                       onClick={e => handleDelete(doc.id, e)}
-                      className="p-1.5 text-xs rounded-lg text-violet-400/70 hover:text-rose-300 hover:bg-rose-500/20 transition-all"
+                      className="p-1.5 text-xs rounded-xl text-[#A8B0A5] hover:text-rose-300 hover:bg-rose-500/20 transition-colors cursor-pointer"
                       title="Delete document"
                     >
                       🗑️
@@ -396,13 +383,13 @@ export const DocumentLibraryModal: React.FC<DocumentLibraryModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-violet-500/20 bg-gradient-to-r from-violet-950/40 via-purple-950/30 to-violet-950/40 flex items-center justify-between text-xs text-violet-400/80">
+        <div className="px-6 py-4 border-t border-white/10 bg-[#050c06] flex items-center justify-between text-xs text-[#A8B0A5]">
           <div>
-            Total Documents: <strong className="text-violet-200">{documents.length}</strong>
+            Total Documents: <strong className="text-white">{documents.length}</strong>
           </div>
           <button
             onClick={onClose}
-            className="px-4 py-1.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-medium shadow-[0_0_15px_rgba(139,92,246,0.4)] transition-all"
+            className="btn-lime px-5 py-2 rounded-full text-xs font-semibold cursor-pointer shadow-[0_0_15px_rgba(156,255,69,0.3)]"
           >
             Done
           </button>

@@ -78,16 +78,16 @@ export const MessageItem: React.FC<MessageItemProps> = ({
   };
 
   return (
-    <div className={`w-full flex ${isUser ? 'justify-end' : 'justify-start'} my-3.5 group`}>
-      <div className={`max-w-3xl w-full flex gap-3 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
+    <div className={`w-full flex ${isUser ? 'justify-end' : 'justify-start'} my-4 group`}>
+      <div className={`max-w-3xl w-full flex gap-3.5 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
         {/* Avatar Icon */}
         <div className="flex-shrink-0 pt-0.5">
           {isUser ? (
-            <div className="w-8 h-8 rounded-xl bg-purple-950/70 border border-purple-500/40 flex items-center justify-center text-purple-300 shadow-[0_0_12px_rgba(168,85,247,0.3)] backdrop-blur-md">
+            <div className="w-8 h-8 rounded-full bg-[#122814] border border-[rgba(180,255,100,0.3)] flex items-center justify-center text-[#9CFF45] shadow-sm backdrop-blur-md">
               <User className="w-4 h-4" />
             </div>
           ) : (
-            <div className="w-8 h-8 rounded-xl bg-black/80 border border-purple-500/40 flex items-center justify-center p-0.5 shadow-[0_0_15px_rgba(139,92,246,0.35)] backdrop-blur-md">
+            <div className="w-8 h-8 rounded-full bg-[#071208] border border-[rgba(180,255,100,0.35)] flex items-center justify-center p-1 shadow-[0_0_15px_rgba(156,255,69,0.2)] backdrop-blur-md">
               <PMLCore size="small" state={message.isStreaming ? 'responding' : 'idle'} />
             </div>
           )}
@@ -97,10 +97,10 @@ export const MessageItem: React.FC<MessageItemProps> = ({
         <div className={`flex-1 min-w-0 ${isUser ? 'items-end' : 'items-start'}`}>
           {/* Identity & Timestamp Line */}
           <div className={`flex items-center gap-2 mb-1.5 px-1 ${isUser ? 'justify-end' : 'justify-start'}`}>
-            <span className="font-display font-bold text-xs tracking-wider text-purple-200">
-              {isUser ? 'YOU' : '✦ PML AI'}
+            <span className="font-bold text-xs tracking-wider text-white">
+              {isUser ? 'YOU' : '✦ PML'}
             </span>
-            <span className="text-[10px] font-mono text-slate-400">
+            <span className="text-[10px] font-mono text-[#A8B0A5]/70">
               {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </span>
           </div>
@@ -111,21 +111,21 @@ export const MessageItem: React.FC<MessageItemProps> = ({
               {message.attachments.map((att: Attachment) => (
                 <div
                   key={att.id}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#120822]/85 border border-purple-500/35 text-xs text-purple-200 shadow-md backdrop-blur-xl"
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#0a180b]/90 border border-[rgba(180,255,100,0.2)] text-xs text-white shadow-md backdrop-blur-xl"
                 >
                   {att.type === 'image' && att.previewUrl ? (
                     <div className="flex items-center gap-2">
                       <img 
                         src={att.previewUrl} 
                         alt={att.name} 
-                        className="w-7 h-7 object-cover rounded-lg border border-purple-400/60 shadow-sm" 
+                        className="w-7 h-7 object-cover rounded-lg border border-[#9CFF45]/40 shadow-sm" 
                       />
-                      <span className="font-mono text-[11px] truncate max-w-[150px]">{att.name}</span>
+                      <span className="text-[11px] truncate max-w-[150px]">{att.name}</span>
                     </div>
                   ) : (
                     <>
-                      <FileText className="w-3.5 h-3.5 text-purple-400" />
-                      <span className="font-mono text-[11px] truncate max-w-[150px]">{att.name}</span>
+                      <FileText className="w-3.5 h-3.5 text-[#9CFF45]" />
+                      <span className="text-[11px] truncate max-w-[150px]">{att.name}</span>
                     </>
                   )}
                 </div>
@@ -145,14 +145,14 @@ export const MessageItem: React.FC<MessageItemProps> = ({
           {/* Bubble / Text Box */}
           <div
             className={`
-              p-4 rounded-2xl relative
+              p-4 rounded-3xl relative
               ${isUser 
-                ? 'cosmic-user-bubble text-white font-sans text-sm md:text-base leading-relaxed max-w-2xl' 
-                : 'cosmic-pml-bubble text-slate-100 font-sans text-sm md:text-base leading-relaxed w-full'
+                ? 'bg-[#0e2210] border border-[rgba(180,255,100,0.25)] text-white font-sans text-sm md:text-base leading-relaxed max-w-2xl ml-auto' 
+                : 'bg-[#071208]/90 border border-[rgba(180,255,100,0.15)] text-white font-sans text-sm md:text-base leading-relaxed w-full shadow-lg'
               }
             `}
           >
-            <div className="pml-markdown-content font-sans">
+            <div className="pml-markdown-content font-sans text-[#EAEAEA]">
               <ReactMarkdown
                 remarkPlugins={[remarkGfm, remarkMath]}
                 rehypePlugins={[rehypeKatex]}
@@ -164,9 +164,9 @@ export const MessageItem: React.FC<MessageItemProps> = ({
                     const isCopied = copiedCodeId === codeId;
 
                     return !inline && match ? (
-                      <div className="relative my-3.5 rounded-xl overflow-hidden border border-purple-500/35 bg-[#090514]/95 shadow-xl font-mono text-xs">
-                        <div className="flex items-center justify-between px-3.5 py-1.5 bg-[#140a28] border-b border-purple-500/25 text-[11px] text-purple-200">
-                          <span className="font-bold uppercase tracking-wider text-purple-300 font-mono">
+                      <div className="relative my-3.5 rounded-2xl overflow-hidden border border-[rgba(180,255,100,0.2)] bg-[#040804] shadow-xl font-mono text-xs">
+                        <div className="flex items-center justify-between px-3.5 py-2 bg-[#09150a] border-b border-white/5 text-[11px] text-[#A8B0A5]">
+                          <span className="font-bold uppercase tracking-wider text-[#9CFF45] font-mono">
                             {match[1]}
                           </span>
                           <button
@@ -176,25 +176,25 @@ export const MessageItem: React.FC<MessageItemProps> = ({
                           >
                             {isCopied ? (
                               <>
-                                <Check className="w-3 h-3 text-emerald-400" />
-                                <span className="text-emerald-400 font-bold">COPIED</span>
+                                <Check className="w-3 h-3 text-[#9CFF45]" />
+                                <span className="text-[#9CFF45] font-bold">COPIED</span>
                               </>
                             ) : (
                               <>
-                                <Copy className="w-3 h-3 text-purple-400" />
+                                <Copy className="w-3 h-3 text-[#A8B0A5]" />
                                 <span>COPY</span>
                               </>
                             )}
                           </button>
                         </div>
-                        <pre className="p-3.5 overflow-x-auto text-slate-200 leading-relaxed font-mono">
+                        <pre className="p-4 overflow-x-auto text-slate-200 leading-relaxed font-mono">
                           <code className={className} {...props}>
                             {children}
                           </code>
                         </pre>
                       </div>
                     ) : (
-                      <code className="px-1.5 py-0.5 rounded bg-purple-950/70 text-purple-200 border border-purple-500/30 font-mono text-[12px]" {...props}>
+                      <code className="px-1.5 py-0.5 rounded-md bg-[#122814] text-[#9CFF45] border border-[rgba(180,255,100,0.2)] font-mono text-[12px]" {...props}>
                         {children}
                       </code>
                     );
@@ -206,7 +206,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
                         href={safeHref}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-cyan-400 hover:text-cyan-300 underline font-medium transition-colors"
+                        className="text-[#9CFF45] hover:text-[#B5FF6A] underline font-medium transition-colors"
                         {...props}
                       >
                         {children}
@@ -219,15 +219,15 @@ export const MessageItem: React.FC<MessageItemProps> = ({
               </ReactMarkdown>
 
               {message.isStreaming && (
-                <span className="inline-block w-2 h-4 ml-1 bg-purple-400 animate-pulse align-middle rounded-sm shadow-[0_0_8px_#c084fc]" />
+                <span className="inline-block w-2 h-4 ml-1 bg-[#9CFF45] animate-pulse align-middle rounded-sm shadow-[0_0_8px_#9CFF45]" />
               )}
             </div>
 
             {/* Document RAG Citations */}
             {!isUser && message.sources && message.sources.length > 0 && (
               <div className="mt-3.5 pt-3 border-t border-white/10">
-                <div className="text-[10px] font-mono text-violet-300 uppercase tracking-widest font-semibold flex items-center gap-1.5 mb-2">
-                  <BookOpen className="w-3 h-3 text-violet-400" />
+                <div className="text-[10px] font-mono text-[#9CFF45] uppercase tracking-widest font-semibold flex items-center gap-1.5 mb-2">
+                  <BookOpen className="w-3 h-3 text-[#9CFF45]" />
                   <span>Document Sources ({message.sources.length})</span>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -235,20 +235,20 @@ export const MessageItem: React.FC<MessageItemProps> = ({
                     <button
                       key={idx}
                       onClick={() => setActiveExcerptIndex(activeExcerptIndex === idx ? null : idx)}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-mono transition-all flex items-center gap-1.5 cursor-pointer border ${
+                      className={`px-2.5 py-1 rounded-full text-xs font-mono transition-all flex items-center gap-1.5 cursor-pointer border ${
                         activeExcerptIndex === idx
-                          ? 'bg-violet-600/40 border-violet-400 text-white shadow-[0_0_12px_rgba(139,92,246,0.4)]'
-                          : 'bg-violet-950/40 border-violet-500/30 hover:border-violet-400 text-violet-200'
+                          ? 'bg-[#153218] border-[#9CFF45] text-white shadow-[0_0_12px_rgba(156,255,69,0.3)]'
+                          : 'bg-[#0a180b] border-[rgba(180,255,100,0.2)] hover:border-[#9CFF45]/50 text-[#A8B0A5]'
                       }`}
                     >
-                      <FileText className="w-3 h-3 text-violet-400" />
+                      <FileText className="w-3 h-3 text-[#9CFF45]" />
                       <span className="font-semibold">{src.file_name}</span>
                       {src.page_number && <span className="opacity-70">p.{src.page_number}</span>}
                     </button>
                   ))}
                 </div>
                 {activeExcerptIndex !== null && message.sources[activeExcerptIndex]?.excerpt && (
-                  <div className="mt-2 p-2.5 rounded-xl bg-violet-950/60 border border-violet-500/40 text-xs text-violet-100 font-sans italic animate-fadeIn">
+                  <div className="mt-2 p-2.5 rounded-2xl bg-[#0a180b] border border-[rgba(180,255,100,0.25)] text-xs text-[#A8B0A5] font-sans italic animate-fadeIn">
                     "{message.sources[activeExcerptIndex].excerpt}"
                   </div>
                 )}
@@ -258,7 +258,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
             {/* Web Search Sources */}
             {!isUser && message.webSources && message.webSources.length > 0 && (
               <div className="mt-3.5 pt-3 border-t border-white/10">
-                <div className="text-[10px] font-mono text-cyan-300 uppercase tracking-widest font-semibold mb-2">
+                <div className="text-[10px] font-mono text-[#9CFF45] uppercase tracking-widest font-semibold mb-2">
                   Live Web Citations ({message.webSources.length})
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -272,19 +272,19 @@ export const MessageItem: React.FC<MessageItemProps> = ({
 
           {/* Action Bar for PML Response */}
           {!isUser && !message.isStreaming && (
-            <div className="mt-2.5 px-2 flex items-center justify-between text-xs text-slate-400 flex-wrap gap-2">
+            <div className="mt-2 px-2 flex items-center justify-between text-xs text-[#A8B0A5] flex-wrap gap-2">
               <div className="flex items-center gap-2 flex-wrap">
-                <div className="flex items-center gap-1 font-mono text-[10px] text-purple-300 tracking-wider">
-                  <Sparkles className="w-3 h-3 text-purple-400 animate-pulse" />
+                <div className="flex items-center gap-1 text-[10px] text-[#9CFF45] tracking-wider font-semibold">
+                  <Sparkles className="w-3 h-3 text-[#9CFF45]" />
                   <span>PML NEURAL CORE</span>
                 </div>
 
                 {message.memoriesUsed && message.memoriesUsed.length > 0 && (
                   <div
-                    className="flex items-center gap-1 text-[10px] font-mono text-purple-200 bg-purple-950/60 px-2 py-0.5 rounded-full border border-purple-500/40"
+                    className="flex items-center gap-1 text-[10px] text-white bg-[#122814] px-2.5 py-0.5 rounded-full border border-[rgba(180,255,100,0.25)]"
                     title={`Recalled memories:\n${message.memoriesUsed.map(m => `• ${m}`).join('\n')}`}
                   >
-                    <Brain className="w-2.5 h-2.5 text-purple-400" />
+                    <Brain className="w-2.5 h-2.5 text-[#9CFF45]" />
                     <span>{message.memoriesUsed.length} {message.memoriesUsed.length === 1 ? 'memory' : 'memories'}</span>
                   </div>
                 )}
@@ -297,20 +297,20 @@ export const MessageItem: React.FC<MessageItemProps> = ({
                   className="p-1.5 rounded-lg hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
                   title="Copy response"
                 >
-                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copied ? <Check className="w-3.5 h-3.5 text-[#9CFF45]" /> : <Copy className="w-3.5 h-3.5" />}
                 </button>
 
                 {/* Read Aloud / Stop Voice Button */}
                 {isSpeakingThis ? (
-                  <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-purple-600/30 border border-purple-500/50 text-purple-200 text-xs shadow-[0_0_12px_rgba(168,85,247,0.4)]">
+                  <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[#153218] border border-[#9CFF45]/50 text-[#9CFF45] text-xs shadow-[0_0_12px_rgba(156,255,69,0.3)]">
                     <span className="flex items-center gap-0.5">
-                      <span className="w-0.5 h-2.5 bg-purple-300 rounded-full animate-bounce" />
-                      <span className="w-0.5 h-3.5 bg-purple-200 rounded-full animate-bounce [animation-delay:150ms]" />
-                      <span className="w-0.5 h-2 bg-purple-300 rounded-full animate-bounce [animation-delay:300ms]" />
+                      <span className="w-0.5 h-2.5 bg-[#9CFF45] rounded-full animate-bounce" />
+                      <span className="w-0.5 h-3.5 bg-[#B5FF6A] rounded-full animate-bounce [animation-delay:150ms]" />
+                      <span className="w-0.5 h-2 bg-[#9CFF45] rounded-full animate-bounce [animation-delay:300ms]" />
                     </span>
                     <button
                       onClick={() => voiceService.stopSpeaking()}
-                      className="p-0.5 hover:text-rose-400 text-purple-200 transition-colors cursor-pointer"
+                      className="p-0.5 hover:text-rose-400 text-[#9CFF45] transition-colors cursor-pointer"
                       title="Stop Audio Playback"
                     >
                       <Square className="w-3 h-3 fill-current" />
@@ -319,7 +319,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
                 ) : (
                   <button
                     onClick={handleToggleSpeak}
-                    className="p-1.5 rounded-lg hover:bg-white/10 hover:text-white text-slate-400 transition-colors cursor-pointer"
+                    className="p-1.5 rounded-lg hover:bg-white/10 hover:text-white text-[#A8B0A5] transition-colors cursor-pointer"
                     title="Read Aloud with Voice"
                   >
                     <Volume2 className="w-3.5 h-3.5" />
@@ -343,7 +343,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
                 <button
                   onClick={() => handleFeedbackClick('like')}
                   className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                    userFeedback === 'like' ? 'text-purple-300 bg-purple-600/30 border border-purple-500/40' : 'hover:bg-white/10 hover:text-white'
+                    userFeedback === 'like' ? 'text-[#9CFF45] bg-[#153218] border border-[#9CFF45]/40' : 'hover:bg-white/10 hover:text-white'
                   }`}
                   title="Helpful"
                 >

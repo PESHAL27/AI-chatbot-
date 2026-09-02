@@ -12,7 +12,6 @@ import {
   X
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { PMLCore } from './PMLCore';
 
 interface AuthExperienceProps {
   onClose?: () => void;
@@ -65,7 +64,7 @@ export const AuthExperience: React.FC<AuthExperienceProps> = ({ onClose }) => {
             setErrorMsg(error.message || 'Failed to sign in. Please verify your credentials.');
           }
         } else {
-          setSuccessMsg('Authentication successful! Welcome to PML Universe.');
+          setSuccessMsg('Authentication successful! Welcome to PML.');
           if (onClose) {
             setTimeout(onClose, 600);
           }
@@ -81,7 +80,7 @@ export const AuthExperience: React.FC<AuthExperienceProps> = ({ onClose }) => {
             setErrorMsg(error.message || 'Unable to create account. Please check your credentials.');
           }
         } else {
-          setSuccessMsg('Account created successfully! Connecting to PML Universe...');
+          setSuccessMsg('Account created successfully! Connecting to PML...');
           if (onClose) {
             setTimeout(onClose, 800);
           }
@@ -99,52 +98,62 @@ export const AuthExperience: React.FC<AuthExperienceProps> = ({ onClose }) => {
         }
       }
     } catch (err: any) {
-      setErrorMsg(err?.message || 'An unexpected authentication error occurred.');
+      setErrorMsg(err.message || 'An unexpected error occurred.');
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 bg-black/80 backdrop-blur-md">
-      <div className="w-full max-w-md glitter-glass-panel bg-black/95 p-8 md:p-10 rounded-3xl border border-purple-500/40 shadow-[0_0_60px_rgba(168,85,247,0.3)] flex flex-col items-center text-center relative pml-neon-card">
-        {/* Close Button if dismissible modal */}
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
+      <div className="w-full max-w-md rounded-3xl p-8 bg-[#071208] border border-[rgba(180,255,100,0.25)] shadow-2xl relative text-center">
+        {/* Close Button */}
         {onClose && (
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-2 rounded-xl hover:bg-white/10 text-slate-400 hover:text-white transition-colors cursor-pointer"
-            title="Close / Continue as Guest"
+            className="absolute top-5 right-5 p-2 rounded-xl text-[#A8B0A5] hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+            title="Close"
           >
             <X className="w-5 h-5" />
           </button>
         )}
 
-        {/* Core Orb Logo */}
-        <div className="mb-4 animate-float">
-          <PMLCore size="medium" state={submitting ? 'thinking' : 'idle'} />
+        {/* Logo */}
+        <div className="w-12 h-12 mx-auto rounded-2xl bg-[#0f2412] border border-[rgba(180,255,100,0.3)] flex items-center justify-center mb-4 text-[#9CFF45]">
+          <svg viewBox="0 0 32 32" className="w-8 h-8 text-[#9CFF45] fill-current">
+            <circle cx="16" cy="16" r="3.2" fill="#9CFF45" />
+            <circle cx="16" cy="6" r="2.2" fill="#9CFF45" opacity="0.9" />
+            <circle cx="16" cy="26" r="2.2" fill="#9CFF45" opacity="0.9" />
+            <circle cx="6" cy="16" r="2.2" fill="#9CFF45" opacity="0.9" />
+            <circle cx="26" cy="16" r="2.2" fill="#9CFF45" opacity="0.9" />
+            <circle cx="9" cy="9" r="1.8" fill="#9CFF45" opacity="0.75" />
+            <circle cx="23" cy="9" r="1.8" fill="#9CFF45" opacity="0.75" />
+            <circle cx="9" cy="23" r="1.8" fill="#9CFF45" opacity="0.75" />
+            <circle cx="23" cy="23" r="1.8" fill="#9CFF45" opacity="0.75" />
+          </svg>
         </div>
 
         {/* Title */}
-        <h1 className="font-display font-black text-3xl md:text-4xl text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-300 to-pink-500 tracking-wider mb-1 drop-shadow-[0_0_20px_rgba(168,85,247,0.4)]">
-          PML AI
+        <h1 className="font-display font-black text-2xl sm:text-3xl text-white tracking-tight mb-1">
+          {mode === 'login' && 'Sign in to PML'}
+          {mode === 'register' && 'Create your PML account'}
+          {mode === 'forgot' && 'Reset your password'}
         </h1>
-        <p className="font-mono text-xs text-purple-300 uppercase tracking-widest font-semibold mb-6">
-          {mode === 'login' && 'Neural Space Authentication'}
-          {mode === 'register' && 'Initialize PML Account'}
-          {mode === 'forgot' && 'Reset Neural Access Key'}
+        <p className="text-xs text-[#A8B0A5] mb-6">
+          Your intelligent AI assistant to explore, analyze, and create.
         </p>
 
         {/* Error / Success Notifications */}
         {errorMsg && (
-          <div className="w-full p-3.5 mb-5 rounded-xl bg-purple-950/80 border border-rose-500/60 text-rose-200 text-xs flex items-start gap-2.5 text-left animate-shake">
+          <div className="w-full p-3.5 mb-5 rounded-2xl bg-rose-950/80 border border-rose-500/40 text-rose-200 text-xs flex items-start gap-2.5 text-left">
             <AlertCircle className="w-4 h-4 text-rose-400 flex-shrink-0 mt-0.5" />
             <span>{errorMsg}</span>
           </div>
         )}
 
         {successMsg && (
-          <div className="w-full p-3.5 mb-5 rounded-xl bg-emerald-950/80 border border-emerald-500/60 text-emerald-200 text-xs flex items-start gap-2.5 text-left">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+          <div className="w-full p-3.5 mb-5 rounded-2xl bg-[#0f2412] border border-[rgba(180,255,100,0.4)] text-[#9CFF45] text-xs flex items-start gap-2.5 text-left">
+            <CheckCircle2 className="w-4 h-4 text-[#9CFF45] flex-shrink-0 mt-0.5" />
             <span>{successMsg}</span>
           </div>
         )}
@@ -153,20 +162,17 @@ export const AuthExperience: React.FC<AuthExperienceProps> = ({ onClose }) => {
         <form onSubmit={handleSubmit} className="w-full space-y-4 text-left">
           {mode === 'register' && (
             <div>
-              <label className="block text-xs font-mono uppercase text-slate-300 mb-1.5 font-semibold">
+              <label className="block text-xs uppercase text-[#A8B0A5] mb-1.5 font-semibold">
                 Full Name
               </label>
-              <div className="flex items-center gap-2.5 px-3.5 py-1 rounded-xl bg-black/80 border border-purple-500/40 focus-within:border-purple-500 focus-within:shadow-[0_0_15px_rgba(168,85,247,0.4)] transition-all">
-                <div className="flex items-center gap-1.5 text-purple-400 select-none flex-shrink-0">
-                  <UserIcon className="w-4 h-4 text-purple-400" />
-                  <span className="font-mono text-purple-400 font-bold text-sm">:</span>
-                </div>
+              <div className="flex items-center gap-2.5 px-3.5 py-1 rounded-2xl bg-[#050c06] border border-white/10 focus-within:border-[#9CFF45] focus-within:shadow-[0_0_15px_rgba(156,255,69,0.2)] transition-all">
+                <UserIcon className="w-4 h-4 text-[#9CFF45] flex-shrink-0" />
                 <input
                   type="text"
                   value={fullName}
                   onChange={e => setFullName(e.target.value)}
                   placeholder="Alex Mercer"
-                  className="flex-1 bg-transparent py-2.5 text-white placeholder-slate-500 text-sm focus:outline-none"
+                  className="flex-1 bg-transparent py-2.5 text-white placeholder-[#758072] text-sm focus:outline-none"
                   required
                 />
               </div>
@@ -174,20 +180,17 @@ export const AuthExperience: React.FC<AuthExperienceProps> = ({ onClose }) => {
           )}
 
           <div>
-            <label className="block text-xs font-mono uppercase text-slate-300 mb-1.5 font-semibold">
+            <label className="block text-xs uppercase text-[#A8B0A5] mb-1.5 font-semibold">
               Email Address
             </label>
-            <div className="flex items-center gap-2.5 px-3.5 py-1 rounded-xl bg-black/80 border border-purple-500/40 focus-within:border-purple-500 focus-within:shadow-[0_0_15px_rgba(168,85,247,0.4)] transition-all">
-              <div className="flex items-center gap-1.5 text-purple-400 select-none flex-shrink-0">
-                <Mail className="w-4 h-4 text-purple-400" />
-                <span className="font-mono text-purple-400 font-bold text-sm">:</span>
-              </div>
+            <div className="flex items-center gap-2.5 px-3.5 py-1 rounded-2xl bg-[#050c06] border border-white/10 focus-within:border-[#9CFF45] focus-within:shadow-[0_0_15px_rgba(156,255,69,0.2)] transition-all">
+              <Mail className="w-4 h-4 text-[#9CFF45] flex-shrink-0" />
               <input
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                placeholder="explorer@universe.ai"
-                className="flex-1 bg-transparent py-2.5 text-white placeholder-slate-500 text-sm focus:outline-none"
+                placeholder="user@example.com"
+                className="flex-1 bg-transparent py-2.5 text-white placeholder-[#758072] text-sm focus:outline-none"
                 required
               />
             </div>
@@ -196,36 +199,33 @@ export const AuthExperience: React.FC<AuthExperienceProps> = ({ onClose }) => {
           {mode !== 'forgot' && (
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="text-xs font-mono uppercase text-slate-300 font-semibold">
+                <label className="text-xs uppercase text-[#A8B0A5] font-semibold">
                   Password
                 </label>
                 {mode === 'login' && (
                   <button
                     type="button"
                     onClick={() => { setMode('forgot'); setErrorMsg(null); setSuccessMsg(null); }}
-                    className="text-xs font-mono text-purple-400 hover:text-purple-300 transition-colors cursor-pointer"
+                    className="text-xs text-[#9CFF45] hover:underline transition-colors cursor-pointer"
                   >
-                    Forgot key?
+                    Forgot password?
                   </button>
                 )}
               </div>
-              <div className="flex items-center gap-2.5 px-3.5 py-1 rounded-xl bg-black/80 border border-purple-500/40 focus-within:border-purple-500 focus-within:shadow-[0_0_15px_rgba(168,85,247,0.4)] transition-all">
-                <div className="flex items-center gap-1.5 text-purple-400 select-none flex-shrink-0">
-                  <Lock className="w-4 h-4 text-purple-400" />
-                  <span className="font-mono text-purple-400 font-bold text-sm">:</span>
-                </div>
+              <div className="flex items-center gap-2.5 px-3.5 py-1 rounded-2xl bg-[#050c06] border border-white/10 focus-within:border-[#9CFF45] focus-within:shadow-[0_0_15px_rgba(156,255,69,0.2)] transition-all">
+                <Lock className="w-4 h-4 text-[#9CFF45] flex-shrink-0" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="flex-1 bg-transparent py-2.5 text-white placeholder-slate-500 text-sm focus:outline-none"
+                  className="flex-1 bg-transparent py-2.5 text-white placeholder-[#758072] text-sm focus:outline-none"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="text-slate-400 hover:text-purple-300 transition-colors p-1 cursor-pointer flex-shrink-0"
+                  className="text-[#A8B0A5] hover:text-white transition-colors p-1 cursor-pointer flex-shrink-0"
                   title={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -236,26 +236,23 @@ export const AuthExperience: React.FC<AuthExperienceProps> = ({ onClose }) => {
 
           {mode === 'register' && (
             <div>
-              <label className="block text-xs font-mono uppercase text-slate-300 mb-1.5 font-semibold">
+              <label className="block text-xs uppercase text-[#A8B0A5] mb-1.5 font-semibold">
                 Confirm Password
               </label>
-              <div className="flex items-center gap-2.5 px-3.5 py-1 rounded-xl bg-black/80 border border-purple-500/40 focus-within:border-purple-500 focus-within:shadow-[0_0_15px_rgba(168,85,247,0.4)] transition-all">
-                <div className="flex items-center gap-1.5 text-purple-400 select-none flex-shrink-0">
-                  <KeyRound className="w-4 h-4 text-purple-400" />
-                  <span className="font-mono text-purple-400 font-bold text-sm">:</span>
-                </div>
+              <div className="flex items-center gap-2.5 px-3.5 py-1 rounded-2xl bg-[#050c06] border border-white/10 focus-within:border-[#9CFF45] focus-within:shadow-[0_0_15px_rgba(156,255,69,0.2)] transition-all">
+                <KeyRound className="w-4 h-4 text-[#9CFF45] flex-shrink-0" />
                 <input
                   type={showConfirmPassword ? 'text' : 'password'}
                   value={confirmPassword}
                   onChange={e => setConfirmPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="flex-1 bg-transparent py-2.5 text-white placeholder-slate-500 text-sm focus:outline-none"
+                  className="flex-1 bg-transparent py-2.5 text-white placeholder-[#758072] text-sm focus:outline-none"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="text-slate-400 hover:text-purple-300 transition-colors p-1 cursor-pointer flex-shrink-0"
+                  className="text-[#A8B0A5] hover:text-white transition-colors p-1 cursor-pointer flex-shrink-0"
                   title={showConfirmPassword ? 'Hide password' : 'Show password'}
                 >
                   {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -268,12 +265,12 @@ export const AuthExperience: React.FC<AuthExperienceProps> = ({ onClose }) => {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full mt-6 py-3.5 px-4 rounded-xl bg-gradient-to-r from-violet-600 via-indigo-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-display font-bold text-sm uppercase tracking-wider flex items-center justify-center gap-3 shadow-[0_0_25px_rgba(139,92,246,0.5)] hover:shadow-[0_0_35px_rgba(168,85,247,0.7)] transition-all duration-300 active:scale-98 disabled:opacity-50 cursor-pointer border border-white/20"
+            className="w-full mt-6 py-3 px-4 rounded-full btn-lime text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(156,255,69,0.3)] transition-all duration-300 disabled:opacity-50 cursor-pointer"
           >
             <span>
               {submitting ? 'Processing...' : (
-                mode === 'login' ? 'Sign In to PML' : 
-                mode === 'register' ? 'Initialize Account' : 'Send Reset Link'
+                mode === 'login' ? 'Sign In' : 
+                mode === 'register' ? 'Create Account' : 'Send Reset Link'
               )}
             </span>
             <ArrowRight className="w-4 h-4" />
@@ -281,14 +278,14 @@ export const AuthExperience: React.FC<AuthExperienceProps> = ({ onClose }) => {
         </form>
 
         {/* Mode Switchers */}
-        <div className="mt-5 pt-5 border-t border-white/10 w-full text-center text-xs font-mono text-slate-400 space-y-2">
+        <div className="mt-5 pt-5 border-t border-white/10 w-full text-center text-xs text-[#A8B0A5] space-y-2">
           {mode === 'login' && (
             <p>
-              New to PML Universe?{' '}
+              New to PML?{' '}
               <button
                 type="button"
                 onClick={() => { setMode('register'); setErrorMsg(null); setSuccessMsg(null); }}
-                className="text-purple-400 hover:text-purple-300 font-bold underline underline-offset-4 transition-colors cursor-pointer"
+                className="text-[#9CFF45] font-semibold underline underline-offset-4 transition-colors cursor-pointer"
               >
                 Create an account
               </button>
@@ -301,7 +298,7 @@ export const AuthExperience: React.FC<AuthExperienceProps> = ({ onClose }) => {
               <button
                 type="button"
                 onClick={() => { setMode('login'); setErrorMsg(null); setSuccessMsg(null); }}
-                className="text-purple-400 hover:text-purple-300 font-bold underline underline-offset-4 transition-colors cursor-pointer"
+                className="text-[#9CFF45] font-semibold underline underline-offset-4 transition-colors cursor-pointer"
               >
                 Sign In
               </button>
@@ -314,7 +311,7 @@ export const AuthExperience: React.FC<AuthExperienceProps> = ({ onClose }) => {
               <button
                 type="button"
                 onClick={() => { setMode('login'); setErrorMsg(null); setSuccessMsg(null); }}
-                className="text-purple-400 hover:text-purple-300 font-bold underline underline-offset-4 transition-colors cursor-pointer"
+                className="text-[#9CFF45] font-semibold underline underline-offset-4 transition-colors cursor-pointer"
               >
                 Back to Sign In
               </button>
@@ -326,9 +323,9 @@ export const AuthExperience: React.FC<AuthExperienceProps> = ({ onClose }) => {
               <button
                 type="button"
                 onClick={onClose}
-                className="text-slate-400 hover:text-white transition-colors cursor-pointer underline text-[11px]"
+                className="text-[#758072] hover:text-white transition-colors cursor-pointer underline text-[11px]"
               >
-                Continue chatting as guest →
+                Continue as guest →
               </button>
             </div>
           )}

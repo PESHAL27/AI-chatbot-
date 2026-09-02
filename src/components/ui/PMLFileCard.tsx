@@ -24,16 +24,16 @@ export const PMLFileCard: React.FC<PMLFileCardProps> = ({
   return (
     <div
       className="
-        relative flex items-center gap-3 p-2.5 rounded-xl
-        bg-[#110822]/80 hover:bg-[#1a0c34]/90
-        border border-purple-500/35 hover:border-purple-400/70
+        relative flex items-center gap-3 p-2.5 rounded-2xl
+        bg-[#0a180b]/85 hover:bg-[#102412]/95
+        border border-[rgba(180,255,100,0.2)] hover:border-[rgba(180,255,100,0.45)]
         shadow-[0_4px_16px_rgba(0,0,0,0.6)]
         backdrop-blur-xl transition-all duration-200
         max-w-xs select-none
       "
     >
       {isImage && attachment.previewUrl ? (
-        <div className="relative w-10 h-10 rounded-lg overflow-hidden border border-purple-400/50 flex-shrink-0 bg-black/60 shadow-sm">
+        <div className="relative w-10 h-10 rounded-xl overflow-hidden border border-[#9CFF45]/40 flex-shrink-0 bg-black/60 shadow-sm">
           <img
             src={attachment.previewUrl}
             alt={attachment.name}
@@ -41,21 +41,21 @@ export const PMLFileCard: React.FC<PMLFileCardProps> = ({
           />
         </div>
       ) : (
-        <div className="p-2 rounded-lg bg-purple-950/60 border border-purple-500/40 text-purple-300 flex-shrink-0">
+        <div className="p-2 rounded-xl bg-[#122814] border border-[rgba(180,255,100,0.3)] text-[#9CFF45] flex-shrink-0">
           {isImage ? <ImageIcon className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
         </div>
       )}
 
       <div className="flex-1 min-w-0">
-        <p className="text-xs font-semibold text-white/95 truncate font-mono">
+        <p className="text-xs font-medium text-white truncate">
           {attachment.name}
         </p>
         <div className="flex items-center gap-2 mt-0.5">
-          <span className="text-[10px] font-mono text-purple-300">
+          <span className="text-[10px] font-mono text-[#A8B0A5]">
             {formatFileSize(attachment.size)}
           </span>
           {isAnalyzed && (
-            <span className="inline-flex items-center gap-1 text-[10px] font-sans text-emerald-400">
+            <span className="inline-flex items-center gap-1 text-[10px] text-[#9CFF45]">
               <CheckCircle2 className="w-2.5 h-2.5" />
               <span>Ready</span>
             </span>
@@ -66,7 +66,7 @@ export const PMLFileCard: React.FC<PMLFileCardProps> = ({
       {onRemove && (
         <button
           onClick={() => onRemove(attachment.id)}
-          className="p-1 rounded-lg hover:bg-rose-500/20 text-slate-400 hover:text-rose-300 transition-colors cursor-pointer"
+          className="p-1 rounded-lg hover:bg-rose-500/20 text-[#A8B0A5] hover:text-rose-300 transition-colors cursor-pointer"
           title="Remove attachment"
         >
           <X className="w-3.5 h-3.5" />

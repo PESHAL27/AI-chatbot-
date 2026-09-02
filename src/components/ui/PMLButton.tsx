@@ -25,37 +25,34 @@ export const PMLButton: React.FC<PMLButtonProps> = ({
   ...props
 }) => {
   const sizeClasses = {
-    sm: 'px-3 py-1.5 text-xs rounded-xl gap-1.5',
-    md: 'px-4 py-2 text-xs md:text-sm rounded-xl gap-2',
-    lg: 'px-5 py-2.5 text-sm md:text-base rounded-2xl gap-2.5',
+    sm: 'px-3 py-1.5 text-xs rounded-full gap-1.5',
+    md: 'px-4 py-2 text-xs md:text-sm rounded-full gap-2',
+    lg: 'px-5 py-2.5 text-sm md:text-base rounded-full gap-2.5',
   }[size];
 
   const variantClasses = {
     primary: `
-      bg-gradient-to-r from-violet-600 via-indigo-600 to-purple-600 
-      hover:from-violet-500 hover:to-purple-500 
-      text-white font-display font-bold uppercase tracking-wider
-      border border-white/25
-      ${glow ? 'shadow-[0_0_20px_rgba(139,92,246,0.45)] hover:shadow-[0_0_30px_rgba(168,85,247,0.7)]' : 'shadow-md'}
+      bg-[#9CFF45] hover:bg-[#B5FF6A] 
+      text-[#050805] font-semibold tracking-wide
+      ${glow ? 'shadow-[0_0_15px_rgba(156,255,69,0.35)] hover:shadow-[0_0_25px_rgba(156,255,69,0.55)]' : ''}
       active:scale-[0.98]
     `,
     secondary: `
-      bg-[#120a20]/80 hover:bg-[#1f1035]/90 
-      text-purple-200 hover:text-white font-sans font-semibold
-      border border-purple-500/30 hover:border-purple-400/60
-      ${glow ? 'hover:shadow-[0_0_18px_rgba(168,85,247,0.3)]' : ''}
+      bg-[#0d1a0e]/80 hover:bg-[#152a17]/90 
+      text-[#A8B0A5] hover:text-white font-sans font-medium
+      border border-[rgba(180,255,100,0.2)] hover:border-[rgba(180,255,100,0.45)]
+      ${glow ? 'hover:shadow-[0_0_15px_rgba(156,255,69,0.15)]' : ''}
       backdrop-blur-md active:scale-[0.98]
     `,
     glass: `
       bg-white/[0.04] hover:bg-white/[0.08]
       text-slate-200 hover:text-white font-sans font-medium
-      border border-white/15 hover:border-purple-400/40
-      ${glow ? 'hover:shadow-[0_0_15px_rgba(139,92,246,0.2)]' : ''}
+      border border-white/10 hover:border-[rgba(180,255,100,0.3)]
       backdrop-blur-lg active:scale-[0.98]
     `,
     ghost: `
       bg-transparent hover:bg-white/10
-      text-slate-300 hover:text-white font-sans font-medium
+      text-[#A8B0A5] hover:text-white font-sans font-medium
       border border-transparent hover:border-white/10
       active:scale-[0.98]
     `,
@@ -81,7 +78,7 @@ export const PMLButton: React.FC<PMLButtonProps> = ({
       {...props}
     >
       {isLoading ? (
-        <span className="inline-block w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+        <span className="inline-block w-4 h-4 border-2 border-black/40 border-t-black rounded-full animate-spin" />
       ) : (
         <>
           {icon && iconPosition === 'left' && <span className="flex-shrink-0">{icon}</span>}

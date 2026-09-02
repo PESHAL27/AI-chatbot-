@@ -424,46 +424,65 @@ const PMLAppContent: React.FC = () => {
     pmlApi.sendFeedback(messageId, feedback);
   };
 
+  const [currentView, setCurrentView] = useState<'home' | 'chat'>('home');
+
+  const handleNavigateView = (view: 'home' | 'chat', sectionId?: string) => {
+    setCurrentView(view);
+    if (sectionId) {
+      setTimeout(() => {
+        const el = document.getElementById(sectionId);
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+      }, 50);
+    }
+  };
+
   // Initial Checking Session Loading Animation
   if (loading) {
     return (
-      <div className="fixed inset-0 bg-[#070510] flex flex-col items-center justify-center text-white z-50">
+      <div className="fixed inset-0 bg-[#050805] flex flex-col items-center justify-center text-white z-50">
         <PMLCore size="large" state="thinking" />
-        <p className="mt-4 font-mono text-xs text-purple-300 tracking-widest uppercase animate-pulse">
-          Synchronizing PML Space State...
+        <p className="mt-4 font-mono text-xs text-[#9CFF45] tracking-widest uppercase animate-pulse">
+          Initializing PML AI System...
         </p>
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-transparent font-sans select-none relative text-[var(--text-primary)]">
-      {/* Dynamic Cosmic Background */}
+    <div className="flex h-screen w-screen overflow-hidden bg-[#050805] font-sans select-none relative text-white">
+      {/* Dynamic Ambient Background */}
       <CosmicBackground density={settings.particleDensity} theme={settings.theme} />
 
-      {/* Floating Glass Navigation Drawer */}
+      {/* Floating Navigation Drawer (Slide-over for chat history) */}
       <NavigationPanel
         isOpen={navOpen}
         onToggle={handleToggleNav}
         conversations={conversations}
         activeConversationId={activeConversationId}
-        onSelectConversation={handleSelectConversation}
-        onNewConversation={handleNewConversation}
+        onSelectConversation={(id) => {
+          handleSelectConversation(id);
+          setCurrentView('chat');
+        }}
+        onNewConversation={() => {
+          handleNewConversation();
+          setCurrentView('chat');
+        }}
         onDeleteConversation={handleDeleteConversation}
         onToggleStarConversation={handleToggleStarConversation}
         onOpenSettings={() => setSettingsModalOpen(true)}
         onOpenProfile={() => (user ? setProfileModalOpen(true) : setAuthModalOpen(true))}
         onOpenMemory={() => (user ? setMemoryModalOpen(true) : setAuthModalOpen(true))}
         onOpenDocuments={() => setDocumentModalOpen(true)}
+        onNavigateHome={() => setCurrentView('home')}
         userProfile={userProfile}
         isAuthenticated={Boolean(user)}
         onOpenAuth={() => setAuthModalOpen(true)}
         onSignOut={handleSignOut}
       />
 
-      {/* Main Workspace Layout Wrapper */}
+      {/* Main Website Layout */}
       <div className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden w-full relative">
-        {/* Top Toolbar Header */}
+        {/* Top Navbar matching Reference Image */}
         <TopHeader
           navOpen={navOpen}
           onToggleNav={handleToggleNav}
@@ -483,24 +502,31 @@ const PMLAppContent: React.FC = () => {
           }
           isAuthenticated={Boolean(user)}
           onOpenAuth={() => setAuthModalOpen(true)}
+          onOpenProfile={() => (user ? setProfileModalOpen(true) : setAuthModalOpen(true))}
+          onOpenDocuments={() => setDocumentModalOpen(true)}
+          onOpenMemory={() => (user ? setMemoryModalOpen(true) : setAuthModalOpen(true))}
+          onSignOut={handleSignOut}
+          userProfile={userProfile}
           selectedDocument={selectedDocument}
           onClearDocumentScope={() => setSelectedDocument(null)}
+          currentView={currentView}
+          onNavigateView={handleNavigateView}
         />
 
-        {/* Guest Session Top Notice Pill */}
-        {!user && showGuestBanner && (
-          <div className="mx-auto mt-2 px-4 py-1.5 rounded-full bg-purple-950/70 border border-purple-500/40 text-purple-200 text-xs font-mono flex items-center gap-2 shadow-[0_0_15px_rgba(168,85,247,0.25)] z-20 backdrop-blur-md">
-            <Sparkles className="w-3.5 h-3.5 text-purple-400 animate-pulse" />
+        {/* Guest Session Notice Pill */}
+        {!user && showGuestBanner && currentView === 'chat' && (
+          <div className="mx-auto mt-2 px-4 py-1.5 rounded-full bg-[#0d2210] border border-[rgba(180,255,100,0.3)] text-[#9CFF45] text-xs font-medium flex items-center gap-2 z-20 backdrop-blur-md">
+            <Sparkles className="w-3.5 h-3.5 text-[#9CFF45]" />
             <span>Guest Mode active. </span>
             <button
               onClick={() => setAuthModalOpen(true)}
-              className="text-white font-bold underline hover:text-purple-300 transition-colors cursor-pointer"
+              className="text-white font-bold underline hover:text-[#B5FF6A] transition-colors cursor-pointer"
             >
               Sign in to sync & save chat history
             </button>
             <button
               onClick={() => setShowGuestBanner(false)}
-              className="ml-1 text-slate-400 hover:text-white p-0.5 cursor-pointer"
+              className="ml-1 text-[#A8B0A5] hover:text-white p-0.5 cursor-pointer"
               title="Dismiss notice"
             >
               <X className="w-3.5 h-3.5" />
@@ -508,13 +534,16 @@ const PMLAppContent: React.FC = () => {
           </div>
         )}
 
-        {/* Central Workspace Stream */}
+        {/* Central Workspace / Landing Stream */}
         <ConversationWorkspace
           activeConversation={activeConversation}
           coreState={coreState}
           onRegenerateResponse={handleRegenerateResponse}
           onFeedback={handleFeedback}
-          onSendMessage={handleSendMessage}
+          onSendMessage={(text, atts) => {
+            setCurrentView('chat');
+            handleSendMessage(text, atts);
+          }}
           selectedDocument={selectedDocument}
           onClearDocumentScope={() => setSelectedDocument(null)}
           onOpenDocumentLibrary={() => setDocumentModalOpen(true)}
@@ -522,10 +551,14 @@ const PMLAppContent: React.FC = () => {
           speechLanguage={settings.speechLanguage || 'en-US'}
           isStreaming={isStreaming}
           onStopGeneration={handleStopGeneration}
+          onOpenMemory={() => (user ? setMemoryModalOpen(true) : setAuthModalOpen(true))}
+          onOpenAuth={() => setAuthModalOpen(true)}
+          currentView={currentView}
+          onNavigateView={handleNavigateView}
         />
 
         {/* Pinned Bottom Message Console (when actively chatting in a thread) */}
-        {activeConversation && activeConversation.messages.length > 0 && (
+        {currentView === 'chat' && activeConversation && activeConversation.messages.length > 0 && (
           <MessageComposer
             onSendMessage={handleSendMessage}
             isStreaming={isStreaming}
@@ -557,7 +590,7 @@ const PMLAppContent: React.FC = () => {
         />
       )}
 
-      {/* Memory Management Console (Phase 6) */}
+      {/* Memory Management Console */}
       <MemoryManagementModal
         isOpen={memoryModalOpen}
         onClose={() => setMemoryModalOpen(false)}
@@ -567,7 +600,7 @@ const PMLAppContent: React.FC = () => {
         onOpenAuth={() => setAuthModalOpen(true)}
       />
 
-      {/* Document Intelligence & RAG Library (Phase 7) */}
+      {/* Document Intelligence & RAG Library */}
       <DocumentLibraryModal
         isOpen={documentModalOpen}
         onClose={() => setDocumentModalOpen(false)}
