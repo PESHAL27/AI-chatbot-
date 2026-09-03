@@ -61,13 +61,21 @@ class RouterService:
 
     CURRENT_INFO_PATTERNS = [
         r"\b(latest|today|currently|current|recent|recently|this\s+week|this\s+month|newest|updated|breaking|now|as\s+of\s+today|latest\s+news|latest\s+developments|happened\s+today|happened\s+in|new\s+in)\b",
-        r"\b(2025|2026|live\s+score|stock\s+price|market\s+cap|release\s+date|election\s+result|price\s+of|weather|forecast|exchange\s+rate|match|game|score)\b",
+        r"\b(2024|2025|2026|live\s+score|stock\s+price|market\s+cap|release\s+date|election\s+result|price\s+of|weather|forecast|exchange\s+rate|match|game|score)\b",
         r"\b(search\s+the\s+web|search\s+online|google|lookup\s+online|find\s+online|search\s+for)\b",
         r"\bwho\s+is\s+the\s+(current|present|new)\b",
         r"\bwhat\s+is\s+the\s+(current|latest|present|new|newest)\b",
         r"\bwhat\s+are\s+the\s+(current|latest|present|new|newest)\b",
         r"\bwhat\s+happened\s+in\b",
-        r"\bwhat\s+did\s+[\w\s]+\s+do\s+in\b"
+        r"\bwhat\s+did\s+[\w\s]+\s+do\s+in\b",
+        # Political offices, leaders, ministers, and public roles
+        r"\bwho\s+is\s+(the\s+)?(current\s+|present\s+|new\s+|acting\s+)?(cm|chief\s+minister|pm|prime\s+minister|president|vice\s+president|governor|lt\s+governor|lieutenant\s+governor|mayor|ceo|cto|cfo|coo|head|leader|captain|coach|minister|finance\s+minister|defence\s+minister|home\s+minister|foreign\s+minister|director|chairman|chancellor|secretary|chief\s+justice|judge|speaker|attorney\s+general|ambassador|ruler|monarch|king|queen|premier)\b",
+        r"\b(cm|chief\s+minister|pm|prime\s+minister|president|governor|mayor|ceo|minister)\s+of\s+[\w\s]+\b",
+        r"\b(who\s+is|who\s+are)\s+(in\s+charge\s+of|leading|heading|running|governing)\b",
+        r"\b(who\s+won|winner\s+of|champions?\s+of|won\s+the|gold\s+medalist|election\s+winner|world\s+cup\s+winner)\b",
+        r"\b(who\s+is\s+winning|current\s+score|live\s+score|current\s+rankings?|icc\s+ranking|fifa\s+ranking)\b",
+        r"\b(news\s+about|updates?\s+on|latest\s+on|current\s+status\s+of)\b",
+        r"\b(who\s+is\s+currently|who\s+presently|who\s+is\s+now)\b"
     ]
 
     WIKIPEDIA_PATTERNS = [

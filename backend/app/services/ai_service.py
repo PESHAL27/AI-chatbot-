@@ -24,13 +24,13 @@ Key Responsibilities & Directives:
    - Answer the user's question directly based on what is visibly present in the image.
 10. INTELLIGENT SOURCE SELECTION & TOOL RULES:
    - You have access to multiple intelligence sources: Internal Model Knowledge, Wikipedia Search, Live Web Search, Document RAG, and Calculator.
-   - INTERNAL MODEL KNOWLEDGE (Default & Preferred for Standard Knowledge):
-     • For standard concepts, coding, science definitions, historical facts, explanations, reasoning, philosophy, and general queries (e.g. "What is quantum mechanics?", "Who was Albert Einstein?", "Explain the history of the internet", "How does quicksort work?"), rely on your comprehensive internal intelligence.
-     • Do NOT execute external searches when you can answer accurately, deeply, and clearly from internal model knowledge.
+   - LIVE WEB SEARCH (`web_search`):
+     • PROACTIVELY USE for any questions involving current office holders, political appointments, ministers, presidents, governors, chief ministers, CEOs, current leaders, recent events, breaking news, live scores, weather, stock prices, or time-sensitive factual data that changes over time.
+     • When a question asks who currently occupies a position (e.g., "Who is the CM of Kerala?", "Who is the Prime Minister of UK?", "Who is the CEO of Apple?"), ALWAYS use the latest web search results to ensure 100% current and fresh accuracy. NEVER guess or rely on your internal training cutoff date.
+   - INTERNAL MODEL KNOWLEDGE:
+     • For timeless concepts, coding, math principles, historical events, science definitions, philosophical explanations, reasoning, and conceptual explanations, rely on your internal intelligence.
    - WIKIPEDIA SEARCH (`wikipedia_search`):
      • Use when the user explicitly asks for Wikipedia/encyclopedia lookup (e.g., "search Wikipedia for X", "check wiki about Y"), or when specific archival encyclopedia summaries/citations are requested.
-   - LIVE WEB SEARCH (`web_search`):
-     • Use ONLY when real-time news, current events, recent tech releases (2025/2026), live stock/weather prices, or latest updates are required (e.g. "What is the latest AI news?").
    - CALCULATOR (`calculator`):
      • Use whenever arithmetic or mathematical calculations are requested (e.g. "3847 * 29", "25% of 840"). Do NOT estimate complex arithmetic yourself.
    - CITATIONS:
@@ -101,8 +101,18 @@ class AIService:
         client = cls.get_client()
         model_name = model_override or settings.AI_MODEL
 
-        # Base system prompt
-        system_content = PML_SYSTEM_PROMPT
+        # Base system prompt with dynamic real-world date context
+        from datetime import datetime
+        current_date_str = datetime.now().strftime("%A, %B %d, %Y")
+        system_content = (
+            f"{PML_SYSTEM_PROMPT}\n\n"
+            f"==================================================\n"
+            f"CURRENT REAL-WORLD DATE CONTEXT\n"
+            f"==================================================\n"
+            f"Today's real-world date is: {current_date_str}.\n"
+            f"You are operating in real time. Whenever the user asks about current leaders, office holders (like CM, PM, President, CEO, Ministers), current status, or recent developments, ensure your answer reflects the verified situation as of {current_date_str} by consulting live search results.\n"
+            f"==================================================\n"
+        )
 
         # 1. Inject Long-Term Memory Context if relevant memories exist (Phase 6)
         if relevant_memories and len(relevant_memories) > 0:
