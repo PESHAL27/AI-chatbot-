@@ -38,6 +38,31 @@ async def get_current_user(
 
     token = credentials.credentials
 
+    # 1. First check if token is an authenticated SQLite local user token
+    try:
+        from app.routes.auth import SQLITE_DB_PATH
+        import sqlite3
+        conn = sqlite3.connect(SQLITE_DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT u.id, u.email, u.full_name, u.avatar_url
+            FROM users u
+            JOIN user_tokens t ON u.id = t.user_id
+            WHERE t.token = ?
+        """, (token,))
+        local_user = cursor.fetchone()
+        conn.close()
+        if local_user:
+            return {
+                "id": local_user[0],
+                "email": local_user[1],
+                "full_name": local_user[2],
+                "is_guest": False,
+                "token": token
+            }
+    except Exception as e:
+        logger.debug(f"[PML Auth] Local token check bypass: {e}")
+
     # If Supabase is not configured or in local test mode
     if not settings.SUPABASE_URL or not settings.SUPABASE_KEY or "your-project-id" in settings.SUPABASE_URL:
         return {

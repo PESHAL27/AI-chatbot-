@@ -77,7 +77,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
-    // 1. Initial Session Check (Restores user on page refresh)
+    // 1. Initial Local Session Check (Restores user from persistent local storage)
+    const savedLocal = localStorage.getItem('pml_local_auth_session');
+    if (savedLocal) {
+      try {
+        const parsed = JSON.parse(savedLocal);
+        if (parsed?.access_token && parsed?.user) {
+          setSession(parsed);
+          setUser(parsed.user);
+          pmlApi.setAuthToken(parsed.access_token);
+          pmlApi.setUserId(parsed.user.id);
+          setProfile({
+            id: parsed.user.id,
+            user_id: parsed.user.id,
+            full_name: parsed.user.user_metadata?.full_name || parsed.user.email?.split('@')[0] || 'Cosmic Explorer',
+            email: parsed.user.email || '',
+          });
+          setLoading(false);
+          return;
+        }
+      } catch (e) {
+        localStorage.removeItem('pml_local_auth_session');
+      }
+    }
+
+    // 2. Supabase Initial Session Check
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -95,10 +119,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
     });
 
-    // 2. Real-time Supabase Auth State Listener
+    // 3. Real-time Supabase Auth State Listener
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, newSession) => {
+      // Ignore if currently using local auth session
+      if (localStorage.getItem('pml_local_auth_session')) return;
+
       setSession(newSession);
       setUser(newSession?.user ?? null);
       pmlApi.setAuthToken(newSession?.access_token || null);
@@ -130,61 +157,180 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signIn = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    });
+    // 1. Try PML backend local auth endpoint first
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), password })
+      });
 
-    if (!error && data.session && data.user) {
-      setSession(data.session);
-      setUser(data.user);
-      pmlApi.setAuthToken(data.session.access_token);
-      pmlApi.setUserId(data.user.id);
-      await loadProfile(data.user);
+      if (res.ok) {
+        const data = await res.json();
+        const userObj: any = {
+          id: data.user.id,
+          email: data.user.email,
+          user_metadata: { full_name: data.user.full_name },
+          app_metadata: {},
+          aud: 'authenticated',
+          created_at: new Date().toISOString()
+        };
+        const sessionObj: any = {
+          access_token: data.session.access_token,
+          token_type: 'bearer',
+          user: userObj
+        };
+
+        localStorage.setItem('pml_local_auth_session', JSON.stringify(sessionObj));
+        setSession(sessionObj);
+        setUser(userObj);
+        pmlApi.setAuthToken(sessionObj.access_token);
+        pmlApi.setUserId(userObj.id);
+
+        const newProfile: UserProfileData = {
+          id: userObj.id,
+          user_id: userObj.id,
+          full_name: data.user.full_name || 'Cosmic Explorer',
+          email: email.trim(),
+          avatar_url: data.user.avatar_url,
+          updated_at: new Date().toISOString()
+        };
+        setProfile(newProfile);
+
+        return { error: null };
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        if (errData.detail) {
+          return { error: { message: errData.detail } as any };
+        }
+      }
+    } catch (err) {
+      console.warn('[PML Auth] Local login network error, trying Supabase fallback:', err);
     }
-    return { error };
-  };
 
-  const signUp = async (email: string, password: string, fullName?: string) => {
-    const cleanName = fullName?.trim() || 'Cosmic Explorer';
-    const { data, error } = await supabase.auth.signUp({
-      email: email.trim(),
-      password,
-      options: {
-        data: {
-          full_name: cleanName,
-        },
-      },
-    });
+    // 2. Fallback to Supabase
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
 
-    if (!error && data.user) {
-      if (data.session) {
+      if (!error && data.session && data.user) {
         setSession(data.session);
         setUser(data.user);
         pmlApi.setAuthToken(data.session.access_token);
         pmlApi.setUserId(data.user.id);
+        await loadProfile(data.user);
       }
-      // Upsert profile in Supabase database
-      const initialProfile: UserProfileData = {
-        id: data.user.id,
-        user_id: data.user.id,
-        full_name: cleanName,
-        email: email.trim(),
-        updated_at: new Date().toISOString(),
-      };
-      try {
-        await supabase.from('profiles').upsert(initialProfile);
-        setProfile(initialProfile);
-      } catch (e) {
-        console.warn('[PML Auth] Error creating profile on signup:', e);
-      }
+      return { error };
+    } catch (e: any) {
+      return { error: { message: e.message || 'Unable to connect to authentication server.' } as any };
     }
-    return { error };
+  };
+
+  const signUp = async (email: string, password: string, fullName?: string) => {
+    const cleanName = fullName?.trim() || 'Cosmic Explorer';
+
+    // 1. Try PML backend local auth endpoint first
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), password, full_name: cleanName })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const userObj: any = {
+          id: data.user.id,
+          email: data.user.email,
+          user_metadata: { full_name: data.user.full_name },
+          app_metadata: {},
+          aud: 'authenticated',
+          created_at: new Date().toISOString()
+        };
+        const sessionObj: any = {
+          access_token: data.session.access_token,
+          token_type: 'bearer',
+          user: userObj
+        };
+
+        localStorage.setItem('pml_local_auth_session', JSON.stringify(sessionObj));
+        setSession(sessionObj);
+        setUser(userObj);
+        pmlApi.setAuthToken(sessionObj.access_token);
+        pmlApi.setUserId(userObj.id);
+
+        const initialProfile: UserProfileData = {
+          id: userObj.id,
+          user_id: userObj.id,
+          full_name: cleanName,
+          email: email.trim(),
+          updated_at: new Date().toISOString(),
+        };
+        setProfile(initialProfile);
+
+        return { error: null };
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        if (errData.detail) {
+          return { error: { message: errData.detail } as any };
+        }
+      }
+    } catch (err) {
+      console.warn('[PML Auth] Local signup network error, trying Supabase fallback:', err);
+    }
+
+    // 2. Fallback to Supabase
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+        options: {
+          data: {
+            full_name: cleanName,
+          },
+        },
+      });
+
+      if (!error && data.user) {
+        if (data.session) {
+          setSession(data.session);
+          setUser(data.user);
+          pmlApi.setAuthToken(data.session.access_token);
+          pmlApi.setUserId(data.user.id);
+        }
+        const initialProfile: UserProfileData = {
+          id: data.user.id,
+          user_id: data.user.id,
+          full_name: cleanName,
+          email: email.trim(),
+          updated_at: new Date().toISOString(),
+        };
+        try {
+          await supabase.from('profiles').upsert(initialProfile);
+          setProfile(initialProfile);
+        } catch (e) {
+          console.warn('[PML Auth] Error creating profile on signup:', e);
+        }
+      }
+      return { error };
+    } catch (e: any) {
+      return { error: { message: e.message || 'Unable to connect to authentication server.' } as any };
+    }
   };
 
   const signOut = async () => {
+    localStorage.removeItem('pml_local_auth_session');
     try {
-      await supabase.auth.signOut();
+      const token = session?.access_token;
+      if (token) {
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` }
+        }).catch(() => {});
+      }
+      await supabase.auth.signOut().catch(() => {});
     } catch (err) {
       console.warn('[PML Auth] Sign out error:', err);
     } finally {
