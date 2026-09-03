@@ -26,6 +26,13 @@ class WikipediaSourceCitation(BaseModel):
     thumbnail: Optional[str] = Field(None, description="Optional article thumbnail image URL")
     source: str = Field("wikipedia", description="Source identifier")
 
+class WebImageResult(BaseModel):
+    title: Optional[str] = Field(None, description="Image title / description")
+    image_url: str = Field(..., description="High-resolution or direct image URL")
+    thumbnail_url: Optional[str] = Field(None, description="Fast-loading thumbnail image URL")
+    source_url: Optional[str] = Field(None, description="Original web page / domain link")
+    source_name: Optional[str] = Field(None, description="Source domain or site name")
+
 class ChatRequest(BaseModel):
     message: Optional[str] = Field(default="", description="The user's prompt message")
     images: Optional[List[str]] = Field(default=None, description="Optional list of base64 data URIs or image URLs for vision understanding")
@@ -56,6 +63,7 @@ class ChatResponse(BaseModel):
     wikipedia_sources: Optional[List[WikipediaSourceCitation]] = Field(None, description="List of Wikipedia sources utilized for encyclopedia grounding")
     tools_called: Optional[List[str]] = Field(None, description="List of tool names executed during response generation")
     generated_images: Optional[List[GeneratedImageData]] = Field(None, description="List of AI images generated during this turn")
+    web_images: Optional[List[WebImageResult]] = Field(None, description="List of real web photos/images retrieved via image search")
 
 class HealthCheckResponse(BaseModel):
     status: str = Field("ok", description="Service status")

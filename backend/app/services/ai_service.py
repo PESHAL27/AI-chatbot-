@@ -43,6 +43,15 @@ Key Responsibilities & Directives:
    - When live web search or Wikipedia results are provided in <untrusted_tool_result>, you MUST extract facts and answer directly based on that retrieved information.
    - NEVER say "I currently cannot access live web search results" or claim a pre-training cutoff limitation when search results are provided in the context.
    - Ground answers directly in the retrieved live search snippets and cite exact source URLs.
+13. REAL WEB PHOTO & IMAGE SEARCH DIRECTIVES (`image_search`):
+   - When `image_search` is called, the PML interface automatically displays the verified photos in a specialized 'Real Web Photos' gallery directly beneath your message.
+   - NEVER output markdown image syntax (like `![alt](url)`), raw image URLs, or numbered lists of image files in your text.
+   - NEVER output redundant boilerplate phrases such as "Source: Wikimedia Commons" or "Feel free to click on the images to view them in full size!" as the UI card already renders interactive previews and verified source links.
+   - Simply provide a concise, pleasant 1-2 sentence response directly answering the user or introducing the photos.
+14. AI IMAGE GENERATION DIRECTIVES (`generate_image`):
+   - When `generate_image` is called, the PML interface automatically renders the generated visual art in a dedicated, high-resolution interactive card below your message.
+   - NEVER output markdown image syntax (like `![alt](url)`) or raw image URLs in your response text, as this causes duplicate images to render.
+   - Provide only ONE visual concept per request, with a brief, creative 1-sentence confirmation or caption.
 """
 
 class AIService:
@@ -174,6 +183,7 @@ DIRECTIVES FOR DOCUMENT RAG:
 
         tools_schema = tool_registry.get_openai_tools_schema() if enable_tools else None
         web_sources: List[Dict[str, str]] = []
+        web_images: List[Dict[str, Any]] = []
         tools_called: List[str] = []
         generated_images: List[Dict[str, Any]] = []
 
@@ -213,7 +223,7 @@ DIRECTIVES FOR DOCUMENT RAG:
                 message = choice.message
 
                 # Check if model requested tool calls
-                if message.tool_calls:
+                if choice.finish_reason == "tool_calls" or (message.tool_calls and len(message.tool_calls) > 0):
                     tool_calls_payload = []
                     for tc in message.tool_calls:
                         tool_calls_payload.append({
@@ -250,6 +260,13 @@ DIRECTIVES FOR DOCUMENT RAG:
                             for item in raw_results:
                                 if item not in web_sources:
                                     web_sources.append(item)
+                        
+                        # Capture real web image results
+                        if tool_name in ("image_search", "web_search") and tool_res.success and isinstance(tool_res.data, dict):
+                            raw_images = tool_res.data.get("images", [])
+                            for img in raw_images:
+                                if img not in web_images:
+                                    web_images.append(img)
 
                         # Capture generated image records
                         if tool_name == "generate_image" and tool_res.success and isinstance(tool_res.data, dict):
@@ -276,6 +293,7 @@ DIRECTIVES FOR DOCUMENT RAG:
                 return {
                     "content": final_text,
                     "web_sources": web_sources,
+                    "web_images": web_images,
                     "tools_called": tools_called,
                     "generated_images": generated_images
                 }
@@ -284,6 +302,7 @@ DIRECTIVES FOR DOCUMENT RAG:
             return {
                 "content": (messages[-1].get("content") or "Tool execution completed.").strip(),
                 "web_sources": web_sources,
+                "web_images": web_images,
                 "tools_called": tools_called,
                 "generated_images": generated_images
             }
@@ -293,6 +312,7 @@ DIRECTIVES FOR DOCUMENT RAG:
             return {
                 "content": "### ⚠️ PML AI API Key Notice\n\nThe configured OpenAI API key is invalid or expired. Please update `AI_API_KEY` in `backend/.env` with a valid key.",
                 "web_sources": [],
+                "web_images": [],
                 "tools_called": []
             }
 

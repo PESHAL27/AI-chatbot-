@@ -12,6 +12,7 @@ export interface StreamCallbacks {
       memoriesUsed?: string[]; 
       sources?: import('../types/pml').DocumentSourceCitation[];
       webSources?: import('../types/pml').WebSourceCitation[];
+      webImages?: import('../types/pml').WebImageResult[];
       toolsCalled?: string[];
       generatedImages?: import('../types/pml').GeneratedImage[];
     }
@@ -209,6 +210,7 @@ export class PMLApiService {
         memoriesUsed: data.memories_used,
         sources: data.sources,
         webSources: data.web_sources,
+        webImages: data.web_images,
         toolsCalled: data.tools_called,
         generatedImages: data.generated_images,
       });
@@ -235,6 +237,7 @@ export class PMLApiService {
       memoriesUsed?: string[]; 
       sources?: import('../types/pml').DocumentSourceCitation[];
       webSources?: import('../types/pml').WebSourceCitation[];
+      webImages?: import('../types/pml').WebImageResult[];
       toolsCalled?: string[];
       generatedImages?: import('../types/pml').GeneratedImage[];
     }

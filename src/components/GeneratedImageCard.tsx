@@ -66,10 +66,17 @@ export const GeneratedImageCard: React.FC<GeneratedImageCardProps> = ({
         className={`relative w-full overflow-hidden bg-[#040905] cursor-pointer ${getAspectRatioClass()}`}
         onClick={() => onPreview && onPreview(image)}
       >
-        {/* Loading Spinner Skeleton */}
-        {loading && !imageError && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#071208] text-[#9CFF45]">
-            <div className="w-8 h-8 rounded-full border-2 border-[#9CFF45]/30 border-t-[#9CFF45] animate-spin" />
+        {/* Loading Spinner Skeleton with smooth fade out */}
+        {!imageError && (
+          <div
+            className={`absolute inset-0 flex flex-col items-center justify-center bg-[#071208] text-[#9CFF45] transition-opacity duration-700 ease-out z-10 ${
+              loading ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+            }`}
+          >
+            <div className="relative flex items-center justify-center">
+              <div className="w-9 h-9 rounded-full border-2 border-[#9CFF45]/25 border-t-[#9CFF45] animate-spin" />
+              <div className="absolute w-12 h-12 rounded-full blur-md bg-[#9CFF45]/15 animate-pulse" />
+            </div>
             <span className="mt-3 text-xs font-mono text-[#A8B0A5] tracking-wider animate-pulse">
               Rendering visual canvas...
             </span>
@@ -101,7 +108,7 @@ export const GeneratedImageCard: React.FC<GeneratedImageCardProps> = ({
               setLoading(false);
               setImageError(true);
             }}
-            className={`w-full h-full object-cover transition-all duration-500 group-hover/card:scale-[1.02] ${
+            className={`w-full h-full object-cover transition-opacity duration-500 ease-out group-hover/card:scale-[1.01] ${
               loading ? 'opacity-0' : 'opacity-100'
             }`}
           />

@@ -5,6 +5,7 @@ from app.tools.calculator import CalculatorTool
 from app.tools.web_search import WebSearchTool
 from app.tools.wikipedia import WikipediaTool
 from app.tools.image_generation import ImageGenerationTool
+from app.tools.image_search import ImageSearchTool
 
 logger = logging.getLogger(__name__)
 
@@ -75,6 +76,7 @@ class ToolRegistry:
         self.register_tool(CalculatorTool())
         self.register_tool(WikipediaTool())
         self.register_tool(ImageGenerationTool())
+        self.register_tool(ImageSearchTool())
 
 
 # Global Singleton Accessor

@@ -8,7 +8,8 @@ import type {
   UserProfile, 
   Attachment,
   DocumentItem,
-  GeneratedImage
+  GeneratedImage,
+  WebImageResult
 } from './types/pml';
 import { pmlApi } from './services/pmlApi';
 import { cosmicAudio } from './utils/audioSynth';
@@ -27,6 +28,7 @@ import { MemoryManagementModal } from './components/MemoryManagementModal';
 import { DocumentLibraryModal } from './components/DocumentLibraryModal';
 import { ImageHistoryModal } from './components/ImageHistoryModal';
 import { ImagePreviewModal } from './components/ImagePreviewModal';
+import { WebImagePreviewModal } from './components/WebImagePreviewModal';
 import { AuthExperience } from './components/AuthExperience';
 import { PMLCore } from './components/PMLCore';
 
@@ -78,6 +80,7 @@ const PMLAppContent: React.FC = () => {
   const [documentModalOpen, setDocumentModalOpen] = useState<boolean>(false);
   const [imagesModalOpen, setImagesModalOpen] = useState<boolean>(false);
   const [previewImage, setPreviewImage] = useState<GeneratedImage | null>(null);
+  const [previewWebImage, setPreviewWebImage] = useState<WebImageResult | null>(null);
   const [authModalOpen, setAuthModalOpen] = useState<boolean>(false);
   const [showGuestBanner, setShowGuestBanner] = useState<boolean>(true);
 
@@ -379,7 +382,8 @@ const PMLAppContent: React.FC = () => {
                           sources: metadata?.sources,
                           webSources: metadata?.webSources,
                           toolsCalled: metadata?.toolsCalled,
-                          generatedImages: metadata?.generatedImages
+                          generatedImages: metadata?.generatedImages,
+                          webImages: metadata?.webImages
                         }
                       : m
                   ),
@@ -557,6 +561,7 @@ const PMLAppContent: React.FC = () => {
           onOpenMemory={() => (user ? setMemoryModalOpen(true) : setAuthModalOpen(true))}
           onOpenAuth={() => setAuthModalOpen(true)}
           onPreviewImage={(img) => setPreviewImage(img)}
+          onPreviewWebImage={(img) => setPreviewWebImage(img)}
           onRegenerateImage={(prompt) => {
             setCurrentView('chat');
             handleSendMessage(`Create an image of ${prompt}`);
@@ -662,7 +667,7 @@ const PMLAppContent: React.FC = () => {
         }}
       />
 
-      {/* Fullscreen Image Preview Modal */}
+      {/* Fullscreen Image Preview Modal (AI Generated Images) */}
       <ImagePreviewModal
         image={previewImage}
         onClose={() => setPreviewImage(null)}
@@ -671,6 +676,12 @@ const PMLAppContent: React.FC = () => {
           setCurrentView('chat');
           handleSendMessage(`Create an image of ${prompt}`);
         }}
+      />
+
+      {/* Real Web Photo Preview Modal */}
+      <WebImagePreviewModal
+        image={previewWebImage}
+        onClose={() => setPreviewWebImage(null)}
       />
 
       {/* Auth Modal */}

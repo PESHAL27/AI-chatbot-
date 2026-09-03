@@ -60,6 +60,7 @@ export interface Message {
   webSources?: WebSourceCitation[];
   toolsCalled?: string[];
   generatedImages?: GeneratedImage[];
+  webImages?: WebImageResult[];
 }
 
 export interface Conversation {
@@ -165,6 +166,14 @@ export interface FastApiChatRequest {
   attachments?: any[];
 }
 
+export interface WebImageResult {
+  title?: string;
+  image_url: string;
+  thumbnail_url?: string;
+  source_url?: string;
+  source_name?: string;
+}
+
 export interface FastApiChatResponse {
   response: string;
   conversation_id: string;
@@ -172,5 +181,7 @@ export interface FastApiChatResponse {
   memories_used?: string[];
   sources?: DocumentSourceCitation[];
   web_sources?: WebSourceCitation[];
+  web_images?: WebImageResult[];
   tools_called?: string[];
+  generated_images?: GeneratedImage[];
 }

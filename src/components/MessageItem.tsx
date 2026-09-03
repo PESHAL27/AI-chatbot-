@@ -15,14 +15,18 @@ import {
   User, 
   Sparkles,
   Brain,
-  BookOpen
+  BookOpen,
+  Share2
 } from 'lucide-react';
-import type { Message, Attachment, GeneratedImage } from '../types/pml';
+import type { Message, Attachment, GeneratedImage, WebImageResult } from '../types/pml';
 import { PMLCore } from './PMLCore';
 import { voiceService } from '../services/voiceService';
 import { PMLToolStatus } from './ui/PMLToolStatus';
 import { PMLSourceCard } from './ui/PMLSourceCard';
 import { GeneratedImageCard } from './GeneratedImageCard';
+import { WebImageCarousel } from './WebImageCarousel';
+import { getProxiedImageUrl } from '../utils/imageUtils';
+import { useToast } from './ui/PMLToast';
 
 interface MessageItemProps {
   message: Message;
@@ -30,6 +34,7 @@ interface MessageItemProps {
   onFeedback?: (messageId: string, feedback: 'like' | 'dislike') => void;
   onPreviewImage?: (image: GeneratedImage) => void;
   onRegenerateImage?: (prompt: string, style?: string, aspectRatio?: string) => void;
+  onPreviewWebImage?: (image: WebImageResult) => void;
 }
 
 export const MessageItem: React.FC<MessageItemProps> = ({
@@ -38,7 +43,9 @@ export const MessageItem: React.FC<MessageItemProps> = ({
   onFeedback,
   onPreviewImage,
   onRegenerateImage,
+  onPreviewWebImage,
 }) => {
+  const { showToast } = useToast();
   const [copied, setCopied] = useState(false);
   const [copiedCodeId, setCopiedCodeId] = useState<string | null>(null);
   const [isSpeakingThis, setIsSpeakingThis] = useState(false);
@@ -46,6 +53,48 @@ export const MessageItem: React.FC<MessageItemProps> = ({
   const [activeExcerptIndex, setActiveExcerptIndex] = useState<number | null>(null);
 
   const isUser = message.role === 'user';
+
+  // Recover or use webImages from metadata or extract from markdown content
+  const effectiveWebImages = React.useMemo(() => {
+    if (message.webImages && message.webImages.length > 0) {
+      return message.webImages;
+    }
+    // Check if content has markdown images matching Wikimedia or external images
+    const mdImgRegex = /!\[([^\]]*)\]\((https?:\/\/[^\s\)]+)\)/g;
+    const extracted: WebImageResult[] = [];
+    let match;
+    while ((match = mdImgRegex.exec(message.content || '')) !== null) {
+      const alt = match[1] || 'Web Photo';
+      const url = match[2];
+      if (url.includes('image.pollinations.ai')) continue;
+      extracted.push({
+        title: alt,
+        image_url: url,
+        thumbnail_url: url,
+        source_url: url,
+        source_name: url.includes('wikimedia.org') ? 'Wikimedia Commons' : 'Web Source'
+      });
+    }
+    return extracted.length > 0 ? extracted : undefined;
+  }, [message.webImages, message.content]);
+
+  // Sanitize message content when real web images or generated images are attached to prevent duplicates & clutter
+  const cleanedContent = React.useMemo(() => {
+    let text = message.content || '';
+    if (effectiveWebImages && effectiveWebImages.length > 0) {
+      text = text.replace(/!\[[^\]]*\]\([^)]+\)/g, '');
+      text = text.replace(/^\s*\d+\.\s*(?:\r?\n|$)/gm, '');
+      text = text.replace(/^\s*\*?\s*(?:Source|Photo source):\s*[^\n]+$/gim, '');
+      text = text.replace(/Feel free to click on the (?:images|links)[^\n]*[\.\!]?/gi, '');
+      text = text.replace(/\n{3,}/g, '\n\n').trim();
+    }
+    if (message.generatedImages && message.generatedImages.length > 0) {
+      text = text.replace(/!\[[^\]]*\]\([^)]+\)/g, '');
+      text = text.replace(/^\s*\*?Aspect Ratio:[^\n]+(?:\r?\n|$)/gim, '');
+      text = text.replace(/\n{3,}/g, '\n\n').trim();
+    }
+    return text;
+  }, [message.content, effectiveWebImages, message.generatedImages]);
 
   useEffect(() => {
     const unsub = voiceService.subscribe(state => {
@@ -82,6 +131,46 @@ export const MessageItem: React.FC<MessageItemProps> = ({
     }
   };
 
+  const handleShareQuestion = async () => {
+    const questionText = message.content.trim();
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Question from PML Chat',
+          text: questionText,
+        });
+        showToast('Shared successfully!', 'success');
+        return;
+      } catch (err: any) {
+        if (err.name === 'AbortError') return;
+      }
+    }
+    await navigator.clipboard.writeText(questionText);
+    setCopied(true);
+    showToast('Question Copied!', 'success', 'Question copied to clipboard');
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleShareResponse = async () => {
+    const shareText = message.content.trim();
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'PML AI Answer',
+          text: shareText.slice(0, 3000),
+        });
+        showToast('Shared successfully!', 'success');
+        return;
+      } catch (err: any) {
+        if (err.name === 'AbortError') return;
+      }
+    }
+    await navigator.clipboard.writeText(shareText);
+    setCopied(true);
+    showToast('Answer Copied!', 'success', 'Response copied to clipboard');
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
     <div className={`w-full flex ${isUser ? 'justify-end' : 'justify-start'} my-4 group`}>
       <div className={`max-w-3xl w-full flex gap-3.5 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
@@ -100,8 +189,30 @@ export const MessageItem: React.FC<MessageItemProps> = ({
 
         {/* Message Content Container */}
         <div className={`flex-1 min-w-0 ${isUser ? 'items-end' : 'items-start'}`}>
-          {/* Identity & Timestamp Line */}
+          {/* Identity & Timestamp Line with Share Button */}
           <div className={`flex items-center gap-2 mb-1.5 px-1 ${isUser ? 'justify-end' : 'justify-start'}`}>
+            {isUser && (
+              <div className="flex items-center gap-1 opacity-70 group-hover:opacity-100 transition-opacity mr-1">
+                <button
+                  onClick={handleShareQuestion}
+                  className="px-2 py-0.5 rounded-full bg-[#122814] border border-[rgba(180,255,100,0.25)] hover:border-[#9CFF45] text-[#9CFF45] hover:text-white transition-all flex items-center gap-1 text-[10px] cursor-pointer shadow-sm"
+                  title="Share this question"
+                >
+                  <Share2 className="w-2.5 h-2.5" />
+                  <span>Share Question</span>
+                </button>
+                <button
+                  onClick={() => {
+                    handleCopyText(message.content);
+                    showToast('Question Copied!', 'success');
+                  }}
+                  className="p-1 rounded-full hover:bg-white/10 text-[#A8B0A5] hover:text-white transition-colors cursor-pointer"
+                  title="Copy question text"
+                >
+                  {copied ? <Check className="w-2.5 h-2.5 text-[#9CFF45]" /> : <Copy className="w-2.5 h-2.5" />}
+                </button>
+              </div>
+            )}
             <span className="font-bold text-xs tracking-wider text-white">
               {isUser ? 'YOU' : '✦ PML'}
             </span>
@@ -220,24 +331,32 @@ export const MessageItem: React.FC<MessageItemProps> = ({
                   },
                   img({ src, alt }: any) {
                     if (!src) return null;
-                    const imgObj: GeneratedImage = {
-                      id: `img_${Math.random().toString(36).slice(2, 9)}`,
-                      prompt: alt || 'Generated Image',
-                      image_url: src,
-                      aspect_ratio: '1:1',
-                      style: 'auto',
-                    };
+                    // Never render duplicate giant cards if real webImages carousel is already handling them
+                    if (effectiveWebImages && effectiveWebImages.length > 0) {
+                      return null;
+                    }
+                    // If generated images metadata exists, NEVER render inside markdown
+                    // because it is already rendered in the dedicated single GeneratedImageCard block below
+                    if (message.generatedImages && message.generatedImages.length > 0) {
+                      return null;
+                    }
+                    // For standalone normal images in markdown, render a clean compact inline image
                     return (
-                      <GeneratedImageCard
-                        image={imgObj}
-                        onPreview={onPreviewImage}
-                        onRegenerate={onRegenerateImage}
-                      />
+                      <span className="inline-block my-2 max-w-sm rounded-xl overflow-hidden border border-white/10 bg-black/40 animate-fadeIn">
+                        <img
+                          src={getProxiedImageUrl(src)}
+                          alt={alt || 'Image'}
+                          referrerPolicy="no-referrer"
+                          className="w-full h-auto max-h-56 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                          loading="lazy"
+                        />
+                        {alt && <span className="block px-2 py-1 text-[10px] text-white/60 truncate font-mono">{alt}</span>}
+                      </span>
                     );
                   }
                 }}
               >
-                {message.content}
+                {cleanedContent}
               </ReactMarkdown>
 
               {message.isStreaming && (
@@ -245,10 +364,10 @@ export const MessageItem: React.FC<MessageItemProps> = ({
               )}
             </div>
 
-            {/* Generated Image Cards Block if populated via metadata */}
+            {/* Generated Image Card Block (Strictly ONE image) */}
             {!isUser && message.generatedImages && message.generatedImages.length > 0 && (
               <div className="mt-3 flex flex-col gap-3">
-                {message.generatedImages.map((genImg) => (
+                {message.generatedImages.slice(0, 1).map((genImg) => (
                   <GeneratedImageCard
                     key={genImg.id}
                     image={genImg}
@@ -257,6 +376,15 @@ export const MessageItem: React.FC<MessageItemProps> = ({
                   />
                 ))}
               </div>
+            )}
+
+            {/* Real Web Image Results Block */}
+            {!isUser && effectiveWebImages && effectiveWebImages.length > 0 && (
+              <WebImageCarousel
+                images={effectiveWebImages}
+                onPreview={onPreviewWebImage || (() => {})}
+                hasPrecedingText={Boolean(cleanedContent && cleanedContent.trim().length > 0)}
+              />
             )}
 
             {/* Document RAG Citations */}
@@ -327,6 +455,15 @@ export const MessageItem: React.FC<MessageItemProps> = ({
               </div>
 
               <div className="flex items-center gap-1">
+                {/* Share Response Button */}
+                <button
+                  onClick={handleShareResponse}
+                  className="p-1.5 rounded-lg hover:bg-white/10 hover:text-[#9CFF45] text-[#A8B0A5] transition-colors cursor-pointer"
+                  title="Share this answer"
+                >
+                  <Share2 className="w-3.5 h-3.5" />
+                </button>
+
                 {/* Copy Button */}
                 <button
                   onClick={() => handleCopyText(message.content)}

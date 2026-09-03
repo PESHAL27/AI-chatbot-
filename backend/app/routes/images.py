@@ -1,6 +1,8 @@
 import logging
+import urllib.parse
+import httpx
 from typing import Dict, Any, List, Optional
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, status, Depends, Response
 from app.schemas.image import (
     ImageGenerationRequest,
     ImageGenerationResponse,
@@ -14,6 +16,100 @@ from app.auth.dependencies import get_current_user
 
 logger = logging.getLogger("pml.routes.images")
 router = APIRouter(prefix="/api/images", tags=["Images"])
+
+@router.get("/proxy", summary="Proxy External Web / Wikimedia Images")
+async def proxy_image_endpoint(url: str):
+    """
+    Safely proxies external images (e.g. Wikimedia Commons, Wikipedia, news)
+    using compliant PML User-Agent headers to prevent 403 Forbidden hotlink blocks.
+    Resolves File: description pages into direct visual image stream.
+    """
+    if not url or not (url.startswith("http://") or url.startswith("https://")):
+        raise HTTPException(status_code=400, detail="Invalid image URL")
+    
+    target_url = url.strip()
+    headers = {
+        "User-Agent": "PML-AI-Assistant/10.0 (https://pml.ai; contact: dev@pml.universe)",
+        "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8"
+    }
+    
+    # Handle Wikimedia Commons / Wikipedia file description pages gracefully
+    if "/wiki/File:" in target_url or "/wiki/file:" in target_url:
+        try:
+            raw_file_part = target_url.split("/wiki/")[1]
+            file_part = urllib.parse.unquote(raw_file_part).split("?")[0].split("#")[0].strip()
+            if not file_part.lower().startswith("file:"):
+                file_part = f"File:{file_part}"
+            
+            # Determine API endpoint (commons.wikimedia.org or local wikipedia domain)
+            api_endpoint = "https://commons.wikimedia.org/w/api.php"
+            if "wikipedia.org" in target_url and "commons.wikimedia.org" not in target_url:
+                domain = urllib.parse.urlparse(target_url).netloc or "en.wikipedia.org"
+                api_endpoint = f"https://{domain}/w/api.php"
+            
+            api_params = {
+                "action": "query",
+                "titles": file_part,
+                "prop": "imageinfo",
+                "iiprop": "url",
+                "iiurlwidth": 1200,
+                "format": "json"
+            }
+            async with httpx.AsyncClient(headers=headers, timeout=8.0) as client:
+                api_res = await client.get(api_endpoint, params=api_params)
+                if api_res.status_code == 200:
+                    data = api_res.json()
+                    pages = data.get("query", {}).get("pages", {})
+                    for _, page in pages.items():
+                        info_list = page.get("imageinfo", [])
+                        if info_list:
+                            info = info_list[0]
+                            resolved = info.get("thumburl") or info.get("url")
+                            if resolved:
+                                target_url = resolved
+                                break
+                    # If not found on local wikipedia domain, retry against Commons
+                    if ("commons.wikimedia.org" not in api_endpoint) and ("/wiki/File:" in target_url or "/wiki/file:" in target_url):
+                        api_res_commons = await client.get("https://commons.wikimedia.org/w/api.php", params=api_params)
+                        if api_res_commons.status_code == 200:
+                            commons_data = api_res_commons.json()
+                            for _, page in commons_data.get("query", {}).get("pages", {}).items():
+                                info_list = page.get("imageinfo", [])
+                                if info_list:
+                                    info = info_list[0]
+                                    resolved = info.get("thumburl") or info.get("url")
+                                    if resolved:
+                                        target_url = resolved
+                                        break
+        except Exception as resolve_err:
+            logger.warning(f"[ImageProxy] Failed resolving file page for {target_url}: {resolve_err}")
+
+    try:
+        async with httpx.AsyncClient(headers=headers, timeout=14.0, follow_redirects=True) as client:
+            resp = await client.get(target_url)
+            if resp.status_code != 200:
+                logger.warning(f"[ImageProxy] Upstream returned {resp.status_code} for {target_url}")
+                raise HTTPException(status_code=resp.status_code, detail="Failed to fetch upstream image")
+            
+            content_type = resp.headers.get("content-type", "image/jpeg")
+            # If upstream returned an HTML page instead of an image, don't serve as image
+            if "text/html" in content_type.lower():
+                logger.warning(f"[ImageProxy] Upstream URL returned HTML content instead of image: {target_url}")
+                raise HTTPException(status_code=404, detail="Upstream resource is not an image")
+
+            return Response(
+                content=resp.content,
+                media_type=content_type,
+                headers={
+                    "Cache-Control": "public, max-age=86400, immutable",
+                    "Access-Control-Allow-Origin": "*"
+                }
+            )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.warning(f"[ImageProxy] Error proxying {target_url}: {e}")
+        raise HTTPException(status_code=502, detail="Error retrieving image")
 
 @router.post("/generate", response_model=ImageGenerationResponse, summary="Generate AI Image")
 async def generate_image_endpoint(

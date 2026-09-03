@@ -1,9 +1,10 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { ChevronDown } from 'lucide-react';
-import type { Conversation, PMLCoreState, DocumentItem, Attachment, GeneratedImage } from '../types/pml';
+import { ChevronDown, Share2 } from 'lucide-react';
+import type { Conversation, PMLCoreState, DocumentItem, Attachment, GeneratedImage, WebImageResult } from '../types/pml';
 import { MessageItem } from './MessageItem';
 import { WelcomeExperience } from './WelcomeExperience';
 import { PMLCore } from './PMLCore';
+import { ShareModal } from './ShareModal';
 
 interface ConversationWorkspaceProps {
   activeConversation: Conversation | null;
@@ -22,6 +23,7 @@ interface ConversationWorkspaceProps {
   onOpenAuth?: () => void;
   onPreviewImage?: (image: GeneratedImage) => void;
   onRegenerateImage?: (prompt: string, style?: string, aspectRatio?: string) => void;
+  onPreviewWebImage?: (image: WebImageResult) => void;
   currentView?: 'home' | 'chat';
   onNavigateView?: (view: 'home' | 'chat') => void;
 }
@@ -42,19 +44,25 @@ export const ConversationWorkspace: React.FC<ConversationWorkspaceProps> = ({
   onOpenMemory,
   onPreviewImage,
   onRegenerateImage,
+  onPreviewWebImage,
   currentView = 'home',
   onNavigateView,
 }) => {
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [showScrollBottom, setShowScrollBottom] = useState(false);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
 
-  // Auto-scroll to bottom when messages update
+  // Stable auto-scroll to bottom without jitter or shaking
   useEffect(() => {
-    if (bottomRef.current && activeConversation && activeConversation.messages.length > 0) {
-      bottomRef.current.scrollIntoView({ behavior: 'smooth' });
+    if (!containerRef.current || !activeConversation || activeConversation.messages.length === 0) return;
+    const container = containerRef.current;
+    // Check if user is near bottom (within 300px) to auto-follow smoothly without shaking
+    const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+    if (distanceFromBottom < 300) {
+      container.scrollTop = container.scrollHeight;
     }
-  }, [activeConversation?.messages, coreState]);
+  }, [activeConversation?.messages]);
 
   const handleScroll = () => {
     if (!containerRef.current) return;
@@ -114,11 +122,18 @@ export const ConversationWorkspace: React.FC<ConversationWorkspaceProps> = ({
           <span>← Back to Home</span>
         </button>
 
-        <span className="text-[11px] font-mono text-[#9CFF45] bg-[#0c180d] px-3.5 py-1 rounded-full border border-[rgba(180,255,100,0.2)]">
+        <span className="text-[11px] font-mono text-[#9CFF45] bg-[#0c180d] px-3.5 py-1 rounded-full border border-[rgba(180,255,100,0.2)] truncate max-w-[180px] sm:max-w-xs md:max-w-md">
           {activeConversation.title || 'Live Session'}
         </span>
 
-        <div className="w-16" />
+        <button
+          onClick={() => setShareModalOpen(true)}
+          className="px-3 py-1 rounded-full bg-[#122814] border border-[rgba(180,255,100,0.25)] hover:border-[#9CFF45] text-xs text-[#9CFF45] hover:text-white transition-all flex items-center gap-1.5 cursor-pointer shadow-sm hover:shadow-[0_0_12px_rgba(156,255,69,0.3)]"
+          title="Share entire conversation"
+        >
+          <Share2 className="w-3.5 h-3.5" />
+          <span className="font-medium hidden sm:inline">Share Chat</span>
+        </button>
       </div>
 
       {/* Message List */}
@@ -130,6 +145,7 @@ export const ConversationWorkspace: React.FC<ConversationWorkspaceProps> = ({
           onFeedback={onFeedback}
           onPreviewImage={onPreviewImage}
           onRegenerateImage={onRegenerateImage}
+          onPreviewWebImage={onPreviewWebImage}
         />
       ))}
 
@@ -156,6 +172,13 @@ export const ConversationWorkspace: React.FC<ConversationWorkspaceProps> = ({
           <ChevronDown className="w-4 h-4" />
         </button>
       )}
+
+      {/* Share Conversation Modal */}
+      <ShareModal
+        isOpen={shareModalOpen}
+        onClose={() => setShareModalOpen(false)}
+        conversation={activeConversation}
+      />
     </div>
   );
 };

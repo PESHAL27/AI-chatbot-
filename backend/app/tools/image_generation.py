@@ -66,8 +66,9 @@ class ImageGenerationTool(BaseTool):
 
             formatted_output = (
                 f"Generated Image successfully for prompt: \"{img_data.prompt}\"\n\n"
-                f"![{img_data.prompt}]({img_data.image_url})\n\n"
-                f"*Aspect Ratio: {img_data.aspect_ratio} | Style: {img_data.style}*"
+                f"*Aspect Ratio: {img_data.aspect_ratio} | Style: {img_data.style}*\n\n"
+                "CRITICAL UI DIRECTIVE: The generated image is already rendered in the dedicated UI card below your message. "
+                "Do NOT output markdown image tags like `![alt](url)`. Simply provide a brief, polite 1-sentence caption."
             )
 
             return ToolResult(

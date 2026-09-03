@@ -1,4 +1,5 @@
 import asyncio
+import re
 import httpx
 import urllib.parse
 import urllib.request
@@ -134,12 +135,17 @@ class WebSearchTool(BaseTool):
                 "type": "integer",
                 "description": "Number of top results to retrieve (default 5).",
                 "default": 5
+            },
+            "include_images": {
+                "type": "boolean",
+                "description": "Whether to also search and return real web photos/images.",
+                "default": False
             }
         },
         "required": ["query"]
     }
 
-    async def execute(self, query: str, num_results: int = 5, **kwargs) -> ToolResult:
+    async def execute(self, query: str, num_results: int = 5, include_images: bool = False, **kwargs) -> ToolResult:
         clean_query = query.strip()
         logger.info(
             f"\n[PML Router Debug]\n"
@@ -244,10 +250,37 @@ class WebSearchTool(BaseTool):
                 f"    Snippet: {item['snippet']}"
             )
 
+        images: List[Dict[str, str]] = []
+        should_fetch_images = include_images or bool(
+            re.search(r"\b(photos?|pictures?|images?|pics?)\b", clean_query, flags=re.IGNORECASE)
+        )
+        if should_fetch_images:
+            try:
+                from app.tools.image_search import (
+                    clean_image_search_query,
+                    _search_serper_google_images,
+                    _search_tavily_images,
+                    _search_wikimedia_commons_images
+                )
+                img_target = clean_image_search_query(clean_query)
+                if settings.SERPER_API_KEY:
+                    images = await _search_serper_google_images(img_target, limit=4)
+                if not images:
+                    images = await _search_tavily_images(img_target, limit=4)
+                if not images:
+                    images = await _search_wikimedia_commons_images(img_target, limit=4)
+
+                if images:
+                    formatted_blocks.append(f"\n### REAL WEB PHOTOS ATTACHED ({len(images)} photos):")
+                    for idx, img in enumerate(images, 1):
+                        formatted_blocks.append(f"[Photo {idx}] {img['title']} | Source: {img['source_name']} | URL: {img['source_url']}")
+            except Exception as img_err:
+                logger.warning(f"[WebSearchTool] Real image retrieval error: {img_err}")
+
         formatted_output = "\n\n".join(formatted_blocks)
 
         return ToolResult(
             success=True,
-            data={"query": clean_query, "results": results},
+            data={"query": clean_query, "results": results, "images": images},
             formatted_output=formatted_output
         )

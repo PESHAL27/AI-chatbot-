@@ -3,7 +3,7 @@ import asyncio
 import logging
 from typing import List, Dict, Optional, Any
 from app.config import settings
-from app.schemas.chat import ChatRequest, ChatResponse, DocumentSourceCitation, WebSourceCitation
+from app.schemas.chat import ChatRequest, ChatResponse, DocumentSourceCitation, WebSourceCitation, WebImageResult
 from app.schemas.image import GeneratedImageData
 from app.services.ai_service import AIService
 from app.services.database_service import DatabaseService
@@ -173,6 +173,8 @@ class ChatService:
         forced_tool_name = None
         if "generate_image" in plan.required_tools or plan.intent == "image_generation":
             forced_tool_name = "generate_image"
+        elif "image_search" in plan.required_tools or plan.intent == "image_search":
+            forced_tool_name = "image_search"
         elif "web_search" in plan.required_tools:
             forced_tool_name = "web_search"
         elif "calculator" in plan.required_tools:
@@ -192,6 +194,7 @@ class ChatService:
 
         ai_reply = ai_res.get("content", "")
         raw_web_sources = ai_res.get("web_sources", [])
+        raw_web_images = ai_res.get("web_images", [])
         raw_generated_images = ai_res.get("generated_images", [])
         tools_called = list(set(ai_res.get("tools_called", [])))
 
@@ -213,6 +216,21 @@ class ChatService:
                     source=s.get("source")
                 )
                 for s in raw_web_sources
+            ]
+
+        # Map real web photo results
+        web_images_list: Optional[List[WebImageResult]] = None
+        if raw_web_images:
+            web_images_list = [
+                WebImageResult(
+                    title=img.get("title"),
+                    image_url=img["image_url"],
+                    thumbnail_url=img.get("thumbnail_url") or img["image_url"],
+                    source_url=img.get("source_url"),
+                    source_name=img.get("source_name")
+                )
+                for img in raw_web_images
+                if img.get("image_url")
             ]
 
         # Save any generated images into user database history
@@ -274,6 +292,7 @@ class ChatService:
             memories_used=relevant_memories_list if relevant_memories_list else None,
             sources=citations,
             web_sources=web_citations,
+            web_images=web_images_list,
             tools_called=tools_called if tools_called else None,
             generated_images=generated_images_list
         )
