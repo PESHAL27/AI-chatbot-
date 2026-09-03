@@ -1,8 +1,7 @@
 import type { Conversation, PMLSettings, FastApiChatRequest, Attachment } from '../types/pml';
 
 // Service abstraction layer for PML AI backend integration
-// Service abstraction layer for PML AI backend integration
-const DEFAULT_API_ENDPOINT = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const DEFAULT_API_ENDPOINT = import.meta.env.VITE_API_URL || '';
 
 export interface StreamCallbacks {
   onChunk: (chunk: string, fullText: string) => void;
