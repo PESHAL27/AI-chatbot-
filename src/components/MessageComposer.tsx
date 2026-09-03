@@ -473,23 +473,23 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
               </button>
 
               {showPlusMenu && (
-                <div className="absolute bottom-full left-0 mb-2 w-64 p-1.5 rounded-2xl bg-[#09120a]/95 border border-[rgba(180,255,100,0.25)] shadow-2xl shadow-black/90 backdrop-blur-2xl z-50 animate-fadeIn text-xs text-[#A8B0A5] space-y-1">
+                <div className="absolute bottom-full left-0 mb-3 w-64 p-2.5 rounded-2xl bg-[#09120a]/95 border border-[rgba(180,255,100,0.25)] shadow-2xl shadow-black/90 backdrop-blur-2xl z-50 animate-fadeIn text-xs text-[#A8B0A5] flex flex-col gap-2">
                   {/* Vision Upload */}
                   <button
                     onClick={() => {
                       setShowPlusMenu(false);
                       imageInputRef.current?.click();
                     }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-white/10 hover:text-white transition-colors text-left cursor-pointer"
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/[0.04] hover:bg-[#9CFF45]/15 border border-white/5 hover:border-[#9CFF45]/30 transition-all text-left cursor-pointer group"
                   >
-                    <Camera className="w-4 h-4 text-[#9CFF45]" />
+                    <div className="p-1.5 rounded-lg bg-[#9CFF45]/10 text-[#9CFF45] group-hover:scale-110 transition-transform">
+                      <Camera className="w-4 h-4" />
+                    </div>
                     <div>
                       <div className="font-semibold text-white">Upload Image (Vision)</div>
                       <div className="text-[10px] text-[#A8B0A5]">Code screenshot, math, diagrams</div>
                     </div>
                   </button>
-
-                  <div className="h-[1px] bg-white/10 my-1" />
 
                   {/* Document RAG Upload */}
                   <button
@@ -497,9 +497,11 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
                       setShowPlusMenu(false);
                       docRAGInputRef.current?.click();
                     }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-white/10 hover:text-white transition-colors text-left cursor-pointer"
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/[0.04] hover:bg-[#9CFF45]/15 border border-white/5 hover:border-[#9CFF45]/30 transition-all text-left cursor-pointer group"
                   >
-                    <span className="text-[#9CFF45]">📄</span>
+                    <div className="p-1.5 rounded-lg bg-[#9CFF45]/10 text-[#9CFF45] group-hover:scale-110 transition-transform">
+                      <Paperclip className="w-4 h-4" />
+                    </div>
                     <div>
                       <div className="font-semibold text-white">Upload Document (RAG)</div>
                       <div className="text-[10px] text-[#A8B0A5]">PDF, DOCX, TXT vector search</div>
@@ -512,9 +514,11 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
                       setShowPlusMenu(false);
                       if (onOpenDocumentLibrary) onOpenDocumentLibrary();
                     }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-white/10 hover:text-white transition-colors text-left cursor-pointer"
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/[0.04] hover:bg-[#9CFF45]/15 border border-white/5 hover:border-[#9CFF45]/30 transition-all text-left cursor-pointer group"
                   >
-                    <BookOpen className="w-4 h-4 text-[#9CFF45]" />
+                    <div className="p-1.5 rounded-lg bg-[#9CFF45]/10 text-[#9CFF45] group-hover:scale-110 transition-transform">
+                      <BookOpen className="w-4 h-4" />
+                    </div>
                     <div>
                       <div className="font-semibold text-white">Document Library</div>
                       <div className="text-[10px] text-[#A8B0A5]">Manage vector documents</div>

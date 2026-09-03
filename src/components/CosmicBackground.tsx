@@ -24,7 +24,7 @@ export const CosmicBackground: React.FC<CosmicBackgroundProps> = ({
         }}
       />
 
-      {/* Subtle ambient green glow on left and right */}
+      {/* Subtle ambient glowing orbs */}
       <div 
         className="absolute -top-32 -left-32 w-[500px] h-[500px] rounded-full blur-[140px] pointer-events-none opacity-40 transition-opacity duration-500"
         style={{
@@ -41,15 +41,6 @@ export const CosmicBackground: React.FC<CosmicBackgroundProps> = ({
         className="absolute bottom-0 left-1/3 w-[600px] h-[400px] rounded-full blur-[180px] pointer-events-none opacity-20"
         style={{
           background: 'rgba(156, 255, 69, 0.06)',
-        }}
-      />
-
-      {/* Ultra-subtle grid pattern overlay */}
-      <div 
-        className="absolute inset-0 opacity-[0.02] pointer-events-none"
-        style={{
-          backgroundImage: 'linear-gradient(#9CFF45 1px, transparent 1px), linear-gradient(90deg, #9CFF45 1px, transparent 1px)',
-          backgroundSize: '48px 48px',
         }}
       />
     </div>

@@ -76,6 +76,7 @@ export const ConversationWorkspace: React.FC<ConversationWorkspaceProps> = ({
       >
         {/* Exact Front Page from Reference Image */}
         <WelcomeExperience
+          activeConversationId={activeConversation?.id}
           onSendMessage={(text, atts) => {
             if (onNavigateView) onNavigateView('chat');
             if (onSendMessage) onSendMessage(text, atts);

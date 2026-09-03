@@ -453,33 +453,6 @@ const PMLAppContent: React.FC = () => {
       {/* Dynamic Ambient Background */}
       <CosmicBackground density={settings.particleDensity} theme={settings.theme} />
 
-      {/* Floating Navigation Drawer (Slide-over for chat history) */}
-      <NavigationPanel
-        isOpen={navOpen}
-        onToggle={handleToggleNav}
-        conversations={conversations}
-        activeConversationId={activeConversationId}
-        onSelectConversation={(id) => {
-          handleSelectConversation(id);
-          setCurrentView('chat');
-        }}
-        onNewConversation={() => {
-          handleNewConversation();
-          setCurrentView('chat');
-        }}
-        onDeleteConversation={handleDeleteConversation}
-        onToggleStarConversation={handleToggleStarConversation}
-        onOpenSettings={() => setSettingsModalOpen(true)}
-        onOpenProfile={() => (user ? setProfileModalOpen(true) : setAuthModalOpen(true))}
-        onOpenMemory={() => (user ? setMemoryModalOpen(true) : setAuthModalOpen(true))}
-        onOpenDocuments={() => setDocumentModalOpen(true)}
-        onNavigateHome={() => setCurrentView('home')}
-        userProfile={userProfile}
-        isAuthenticated={Boolean(user)}
-        onOpenAuth={() => setAuthModalOpen(true)}
-        onSignOut={handleSignOut}
-      />
-
       {/* Main Website Layout */}
       <div className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden w-full relative">
         {/* Top Navbar matching Reference Image */}
@@ -572,7 +545,34 @@ const PMLAppContent: React.FC = () => {
         )}
       </div>
 
-      {/* Modals */}
+      {/* Floating Navigation Drawer (Slide-over for chat history) */}
+      <NavigationPanel
+        isOpen={navOpen}
+        onToggle={handleToggleNav}
+        conversations={conversations}
+        activeConversationId={activeConversationId}
+        onSelectConversation={(id) => {
+          handleSelectConversation(id);
+          setCurrentView('chat');
+        }}
+        onNewConversation={() => {
+          handleNewConversation();
+          setCurrentView('chat');
+        }}
+        onDeleteConversation={handleDeleteConversation}
+        onToggleStarConversation={handleToggleStarConversation}
+        onOpenSettings={() => setSettingsModalOpen(true)}
+        onOpenProfile={() => (user ? setProfileModalOpen(true) : setAuthModalOpen(true))}
+        onOpenMemory={() => (user ? setMemoryModalOpen(true) : setAuthModalOpen(true))}
+        onOpenDocuments={() => setDocumentModalOpen(true)}
+        onNavigateHome={() => setCurrentView('home')}
+        userProfile={userProfile}
+        isAuthenticated={Boolean(user)}
+        onOpenAuth={() => setAuthModalOpen(true)}
+        onSignOut={handleSignOut}
+      />
+
+      {/* Settings Modal */}
       <SettingsModal
         isOpen={settingsModalOpen}
         onClose={() => setSettingsModalOpen(false)}

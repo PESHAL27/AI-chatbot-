@@ -121,8 +121,7 @@ html, body, #root {
   width: 960px;
   height: 960px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(156, 255, 69, 0.14) 0%, rgba(18, 55, 18, 0.08) 45%, transparent 70%);
-  border: 1px solid rgba(180, 255, 100, 0.12);
+  background: radial-gradient(circle, rgba(156, 255, 69, 0.12) 0%, rgba(18, 55, 18, 0.06) 45%, transparent 70%);
   box-shadow: 0 0 120px rgba(156, 255, 69, 0.06), inset 0 0 80px rgba(156, 255, 69, 0.04);
 }
 
@@ -134,7 +133,7 @@ html, body, #root {
   width: 1280px;
   height: 1280px;
   border-radius: 50%;
-  border: 1px dashed rgba(180, 255, 100, 0.06);
+  background: radial-gradient(circle, rgba(156, 255, 69, 0.05) 0%, transparent 60%);
   pointer-events: none;
 }
 
@@ -238,12 +237,22 @@ html, body, #root {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.25s ease;
+}
+
+[data-theme='light'] .pml-navbar {
+  background: rgba(245, 248, 245, 0.95);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 /* Active Nav Dot Indicator */
 .nav-link-active {
   color: #FFFFFF !important;
   position: relative;
+}
+
+[data-theme='light'] .nav-link-active {
+  color: #0a140a !important;
 }
 
 .nav-link-active::after {
@@ -257,6 +266,110 @@ html, body, #root {
   border-radius: 50%;
   background: #9CFF45;
   box-shadow: 0 0 8px #9CFF45;
+}
+
+/* Greeting message style */
+.welcome-greeting-text {
+  color: rgba(255, 255, 255, 0.95);
+  transition: color 0.25s ease;
+}
+
+[data-theme='light'] .welcome-greeting-text {
+  color: #111827;
+}
+
+/* Reference Search Pill Capsule Style (Centered Floating Search Box) */
+.search-pill-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  max-width: 680px;
+  height: 3.4rem;
+  padding-left: 0.85rem;
+  padding-right: 0.45rem;
+  border-radius: 9999px;
+  background: #202124;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+  transition: all 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.search-pill-container:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: #242628;
+}
+
+.search-pill-container:focus-within {
+  border-color: rgba(255, 255, 255, 0.3);
+  background: #242628;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7);
+}
+
+[data-theme='light'] .search-pill-container {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme='light'] .search-pill-container:hover {
+  border-color: rgba(0, 0, 0, 0.22);
+  background: #fdfdfd;
+}
+
+[data-theme='light'] .search-pill-container:focus-within {
+  border-color: rgba(0, 0, 0, 0.35);
+  background: #ffffff;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+}
+
+.search-pill-input {
+  all: unset;
+  flex: 1;
+  height: 100%;
+  padding-left: 0.65rem;
+  padding-right: 0.5rem;
+  color: #FFFFFF;
+  font-size: 1.02rem;
+  font-family: inherit;
+  text-align: left;
+}
+
+.search-pill-input::placeholder {
+  color: #9aa0a6;
+  opacity: 0.85;
+}
+
+[data-theme='light'] .search-pill-input {
+  color: #111827;
+}
+
+[data-theme='light'] .search-pill-input::placeholder {
+  color: #6b7280;
+}
+
+.search-pill-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.35rem;
+  height: 2.35rem;
+  border-radius: 9999px;
+  background: #1a73e8;
+  color: #ffffff;
+  cursor: pointer;
+  border: none;
+  flex-shrink: 0;
+  transition: all 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 0 12px rgba(26, 115, 232, 0.4);
+}
+
+.search-pill-action-btn:hover {
+  background: #1967d2;
+  box-shadow: 0 0 18px rgba(26, 115, 232, 0.65);
+  transform: scale(1.05);
 }
 
 /* Mubanga Search Input Style (Clean Levitating Pill + Dynamic Button) */
