@@ -78,6 +78,20 @@ class RouterService:
         r"\b(according\s+to\s+my|in\s+my\s+uploaded|from\s+the\s+document)\b"
     ]
 
+    IMAGE_GENERATION_PATTERNS = [
+        r"\b(generate|create|make|draw|paint|design|render|illustrate|produce)\s+(an?\s+)?(realistic\s+|3d\s+|cartoon\s+|concept\s+|anime\s+|cinematic\s+|vibrant\s+|beautiful\s+|cool\s+)?(image|picture|photo|illustration|artwork|drawing|painting|poster|logo|render|graphic|wallpaper|avatar|icon)\b",
+        r"^(draw|paint|illustrate|render)\s+(a|an|the|me\s+a|me\s+an)?\s+[\w\s\-\,\.]+",
+        r"^(create|generate|make)\s+(a|an|the|me\s+a|me\s+an)\s+(logo|illustration|poster|3d\s+render|artwork|portrait|wallpaper|drawing|painting|cartoon|graphic)\b",
+        r"\b(image|picture|photo|illustration|render)\s+of\s+[\w\s\-\,\.]+",
+        r"^(visualize|depict)\s+[\w\s\-\,\.]+",
+        r"^(make\s+it|change\s+it\s+to|change\s+the\s+lighting\s+to|make\s+the\s+\w+)\s+(more\s+)?(realistic|cinematic|anime|3d|vibrant|darker|brighter|colorful|detailed|sunset|cyberpunk)\b"
+    ]
+
+    IMAGE_GENERATION_EXCLUSIONS = [
+        r"^(what\s+is|explain|how\s+does|how\s+to|define|search\s+for|search\s+the\s+web|look\s+up|history\s+of|difference\s+between|why\s+is|can\s+you\s+explain)\b",
+        r"\b(segmentation|classification|compression|recognition|processing|algorithm|models?|dataset|format)\b"
+    ]
+
     AMBIGUOUS_PATTERNS = [
         r"^(find\s+it|calculate|search|look\s+up|solve\s+it|do\s+it|help)$"
     ]
@@ -110,7 +124,7 @@ class RouterService:
                     reasoning="Prompt is overly ambiguous without a target."
                 )
 
-        # 2. Vision inspection
+        # 2. Vision inspection (image uploaded for analysis)
         if has_images:
             tools.append("vision")
 
@@ -125,9 +139,20 @@ class RouterService:
                         reasoning="User explicitly commanded to save or modify long-term memory."
                     )
 
-        # 4. Memory recall detection
+        # 4. Image Generation detection
+        needs_image_gen = False
+        is_excluded = any(re.search(pat, lower_text) for pat in cls.IMAGE_GENERATION_EXCLUSIONS)
+        if not is_excluded:
+            for pat in cls.IMAGE_GENERATION_PATTERNS:
+                if re.search(pat, lower_text):
+                    needs_image_gen = True
+                    if "generate_image" not in tools:
+                        tools.append("generate_image")
+                    break
+
+        # 5. Memory recall detection
         needs_memory = False
-        if memory_enabled:
+        if memory_enabled and not needs_image_gen:
             for pat in cls.MEMORY_RECALL_PATTERNS:
                 if re.search(pat, lower_text):
                     needs_memory = True
@@ -135,7 +160,7 @@ class RouterService:
                         tools.append("memory")
                     break
 
-        # 5. Document RAG detection
+        # 6. Document RAG detection
         needs_rag = False
         if document_id:
             needs_rag = True
@@ -148,18 +173,19 @@ class RouterService:
                         tools.append("rag")
                     break
 
-        # 6. Web Search detection (real-time news, current events, recent tech)
+        # 7. Web Search detection (real-time news, current events, recent tech)
         needs_web = False
-        for pat in cls.CURRENT_INFO_PATTERNS:
-            if re.search(pat, lower_text):
-                needs_web = True
-                if "web_search" not in tools:
-                    tools.append("web_search")
-                break
+        if not needs_image_gen:
+            for pat in cls.CURRENT_INFO_PATTERNS:
+                if re.search(pat, lower_text):
+                    needs_web = True
+                    if "web_search" not in tools:
+                        tools.append("web_search")
+                    break
 
-        # 7. Wikipedia detection (established facts, history, science, biography)
+        # 8. Wikipedia detection (established facts, history, science, biography)
         needs_wiki = False
-        if not needs_web and not needs_rag:
+        if not needs_web and not needs_rag and not needs_image_gen:
             for pat in cls.WIKIPEDIA_PATTERNS:
                 if re.search(pat, lower_text):
                     needs_wiki = True
@@ -167,21 +193,24 @@ class RouterService:
                         tools.append("wikipedia_search")
                     break
 
-        # 8. Calculator detection
+        # 9. Calculator detection
         needs_calc = False
         extracted_expr = None
-        for pat in cls.CALC_PATTERNS:
-            m = re.search(pat, lower_text)
-            if m:
-                needs_calc = True
-                extracted_expr = m.group(0)
-                if "calculator" not in tools:
-                    tools.append("calculator")
-                break
+        if not needs_image_gen:
+            for pat in cls.CALC_PATTERNS:
+                m = re.search(pat, lower_text)
+                if m:
+                    needs_calc = True
+                    extracted_expr = m.group(0)
+                    if "calculator" not in tools:
+                        tools.append("calculator")
+                    break
 
-        # 9. Determine overall intent
+        # 10. Determine overall intent
         if len(tools) > 1:
             intent = "multi_tool"
+        elif "generate_image" in tools:
+            intent = "image_generation"
         elif "vision" in tools:
             intent = "vision"
         elif "rag" in tools:

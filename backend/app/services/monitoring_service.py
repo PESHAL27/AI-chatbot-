@@ -79,7 +79,7 @@ class MonitoringService:
             request_id=request_id,
             endpoint=endpoint,
             method=method,
-            user_id="guest" if user_id == "guest_user" else f"user_{user_id[:6]}...",
+            user_id="guest_session" if (not user_id or str(user_id).startswith("guest")) else f"user_{user_id[:6]}...",
             status_code=status_code,
             duration_ms=round(duration_ms, 2),
             tools_called=tools_called or [],

@@ -17,22 +17,27 @@ import {
   Brain,
   BookOpen
 } from 'lucide-react';
-import type { Message, Attachment } from '../types/pml';
+import type { Message, Attachment, GeneratedImage } from '../types/pml';
 import { PMLCore } from './PMLCore';
 import { voiceService } from '../services/voiceService';
 import { PMLToolStatus } from './ui/PMLToolStatus';
 import { PMLSourceCard } from './ui/PMLSourceCard';
+import { GeneratedImageCard } from './GeneratedImageCard';
 
 interface MessageItemProps {
   message: Message;
   onRegenerate?: () => void;
   onFeedback?: (messageId: string, feedback: 'like' | 'dislike') => void;
+  onPreviewImage?: (image: GeneratedImage) => void;
+  onRegenerateImage?: (prompt: string, style?: string, aspectRatio?: string) => void;
 }
 
 export const MessageItem: React.FC<MessageItemProps> = ({
   message,
   onRegenerate,
   onFeedback,
+  onPreviewImage,
+  onRegenerateImage,
 }) => {
   const [copied, setCopied] = useState(false);
   const [copiedCodeId, setCopiedCodeId] = useState<string | null>(null);
@@ -212,6 +217,23 @@ export const MessageItem: React.FC<MessageItemProps> = ({
                         {children}
                       </a>
                     );
+                  },
+                  img({ src, alt }: any) {
+                    if (!src) return null;
+                    const imgObj: GeneratedImage = {
+                      id: `img_${Math.random().toString(36).slice(2, 9)}`,
+                      prompt: alt || 'Generated Image',
+                      image_url: src,
+                      aspect_ratio: '1:1',
+                      style: 'auto',
+                    };
+                    return (
+                      <GeneratedImageCard
+                        image={imgObj}
+                        onPreview={onPreviewImage}
+                        onRegenerate={onRegenerateImage}
+                      />
+                    );
                   }
                 }}
               >
@@ -222,6 +244,20 @@ export const MessageItem: React.FC<MessageItemProps> = ({
                 <span className="inline-block w-2 h-4 ml-1 bg-[#9CFF45] animate-pulse align-middle rounded-sm shadow-[0_0_8px_#9CFF45]" />
               )}
             </div>
+
+            {/* Generated Image Cards Block if populated via metadata */}
+            {!isUser && message.generatedImages && message.generatedImages.length > 0 && (
+              <div className="mt-3 flex flex-col gap-3">
+                {message.generatedImages.map((genImg) => (
+                  <GeneratedImageCard
+                    key={genImg.id}
+                    image={genImg}
+                    onPreview={onPreviewImage}
+                    onRegenerate={onRegenerateImage}
+                  />
+                ))}
+              </div>
+            )}
 
             {/* Document RAG Citations */}
             {!isUser && message.sources && message.sources.length > 0 && (

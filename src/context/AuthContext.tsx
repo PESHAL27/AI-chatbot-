@@ -82,6 +82,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSession(session);
       setUser(session?.user ?? null);
       pmlApi.setAuthToken(session?.access_token || null);
+      pmlApi.setUserId(session?.user?.id || null);
 
       if (session?.user) {
         await loadProfile(session.user);
@@ -101,6 +102,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSession(newSession);
       setUser(newSession?.user ?? null);
       pmlApi.setAuthToken(newSession?.access_token || null);
+      pmlApi.setUserId(newSession?.user?.id || null);
 
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
         if (newSession?.user) {
@@ -110,7 +112,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(null);
         setSession(null);
         setProfile(null);
-        pmlApi.setAuthToken(null);
+        pmlApi.resetGuestSession();
       }
 
       setLoading(false);
@@ -137,6 +139,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSession(data.session);
       setUser(data.user);
       pmlApi.setAuthToken(data.session.access_token);
+      pmlApi.setUserId(data.user.id);
       await loadProfile(data.user);
     }
     return { error };
@@ -159,6 +162,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setSession(data.session);
         setUser(data.user);
         pmlApi.setAuthToken(data.session.access_token);
+        pmlApi.setUserId(data.user.id);
       }
       // Upsert profile in Supabase database
       const initialProfile: UserProfileData = {
@@ -187,7 +191,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSession(null);
       setUser(null);
       setProfile(null);
-      pmlApi.setAuthToken(null);
+      pmlApi.resetGuestSession();
     }
   };
 

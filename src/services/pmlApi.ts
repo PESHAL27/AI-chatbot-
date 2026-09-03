@@ -13,6 +13,7 @@ export interface StreamCallbacks {
       sources?: import('../types/pml').DocumentSourceCitation[];
       webSources?: import('../types/pml').WebSourceCitation[];
       toolsCalled?: string[];
+      generatedImages?: import('../types/pml').GeneratedImage[];
     }
   ) => void;
   onError: (error: Error) => void;
@@ -21,6 +22,17 @@ export interface StreamCallbacks {
 export class PMLApiService {
   private endpoint: string;
   private authToken: string | null = null;
+  private currentUserId: string | null = null;
+  private guestId: string = (() => {
+    if (typeof window === 'undefined') return 'guest_default';
+    let id = sessionStorage.getItem('pml_guest_session_id');
+    if (!id) {
+      const randomPart = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Math.random().toString(36).substring(2, 11)}_${Date.now().toString(36)}`;
+      id = `guest_${randomPart}`;
+      sessionStorage.setItem('pml_guest_session_id', id);
+    }
+    return id;
+  })();
 
   constructor(endpoint: string = DEFAULT_API_ENDPOINT) {
     this.endpoint = endpoint;
@@ -42,9 +54,75 @@ export class PMLApiService {
     return this.authToken;
   }
 
+  setUserId(userId: string | null) {
+    this.currentUserId = userId;
+  }
+
+  getUserId(): string | null {
+    return this.currentUserId;
+  }
+
+  getGuestId(): string {
+    return this.guestId;
+  }
+
+  /**
+   * Resets the temporary guest session with a brand new isolated identifier.
+   * Clears any existing guest temporary cached state.
+   */
+  resetGuestSession(): string {
+    if (typeof window !== 'undefined') {
+      try {
+        sessionStorage.removeItem(`pml_conversations_guest_${this.guestId}`);
+        sessionStorage.removeItem(`pml_active_conv_guest_${this.guestId}`);
+        sessionStorage.removeItem('pml_guest_session_id');
+      } catch {
+        // Safe fallback
+      }
+      const randomPart = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Math.random().toString(36).substring(2, 11)}_${Date.now().toString(36)}`;
+      this.guestId = `guest_${randomPart}`;
+      try {
+        sessionStorage.setItem('pml_guest_session_id', this.guestId);
+      } catch {
+        // Safe fallback
+      }
+    }
+    this.authToken = null;
+    this.currentUserId = null;
+    return this.guestId;
+  }
+
+  getStorageKey(userId?: string | null): string {
+    const effectiveUser = userId !== undefined ? userId : this.currentUserId;
+    if (effectiveUser && !effectiveUser.startsWith('guest')) {
+      return `pml_conversations_user_${effectiveUser}`;
+    }
+    return `pml_conversations_guest_${this.guestId}`;
+  }
+
+  /**
+   * Clears cached data for a specific user or current guest session
+   */
+  clearUserCache(userId?: string | null) {
+    if (typeof window === 'undefined') return;
+    try {
+      const key = this.getStorageKey(userId);
+      localStorage.removeItem(key);
+      sessionStorage.removeItem(key);
+      localStorage.removeItem('pml_conversations'); // Legacy cleanup
+      localStorage.removeItem('pml_active_conv_id');
+      if (userId && !userId.startsWith('guest')) {
+        sessionStorage.removeItem(`pml_active_conv_${userId}`);
+      }
+    } catch {
+      // Safe fallback
+    }
+  }
+
   private getHeaders(custom: Record<string, string> = {}): Record<string, string> {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
+      'X-Guest-ID': this.guestId,
       ...custom,
     };
     if (this.authToken) {
@@ -132,6 +210,7 @@ export class PMLApiService {
         sources: data.sources,
         webSources: data.web_sources,
         toolsCalled: data.tools_called,
+        generatedImages: data.generated_images,
       });
     } catch (err: any) {
       console.warn('FastAPI backend connection issue:', err);
@@ -157,6 +236,7 @@ export class PMLApiService {
       sources?: import('../types/pml').DocumentSourceCitation[];
       webSources?: import('../types/pml').WebSourceCitation[];
       toolsCalled?: string[];
+      generatedImages?: import('../types/pml').GeneratedImage[];
     }
   ): Promise<void> {
     let currentText = '';
@@ -339,7 +419,7 @@ How can I assist your exploration today? Feel free to ask a question, attach doc
   }
 
   /** Real Database & Backend Storage Operations */
-  async fetchConversations(): Promise<Conversation[]> {
+  async fetchConversations(userId?: string): Promise<Conversation[]> {
     try {
       const apiBase = this.endpoint || DEFAULT_API_ENDPOINT;
       const res = await fetch(`${apiBase}/api/conversations`, {
@@ -347,19 +427,26 @@ How can I assist your exploration today? Feel free to ask a question, attach doc
       });
       if (res.ok) {
         const data = await res.json();
-        return data.map((c: any) => ({
+        const convList = data.map((c: any) => ({
           id: c.id,
           title: c.title,
           createdAt: c.created_at || new Date().toISOString(),
           updatedAt: c.updated_at || new Date().toISOString(),
           messages: [],
         }));
+        // Update user-scoped cached fallback
+        this.saveConversationsToStorage(convList, userId);
+        return convList;
       }
     } catch (err) {
-      console.warn('[PML API] Could not fetch conversations from backend, falling back to localStorage:', err);
+      console.warn('[PML API] Could not fetch conversations from backend, falling back to scoped storage:', err);
     }
 
-    const stored = localStorage.getItem('pml_conversations');
+    const key = this.getStorageKey(userId);
+    let stored: string | null = null;
+    if (typeof window !== 'undefined') {
+      stored = sessionStorage.getItem(key) || localStorage.getItem(key);
+    }
     if (!stored) return [];
     try {
       return JSON.parse(stored);
@@ -395,7 +482,7 @@ How can I assist your exploration today? Feel free to ask a question, attach doc
     return null;
   }
 
-  async renameConversation(id: string, newTitle: string): Promise<boolean> {
+  async renameConversation(id: string, newTitle: string, userId?: string): Promise<boolean> {
     try {
       const apiBase = this.endpoint || DEFAULT_API_ENDPOINT;
       const res = await fetch(`${apiBase}/api/conversations/${id}`, {
@@ -408,10 +495,10 @@ How can I assist your exploration today? Feel free to ask a question, attach doc
       console.warn('[PML API] Error renaming conversation on backend:', err);
     }
 
-    // Local Storage Fallback
-    const convs = await this.fetchConversations();
+    // Scoped Storage Fallback
+    const convs = await this.fetchConversations(userId);
     const updated = convs.map(c => c.id === id ? { ...c, title: newTitle } : c);
-    await this.saveConversations(updated);
+    await this.saveConversations(updated, userId);
     return true;
   }
 
@@ -426,11 +513,22 @@ How can I assist your exploration today? Feel free to ask a question, attach doc
     return newConv;
   }
 
-  async saveConversations(conversations: Conversation[]): Promise<void> {
-    localStorage.setItem('pml_conversations', JSON.stringify(conversations));
+  private saveConversationsToStorage(conversations: Conversation[], userId?: string): void {
+    if (typeof window === 'undefined') return;
+    const key = this.getStorageKey(userId);
+    const serialized = JSON.stringify(conversations);
+    if (key.startsWith('pml_conversations_guest_')) {
+      sessionStorage.setItem(key, serialized);
+    } else {
+      localStorage.setItem(key, serialized);
+    }
   }
 
-  async deleteConversation(id: string): Promise<void> {
+  async saveConversations(conversations: Conversation[], userId?: string): Promise<void> {
+    this.saveConversationsToStorage(conversations, userId);
+  }
+
+  async deleteConversation(id: string, userId?: string): Promise<void> {
     try {
       const apiBase = this.endpoint || DEFAULT_API_ENDPOINT;
       await fetch(`${apiBase}/api/conversations/${id}`, {
@@ -441,9 +539,9 @@ How can I assist your exploration today? Feel free to ask a question, attach doc
       console.warn('[PML API] Error deleting conversation from backend:', err);
     }
 
-    const convs = await this.fetchConversations();
+    const convs = await this.fetchConversations(userId);
     const filtered = convs.filter(c => c.id !== id);
-    await this.saveConversations(filtered);
+    await this.saveConversations(filtered, userId);
   }
 
   async sendFeedback(messageId: string, feedback: 'like' | 'dislike'): Promise<boolean> {
@@ -526,7 +624,9 @@ How can I assist your exploration today? Feel free to ask a question, attach doc
     const formData = new FormData();
     formData.append('file', file);
 
-    const headers: Record<string, string> = {};
+    const headers: Record<string, string> = {
+      'X-Guest-ID': this.guestId,
+    };
     if (this.authToken) {
       headers['Authorization'] = `Bearer ${this.authToken}`;
     }
@@ -612,6 +712,89 @@ How can I assist your exploration today? Feel free to ask a question, attach doc
       console.warn('[PML API] Error retrying document processing:', err);
     }
     return null;
+  }
+
+  // =========================================================================
+  // IMAGE GENERATION & HISTORY API
+  // =========================================================================
+
+  async generateImage(
+    prompt: string,
+    options?: import('../types/pml').ImageGenerationOptions,
+    conversationId?: string
+  ): Promise<import('../types/pml').GeneratedImage | null> {
+    try {
+      const apiBase = this.endpoint || DEFAULT_API_ENDPOINT;
+      const res = await fetch(`${apiBase}/api/images/generate`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify({
+          prompt,
+          aspect_ratio: options?.aspect_ratio || '1:1',
+          style: options?.style || 'auto',
+          quality: options?.quality || 'standard',
+          enhance_prompt: options?.enhance_prompt || false,
+          conversation_id: conversationId,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return data.image || null;
+      }
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.detail || 'Image generation failed.');
+    } catch (err) {
+      console.error('[PML API] Image generation error:', err);
+      throw err;
+    }
+  }
+
+  async getImageHistory(limit: number = 50): Promise<import('../types/pml').GeneratedImage[]> {
+    try {
+      const apiBase = this.endpoint || DEFAULT_API_ENDPOINT;
+      const res = await fetch(`${apiBase}/api/images/history?limit=${limit}`, {
+        method: 'GET',
+        headers: this.getHeaders(),
+      });
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (err) {
+      console.warn('[PML API] Error fetching image history:', err);
+    }
+    return [];
+  }
+
+  async deleteGeneratedImage(imageId: string): Promise<boolean> {
+    try {
+      const apiBase = this.endpoint || DEFAULT_API_ENDPOINT;
+      const res = await fetch(`${apiBase}/api/images/${imageId}`, {
+        method: 'DELETE',
+        headers: this.getHeaders(),
+      });
+      return res.ok;
+    } catch (err) {
+      console.warn('[PML API] Error deleting image:', err);
+      return false;
+    }
+  }
+
+  async enhanceImagePrompt(prompt: string, style?: string): Promise<string> {
+    try {
+      const apiBase = this.endpoint || DEFAULT_API_ENDPOINT;
+      const res = await fetch(`${apiBase}/api/images/enhance-prompt`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify({ prompt, style: style || 'auto' }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return data.enhanced_prompt || prompt;
+      }
+    } catch (err) {
+      console.warn('[PML API] Error enhancing prompt:', err);
+    }
+    return prompt;
   }
 }
 

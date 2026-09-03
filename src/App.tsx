@@ -7,7 +7,8 @@ import type {
   PMLSettings, 
   UserProfile, 
   Attachment,
-  DocumentItem
+  DocumentItem,
+  GeneratedImage
 } from './types/pml';
 import { pmlApi } from './services/pmlApi';
 import { cosmicAudio } from './utils/audioSynth';
@@ -24,6 +25,8 @@ import { SettingsModal } from './components/SettingsModal';
 import { UserProfileModal } from './components/UserProfileModal';
 import { MemoryManagementModal } from './components/MemoryManagementModal';
 import { DocumentLibraryModal } from './components/DocumentLibraryModal';
+import { ImageHistoryModal } from './components/ImageHistoryModal';
+import { ImagePreviewModal } from './components/ImagePreviewModal';
 import { AuthExperience } from './components/AuthExperience';
 import { PMLCore } from './components/PMLCore';
 
@@ -51,9 +54,7 @@ const PMLAppContent: React.FC = () => {
   const { user, profile, signOut, loading } = useAuth();
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [activeConversationId, setActiveConversationId] = useState<string | null>(() => {
-    return localStorage.getItem('pml_active_conv_id') || null;
-  });
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [coreState, setCoreState] = useState<PMLCoreState>('idle');
   const [navOpen, setNavOpen] = useState<boolean>(() => {
     if (typeof window === 'undefined') return true;
@@ -75,6 +76,8 @@ const PMLAppContent: React.FC = () => {
   const [profileModalOpen, setProfileModalOpen] = useState<boolean>(false);
   const [memoryModalOpen, setMemoryModalOpen] = useState<boolean>(false);
   const [documentModalOpen, setDocumentModalOpen] = useState<boolean>(false);
+  const [imagesModalOpen, setImagesModalOpen] = useState<boolean>(false);
+  const [previewImage, setPreviewImage] = useState<GeneratedImage | null>(null);
   const [authModalOpen, setAuthModalOpen] = useState<boolean>(false);
   const [showGuestBanner, setShowGuestBanner] = useState<boolean>(true);
 
@@ -109,16 +112,32 @@ const PMLAppContent: React.FC = () => {
   // Helper to safely select and persist active conversation ID
   const selectConversationId = (id: string | null) => {
     setActiveConversationId(id);
+    const activeKey = user ? `pml_active_conv_${user.id}` : `pml_active_conv_guest_${pmlApi.getGuestId()}`;
     if (id) {
-      localStorage.setItem('pml_active_conv_id', id);
+      sessionStorage.setItem(activeKey, id);
     } else {
-      localStorage.removeItem('pml_active_conv_id');
+      sessionStorage.removeItem(activeKey);
     }
   };
 
+  // One-time cleanup of legacy shared storage items
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem('pml_active_conv_id');
+        localStorage.removeItem('pml_conversations');
+      } catch {
+        // Safe fallback
+      }
+    }
+  }, []);
+
   // Load conversations when user state initializes or changes (login/logout transition)
   useEffect(() => {
-    const currentUserId = user?.id || 'guest';
+    if (loading) {
+      return;
+    }
+    const currentUserId = user?.id || null;
     
     // Only re-fetch if this is an actual user change/login/logout event
     if (lastLoadedUserIdRef.current === currentUserId) {
@@ -126,11 +145,16 @@ const PMLAppContent: React.FC = () => {
     }
     lastLoadedUserIdRef.current = currentUserId;
 
-    pmlApi.fetchConversations().then(async data => {
+    // Immediately clear previous user's conversation state from view
+    setConversations([]);
+    setActiveConversationId(null);
+    pmlApi.setUserId(currentUserId);
+
+    pmlApi.fetchConversations(currentUserId || undefined).then(async data => {
       setConversations(data);
       if (data.length > 0) {
-        // Retain current active conversation if valid, otherwise pick the first
-        const currentSavedId = localStorage.getItem('pml_active_conv_id');
+        const activeKey = currentUserId ? `pml_active_conv_${currentUserId}` : `pml_active_conv_guest_${pmlApi.getGuestId()}`;
+        const currentSavedId = sessionStorage.getItem(activeKey);
         const targetId = (currentSavedId && data.some(c => c.id === currentSavedId))
           ? currentSavedId
           : data[0].id;
@@ -144,7 +168,7 @@ const PMLAppContent: React.FC = () => {
         selectConversationId(null);
       }
     });
-  }, [user]);
+  }, [user, loading]);
 
   // Sync settings & theme attribute
   useEffect(() => {
@@ -162,21 +186,26 @@ const PMLAppContent: React.FC = () => {
   // Sync conversations to storage
   const saveConversationsState = (newConvs: Conversation[]) => {
     setConversations(newConvs);
-    pmlApi.saveConversations(newConvs);
+    pmlApi.saveConversations(newConvs, user?.id);
   };
 
   const activeConversation = conversations.find(c => c.id === activeConversationId) || null;
 
   // Handle Logout
   const handleSignOut = async () => {
+    const prevUserId = user?.id;
     await signOut();
     lastLoadedUserIdRef.current = undefined;
+    if (prevUserId) {
+      pmlApi.clearUserCache(prevUserId);
+    }
     setConversations([]);
     selectConversationId(null);
     setProfileModalOpen(false);
     setMemoryModalOpen(false);
     setDocumentModalOpen(false);
     setSelectedDocument(null);
+    setImagesModalOpen(false);
   };
 
   // Start New Conversation
@@ -205,7 +234,7 @@ const PMLAppContent: React.FC = () => {
   // Delete Conversation
   const handleDeleteConversation = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    await pmlApi.deleteConversation(id);
+    await pmlApi.deleteConversation(id, user?.id);
     const updated = conversations.filter(c => c.id !== id);
     saveConversationsState(updated);
     if (activeConversationId === id) {
@@ -222,7 +251,7 @@ const PMLAppContent: React.FC = () => {
 
   // Rename Conversation
   const handleRenameConversation = async (id: string, newTitle: string) => {
-    await pmlApi.renameConversation(id, newTitle);
+    await pmlApi.renameConversation(id, newTitle, user?.id);
     const updated = conversations.map(c => (c.id === id ? { ...c, title: newTitle } : c));
     saveConversationsState(updated);
   };
@@ -349,7 +378,8 @@ const PMLAppContent: React.FC = () => {
                           memoriesUsed: metadata?.memoriesUsed,
                           sources: metadata?.sources,
                           webSources: metadata?.webSources,
-                          toolsCalled: metadata?.toolsCalled
+                          toolsCalled: metadata?.toolsCalled,
+                          generatedImages: metadata?.generatedImages
                         }
                       : m
                   ),
@@ -454,7 +484,7 @@ const PMLAppContent: React.FC = () => {
       <CosmicBackground density={settings.particleDensity} theme={settings.theme} />
 
       {/* Main Website Layout */}
-      <div className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden w-full relative">
+      <div className="flex-1 flex flex-col h-full min-h-0 min-w-0 overflow-hidden w-full relative">
         {/* Top Navbar matching Reference Image */}
         <TopHeader
           navOpen={navOpen}
@@ -488,7 +518,7 @@ const PMLAppContent: React.FC = () => {
 
         {/* Guest Session Notice Pill */}
         {!user && showGuestBanner && currentView === 'chat' && (
-          <div className="mx-auto mt-2 px-4 py-1.5 rounded-full bg-[#0d2210] border border-[rgba(180,255,100,0.3)] text-[#9CFF45] text-xs font-medium flex items-center gap-2 z-20 backdrop-blur-md">
+          <div className="mx-auto mt-2 px-4 py-1.5 rounded-full bg-[#0d2210] border border-[rgba(180,255,100,0.3)] text-[#9CFF45] text-xs font-medium flex items-center gap-2 z-20 backdrop-blur-md flex-shrink-0">
             <Sparkles className="w-3.5 h-3.5 text-[#9CFF45]" />
             <span>Guest Mode active. </span>
             <button
@@ -526,22 +556,29 @@ const PMLAppContent: React.FC = () => {
           onStopGeneration={handleStopGeneration}
           onOpenMemory={() => (user ? setMemoryModalOpen(true) : setAuthModalOpen(true))}
           onOpenAuth={() => setAuthModalOpen(true)}
+          onPreviewImage={(img) => setPreviewImage(img)}
+          onRegenerateImage={(prompt) => {
+            setCurrentView('chat');
+            handleSendMessage(`Create an image of ${prompt}`);
+          }}
           currentView={currentView}
           onNavigateView={handleNavigateView}
         />
 
         {/* Pinned Bottom Message Console (when actively chatting in a thread) */}
         {currentView === 'chat' && activeConversation && activeConversation.messages.length > 0 && (
-          <MessageComposer
-            onSendMessage={handleSendMessage}
-            isStreaming={isStreaming}
-            onStopGeneration={handleStopGeneration}
-            selectedDocument={selectedDocument}
-            onClearDocumentScope={() => setSelectedDocument(null)}
-            onOpenDocumentLibrary={() => setDocumentModalOpen(true)}
-            onUploadDocument={handleUploadDocument}
-            speechLanguage={settings.speechLanguage || 'en-US'}
-          />
+          <div className="flex-shrink-0 w-full z-30">
+            <MessageComposer
+              onSendMessage={handleSendMessage}
+              isStreaming={isStreaming}
+              onStopGeneration={handleStopGeneration}
+              selectedDocument={selectedDocument}
+              onClearDocumentScope={() => setSelectedDocument(null)}
+              onOpenDocumentLibrary={() => setDocumentModalOpen(true)}
+              onUploadDocument={handleUploadDocument}
+              speechLanguage={settings.speechLanguage || 'en-US'}
+            />
+          </div>
         )}
       </div>
 
@@ -565,6 +602,7 @@ const PMLAppContent: React.FC = () => {
         onOpenProfile={() => (user ? setProfileModalOpen(true) : setAuthModalOpen(true))}
         onOpenMemory={() => (user ? setMemoryModalOpen(true) : setAuthModalOpen(true))}
         onOpenDocuments={() => setDocumentModalOpen(true)}
+        onOpenImages={() => setImagesModalOpen(true)}
         onNavigateHome={() => setCurrentView('home')}
         userProfile={userProfile}
         isAuthenticated={Boolean(user)}
@@ -607,6 +645,32 @@ const PMLAppContent: React.FC = () => {
         selectedDocumentId={selectedDocument?.id || null}
         onSelectDocument={doc => setSelectedDocument(doc)}
         onUploadSuccess={doc => setSelectedDocument(doc)}
+      />
+
+      {/* Image History & Gallery Modal */}
+      <ImageHistoryModal
+        isOpen={imagesModalOpen}
+        onClose={() => setImagesModalOpen(false)}
+        onSelectImage={(img) => {
+          setImagesModalOpen(false);
+          setPreviewImage(img);
+        }}
+        onRegenerate={(prompt) => {
+          setImagesModalOpen(false);
+          setCurrentView('chat');
+          handleSendMessage(`Create an image of ${prompt}`);
+        }}
+      />
+
+      {/* Fullscreen Image Preview Modal */}
+      <ImagePreviewModal
+        image={previewImage}
+        onClose={() => setPreviewImage(null)}
+        onRegenerate={(prompt) => {
+          setPreviewImage(null);
+          setCurrentView('chat');
+          handleSendMessage(`Create an image of ${prompt}`);
+        }}
       />
 
       {/* Auth Modal */}

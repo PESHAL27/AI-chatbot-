@@ -193,28 +193,30 @@ export const MemoryManagementModal: React.FC<MemoryManagementModalProps> = ({
           </button>
         </div>
 
-        {/* Unauthenticated Guest Warning */}
-        {!isAuthenticated ? (
-          <div className="p-6 rounded-2xl bg-[#0a180b] border border-[rgba(180,255,100,0.2)] text-center my-auto flex flex-col items-center gap-3">
-            <ShieldCheck className="w-10 h-10 text-[#9CFF45]" />
-            <h3 className="text-base font-bold text-white">Account Required for Long-Term Memory</h3>
-            <p className="text-xs text-[#A8B0A5] max-w-md">
-              Long-term memory is securely encrypted and isolated to authenticated user accounts. Sign in or create a PML account to enable cross-conversation memory.
-            </p>
-            <button
-              onClick={() => {
-                onClose();
-                onOpenAuth();
-              }}
-              className="mt-2 btn-lime px-6 py-2.5 rounded-full text-xs font-semibold cursor-pointer shadow-[0_0_15px_rgba(156,255,69,0.3)]"
-            >
-              Sign In / Create Account
-            </button>
-          </div>
-        ) : (
-          <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-            {/* Category Tabs */}
-            <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-2 mb-3">
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+          {/* Unauthenticated Guest Notice Banner */}
+          {!isAuthenticated && (
+            <div className="p-3 mb-3 rounded-xl bg-[#0a180b] border border-[rgba(180,255,100,0.2)] flex items-center justify-between gap-3 shrink-0">
+              <div className="flex items-center gap-2.5">
+                <ShieldCheck className="w-5 h-5 text-[#9CFF45] shrink-0" />
+                <span className="text-[11px] text-[#A8B0A5]">
+                  <strong className="text-white">Temporary Guest Session:</strong> Memories created here are temporary to this browser session and isolated from user accounts.
+                </span>
+              </div>
+              <button
+                onClick={() => {
+                  onClose();
+                  onOpenAuth();
+                }}
+                className="btn-lime px-3 py-1 rounded-full text-[10px] font-semibold whitespace-nowrap cursor-pointer shadow-[0_0_10px_rgba(156,255,69,0.2)]"
+              >
+                Sign In to Persist
+              </button>
+            </div>
+          )}
+
+          {/* Category Tabs */}
+          <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-2 mb-3">
               <div className="flex gap-2 overflow-x-auto py-1">
                 {[
                   { id: 'all', label: `All (${memories.length})` },
@@ -368,7 +370,6 @@ export const MemoryManagementModal: React.FC<MemoryManagementModalProps> = ({
               </button>
             </form>
           </div>
-        )}
 
         {/* Footer info */}
         <div className="mt-4 pt-3 border-t border-white/10 flex justify-between items-center text-[10px] text-[#A8B0A5]">

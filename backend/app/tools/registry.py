@@ -4,6 +4,7 @@ from app.tools.base import BaseTool, ToolResult
 from app.tools.calculator import CalculatorTool
 from app.tools.web_search import WebSearchTool
 from app.tools.wikipedia import WikipediaTool
+from app.tools.image_generation import ImageGenerationTool
 
 logger = logging.getLogger(__name__)
 
@@ -69,10 +70,11 @@ class ToolRegistry:
             )
 
     def _register_default_tools(self):
-        """Registers default core tools: web_search, calculator, and wikipedia_search."""
+        """Registers default core tools: web_search, calculator, wikipedia_search, and generate_image."""
         self.register_tool(WebSearchTool())
         self.register_tool(CalculatorTool())
         self.register_tool(WikipediaTool())
+        self.register_tool(ImageGenerationTool())
 
 
 # Global Singleton Accessor

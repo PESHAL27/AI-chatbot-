@@ -79,6 +79,35 @@ class DatabaseService:
                     FOREIGN KEY (document_id) REFERENCES documents(id) ON DELETE CASCADE
                 );
             """)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS generated_images (
+                    id TEXT PRIMARY KEY,
+                    user_id TEXT NOT NULL,
+                    conversation_id TEXT,
+                    prompt TEXT NOT NULL,
+                    revised_prompt TEXT,
+                    image_url TEXT NOT NULL,
+                    aspect_ratio TEXT DEFAULT '1:1',
+                    style TEXT DEFAULT 'auto',
+                    quality TEXT DEFAULT 'standard',
+                    storage_path TEXT,
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+                );
+            """)
+
+            # Auto-cleanup stale temporary guest records older than 48 hours
+            try:
+                cursor.execute("""
+                    DELETE FROM messages WHERE conversation_id IN (
+                        SELECT id FROM conversations WHERE user_id LIKE 'guest_%' AND datetime(created_at) < datetime('now', '-2 days')
+                    );
+                """)
+                cursor.execute("DELETE FROM conversations WHERE user_id LIKE 'guest_%' AND datetime(created_at) < datetime('now', '-2 days');")
+                cursor.execute("DELETE FROM memories WHERE user_id LIKE 'guest_%' AND datetime(created_at) < datetime('now', '-2 days');")
+                cursor.execute("DELETE FROM generated_images WHERE user_id LIKE 'guest_%' AND datetime(created_at) < datetime('now', '-2 days');")
+            except Exception:
+                pass
+
             conn.commit()
             conn.close()
         except Exception as e:
@@ -779,7 +808,7 @@ class DatabaseService:
         user_token: Optional[str] = None
     ) -> int:
         """Deletes all memories belonging to the authenticated user."""
-        if cls._is_supabase_configured():
+        if cls._is_supabase_configured() and cls._is_valid_uuid(user_id):
             try:
                 async with httpx.AsyncClient() as client:
                     res = await client.delete(
@@ -1161,3 +1190,131 @@ class DatabaseService:
         conn.commit()
         conn.close()
         return count
+
+    # =========================================================================
+    # GENERATED IMAGES PERSISTENCE & HISTORY
+    # =========================================================================
+
+    @classmethod
+    async def save_generated_image(
+        cls,
+        image_data: Dict[str, Any],
+        user_id: str,
+        user_token: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Saves generated image metadata in Supabase or SQLite fallback."""
+        img_id = image_data.get("id") or f"img_{uuid.uuid4().hex[:16]}"
+        record = {
+            "id": img_id,
+            "user_id": user_id,
+            "conversation_id": image_data.get("conversation_id"),
+            "prompt": image_data.get("prompt", ""),
+            "revised_prompt": image_data.get("revised_prompt") or image_data.get("prompt", ""),
+            "image_url": image_data.get("image_url", ""),
+            "aspect_ratio": image_data.get("aspect_ratio", "1:1"),
+            "style": image_data.get("style", "auto"),
+            "quality": image_data.get("quality", "standard"),
+            "storage_path": image_data.get("storage_path"),
+            "created_at": image_data.get("created_at") or datetime.now(timezone.utc).isoformat()
+        }
+
+        # Try Supabase if configured
+        if cls._is_supabase_configured() and cls._is_valid_uuid(user_id):
+            try:
+                async with httpx.AsyncClient() as client:
+                    res = await client.post(
+                        f"{settings.SUPABASE_URL}/rest/v1/generated_images",
+                        headers=cls._get_supabase_headers(user_token),
+                        json=record,
+                        timeout=10.0
+                    )
+                    if res.status_code in (200, 201):
+                        data = res.json()
+                        return data[0] if isinstance(data, list) and len(data) > 0 else record
+            except Exception as err:
+                logger.warning(f"[PML Database] Supabase save_generated_image failed, using SQLite: {err}")
+
+        # SQLite Fallback
+        cls._init_sqlite()
+        conn = sqlite3.connect(SQLITE_DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT OR REPLACE INTO generated_images (
+                id, user_id, conversation_id, prompt, revised_prompt, image_url,
+                aspect_ratio, style, quality, storage_path, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            record["id"], record["user_id"], record["conversation_id"], record["prompt"],
+            record["revised_prompt"], record["image_url"], record["aspect_ratio"],
+            record["style"], record["quality"], record["storage_path"], record["created_at"]
+        ))
+        conn.commit()
+        conn.close()
+        return record
+
+    @classmethod
+    async def get_user_generated_images(
+        cls,
+        user_id: str,
+        limit: int = 50,
+        user_token: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """Retrieves user's generated images history."""
+        if cls._is_supabase_configured() and cls._is_valid_uuid(user_id):
+            try:
+                async with httpx.AsyncClient() as client:
+                    res = await client.get(
+                        f"{settings.SUPABASE_URL}/rest/v1/generated_images?user_id=eq.{user_id}&order=created_at.desc&limit={limit}",
+                        headers=cls._get_supabase_headers(user_token),
+                        timeout=10.0
+                    )
+                    if res.status_code == 200:
+                        return res.json()
+            except Exception as err:
+                logger.warning(f"[PML Database] Supabase get_user_generated_images failed: {err}")
+
+        # SQLite Fallback
+        cls._init_sqlite()
+        conn = sqlite3.connect(SQLITE_DB_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT * FROM generated_images WHERE user_id = ? ORDER BY created_at DESC LIMIT ?",
+            (user_id, limit)
+        )
+        rows = cursor.fetchall()
+        result = [dict(r) for r in rows]
+        conn.close()
+        return result
+
+    @classmethod
+    async def delete_generated_image(
+        cls,
+        image_id: str,
+        user_id: str,
+        user_token: Optional[str] = None
+    ) -> bool:
+        """Deletes a generated image from history."""
+        if cls._is_supabase_configured() and cls._is_valid_uuid(user_id):
+            try:
+                async with httpx.AsyncClient() as client:
+                    res = await client.delete(
+                        f"{settings.SUPABASE_URL}/rest/v1/generated_images?id=eq.{image_id}&user_id=eq.{user_id}",
+                        headers=cls._get_supabase_headers(user_token),
+                        timeout=10.0
+                    )
+                    if res.status_code in (200, 204):
+                        return True
+            except Exception as err:
+                logger.warning(f"[PML Database] Supabase delete_generated_image failed: {err}")
+
+        # SQLite Fallback
+        cls._init_sqlite()
+        conn = sqlite3.connect(SQLITE_DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM generated_images WHERE id = ? AND user_id = ?", (image_id, user_id))
+        count = cursor.rowcount
+        conn.commit()
+        conn.close()
+        return count > 0
+

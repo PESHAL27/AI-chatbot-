@@ -4,9 +4,6 @@ import {
   SquarePen,
   Images,
   Library,
-  Clock,
-  Puzzle,
-  Folder,
   Code,
   MoreHorizontal,
   MessageCircle,
@@ -34,6 +31,7 @@ interface NavigationPanelProps {
   onOpenProfile: () => void;
   onOpenMemory?: () => void;
   onOpenDocuments?: () => void;
+  onOpenImages?: () => void;
   onNavigateHome?: () => void;
   userProfile: UserProfileType;
   isAuthenticated?: boolean;
@@ -54,6 +52,7 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
   onOpenProfile,
   onOpenMemory,
   onOpenDocuments,
+  onOpenImages,
   onNavigateHome,
   userProfile,
   isAuthenticated = false,
@@ -62,7 +61,6 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [activeMenu, setActiveMenu] = useState<string | null>(null);
 
   // Separate pinned (starred) and recent conversations
   const { pinnedConversations, recentConversations } = useMemo(() => {
@@ -187,7 +185,7 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
           {/* Images */}
           <button
             onClick={() => {
-              if (onOpenDocuments) onOpenDocuments();
+              if (onOpenImages) onOpenImages();
               onToggle();
             }}
             className="w-full flex items-center gap-3.5 px-3.5 py-2 rounded-xl text-[13.5px] font-medium text-white/90 hover:text-white hover:bg-[#122814]/70 border border-transparent hover:border-[rgba(180,255,100,0.25)] transition-all cursor-pointer text-left group"

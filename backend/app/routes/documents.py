@@ -36,7 +36,7 @@ async def upload_document(
     Receives an uploaded document, validates file type & size,
     saves the file to storage, and starts background extraction & embedding.
     """
-    user_id = current_user.get("id", "guest_user")
+    user_id = current_user["id"]
     token = current_user.get("token")
 
     raw_filename = file.filename or "uploaded_document"
@@ -89,7 +89,7 @@ async def upload_document(
         doc_record = await DatabaseService.create_document(
             document_id=doc_id,
             user_id=user_id,
-            file_name=file_name,
+            file_name=safe_name,
             file_type=ext.lstrip("."),
             file_size=file_size,
             storage_path=file_path,
@@ -132,9 +132,9 @@ async def upload_document(
 @router.get("", response_model=DocumentListResponse, summary="List User Documents")
 async def list_documents(current_user: Dict[str, Any] = Depends(get_current_user)):
     """
-    Returns list of all documents uploaded by the authenticated user.
+    Returns list of all documents uploaded by the authenticated user or guest session.
     """
-    user_id = current_user.get("id", "guest_user")
+    user_id = current_user["id"]
     token = current_user.get("token")
 
     try:
@@ -170,7 +170,7 @@ async def get_document(
     """
     Retrieves metadata for a specific document with user ownership check.
     """
-    user_id = current_user.get("id", "guest_user")
+    user_id = current_user["id"]
     token = current_user.get("token")
 
     doc = await DatabaseService.get_document(document_id=document_id, user_id=user_id, user_token=token)
@@ -202,7 +202,7 @@ async def delete_document(
     """
     Deletes the document file, database record, chunks, and embeddings.
     """
-    user_id = current_user.get("id", "guest_user")
+    user_id = current_user["id"]
     token = current_user.get("token")
 
     success = await DatabaseService.delete_document(
@@ -228,7 +228,7 @@ async def retry_document_processing(
     """
     Re-triggers ingestion for a failed document.
     """
-    user_id = current_user.get("id", "guest_user")
+    user_id = current_user["id"]
     token = current_user.get("token")
 
     doc = await DatabaseService.get_document(document_id=document_id, user_id=user_id, user_token=token)
@@ -276,7 +276,7 @@ async def search_documents(
     """
     Searches user's document chunks using vector cosine similarity.
     """
-    user_id = current_user.get("id", "guest_user")
+    user_id = current_user["id"]
     token = current_user.get("token")
 
     chunks = await RAGService.retrieve_relevant_chunks(

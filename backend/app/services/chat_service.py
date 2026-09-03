@@ -4,6 +4,7 @@ import logging
 from typing import List, Dict, Optional, Any
 from app.config import settings
 from app.schemas.chat import ChatRequest, ChatResponse, DocumentSourceCitation, WebSourceCitation
+from app.schemas.image import GeneratedImageData
 from app.services.ai_service import AIService
 from app.services.database_service import DatabaseService
 from app.services.memory_service import MemoryService
@@ -170,7 +171,9 @@ class ChatService:
 
         # 9. Execute AI Response Generation with Tool Execution Loop
         forced_tool_name = None
-        if "web_search" in plan.required_tools:
+        if "generate_image" in plan.required_tools or plan.intent == "image_generation":
+            forced_tool_name = "generate_image"
+        elif "web_search" in plan.required_tools:
             forced_tool_name = "web_search"
         elif "calculator" in plan.required_tools:
             forced_tool_name = "calculator"
@@ -189,6 +192,7 @@ class ChatService:
 
         ai_reply = ai_res.get("content", "")
         raw_web_sources = ai_res.get("web_sources", [])
+        raw_generated_images = ai_res.get("generated_images", [])
         tools_called = list(set(ai_res.get("tools_called", [])))
 
         # Add explicit tracking for Vision, RAG, and Memory if active
@@ -210,6 +214,24 @@ class ChatService:
                 )
                 for s in raw_web_sources
             ]
+
+        # Save any generated images into user database history
+        generated_images_list: Optional[List[GeneratedImageData]] = None
+        if raw_generated_images:
+            generated_images_list = []
+            for img in raw_generated_images:
+                img_record = GeneratedImageData(**img)
+                img_record.conversation_id = conv_id
+                img_record.user_id = user_id
+                generated_images_list.append(img_record)
+                try:
+                    await DatabaseService.save_generated_image(
+                        image_data=img_record.model_dump(),
+                        user_id=user_id,
+                        user_token=user_token
+                    )
+                except Exception as save_err:
+                    logger.warning(f"[ChatService] Could not save generated image to database: {save_err}")
 
         # 10. Save AI response message to Database
         await DatabaseService.save_message(
@@ -252,5 +274,6 @@ class ChatService:
             memories_used=relevant_memories_list if relevant_memories_list else None,
             sources=citations,
             web_sources=web_citations,
-            tools_called=tools_called if tools_called else None
+            tools_called=tools_called if tools_called else None,
+            generated_images=generated_images_list
         )

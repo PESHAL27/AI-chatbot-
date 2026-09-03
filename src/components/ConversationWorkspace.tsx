@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
-import type { Conversation, PMLCoreState, DocumentItem, Attachment } from '../types/pml';
+import type { Conversation, PMLCoreState, DocumentItem, Attachment, GeneratedImage } from '../types/pml';
 import { MessageItem } from './MessageItem';
 import { WelcomeExperience } from './WelcomeExperience';
 import { PMLCore } from './PMLCore';
@@ -20,6 +20,8 @@ interface ConversationWorkspaceProps {
   onStopGeneration?: () => void;
   onOpenMemory?: () => void;
   onOpenAuth?: () => void;
+  onPreviewImage?: (image: GeneratedImage) => void;
+  onRegenerateImage?: (prompt: string, style?: string, aspectRatio?: string) => void;
   currentView?: 'home' | 'chat';
   onNavigateView?: (view: 'home' | 'chat') => void;
 }
@@ -38,6 +40,8 @@ export const ConversationWorkspace: React.FC<ConversationWorkspaceProps> = ({
   isStreaming = false,
   onStopGeneration,
   onOpenMemory,
+  onPreviewImage,
+  onRegenerateImage,
   currentView = 'home',
   onNavigateView,
 }) => {
@@ -124,6 +128,8 @@ export const ConversationWorkspace: React.FC<ConversationWorkspaceProps> = ({
           message={message}
           onRegenerate={idx === activeConversation.messages.length - 1 ? onRegenerateResponse : undefined}
           onFeedback={onFeedback}
+          onPreviewImage={onPreviewImage}
+          onRegenerateImage={onRegenerateImage}
         />
       ))}
 

@@ -8,6 +8,7 @@ import {
   ArrowUp,
   Image as ImageIcon,
   Paperclip,
+  Sparkles,
   X
 } from 'lucide-react';
 import type { Attachment, DocumentItem } from '../types/pml';
@@ -115,7 +116,7 @@ export const WelcomeExperience: React.FC<WelcomeExperienceProps> = ({
   };
 
   return (
-    <section className="relative w-full h-[calc(100vh-64px)] flex flex-col justify-center items-center text-center px-4 sm:px-6 lg:px-12 overflow-hidden select-none">
+    <section className="relative w-full min-h-[calc(100vh-64px)] h-full flex flex-col justify-center items-center text-center px-4 sm:px-6 lg:px-12 overflow-hidden select-none py-6">
       {/* Background Glowing Ambient Arch / Dome (clean glow without dashed border lines) */}
       <div className="hero-glow-backdrop">
         <div className="hero-radial-dome" />
@@ -224,6 +225,26 @@ export const WelcomeExperience: React.FC<WelcomeExperienceProps> = ({
 
             {showPlusMenu && (
               <div className="absolute bottom-full left-0 mb-3.5 w-64 p-2.5 rounded-2xl bg-[#1e1f20]/95 dark:bg-[#1e1f20]/95 bg-white border border-white/15 dark:border-white/15 border-black/10 shadow-2xl backdrop-blur-2xl z-50 animate-fadeIn text-xs flex flex-col gap-2.5 text-left">
+                {/* Create AI Image */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowPlusMenu(false);
+                    setInput('Create an image of ');
+                    inputRef.current?.focus();
+                  }}
+                  className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-white/[0.04] dark:bg-white/[0.04] bg-black/[0.03] hover:bg-[#9CFF45]/15 border border-white/5 dark:border-white/5 border-black/5 hover:border-[#9CFF45]/35 transition-all duration-200 cursor-pointer group"
+                >
+                  <div className="p-2 rounded-lg bg-[#9CFF45]/10 text-[#9CFF45] group-hover:scale-110 transition-transform">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="font-semibold text-white dark:text-white text-gray-900">Create AI Image</div>
+                    <div className="text-[11px] text-[#A8B0A5] dark:text-[#A8B0A5] text-gray-500">Logos, 3D renders, artwork</div>
+                  </div>
+                </button>
+
+                {/* Upload Image for Vision */}
                 <button
                   type="button"
                   onClick={() => {
@@ -241,6 +262,7 @@ export const WelcomeExperience: React.FC<WelcomeExperienceProps> = ({
                   </div>
                 </button>
 
+                {/* Upload Document for RAG */}
                 <button
                   type="button"
                   onClick={() => {

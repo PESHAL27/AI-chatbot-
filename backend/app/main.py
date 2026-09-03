@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.auth.rate_limiter import RateLimitMiddleware
 from app.auth.request_id_middleware import RequestIDMiddleware
-from app.routes import health, chat, conversations, memories, documents
+from app.routes import health, chat, conversations, memories, documents, images
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -34,6 +34,7 @@ app.include_router(chat.router)
 app.include_router(conversations.router)
 app.include_router(memories.router)
 app.include_router(documents.router)
+app.include_router(images.router)
 
 @app.get("/health", include_in_schema=False)
 async def health_root():

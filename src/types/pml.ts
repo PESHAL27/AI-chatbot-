@@ -26,6 +26,26 @@ export interface WebSourceCitation {
   source?: string;
 }
 
+export interface GeneratedImage {
+  id: string;
+  user_id?: string;
+  conversation_id?: string;
+  prompt: string;
+  revised_prompt?: string;
+  image_url: string;
+  aspect_ratio?: string;
+  style?: string;
+  quality?: string;
+  created_at?: string;
+}
+
+export interface ImageGenerationOptions {
+  aspect_ratio?: string;
+  style?: string;
+  quality?: string;
+  enhance_prompt?: boolean;
+}
+
 export interface Message {
   id: string;
   role: Role;
@@ -39,6 +59,7 @@ export interface Message {
   sources?: DocumentSourceCitation[];
   webSources?: WebSourceCitation[];
   toolsCalled?: string[];
+  generatedImages?: GeneratedImage[];
 }
 
 export interface Conversation {

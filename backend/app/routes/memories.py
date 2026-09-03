@@ -16,7 +16,7 @@ async def list_memories(current_user: Dict[str, Any] = Depends(get_current_user)
     """
     Returns list of long-term memories belonging to the authenticated user.
     """
-    user_id = current_user.get("id", "guest_user")
+    user_id = current_user["id"]
     token = current_user.get("token")
 
     try:
@@ -48,9 +48,9 @@ async def create_memory(
     current_user: Dict[str, Any] = Depends(get_current_user)
 ):
     """
-    Explicitly saves a new memory fact for the user.
+    Explicitly saves a new memory fact for the user or current guest session.
     """
-    user_id = current_user.get("id", "guest_user")
+    user_id = current_user["id"]
     token = current_user.get("token")
 
     try:
@@ -86,15 +86,15 @@ async def update_memory(
     current_user: Dict[str, Any] = Depends(get_current_user)
 ):
     """
-    Updates an existing memory statement owned by the authenticated user.
+    Updates an existing memory statement owned by the caller.
     """
     user_id = current_user["id"]
     token = current_user.get("token")
 
-    if not user_id or user_id == "guest_user":
+    if not user_id:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required."
+            detail="Valid identity required."
         )
 
     try:
@@ -136,15 +136,15 @@ async def delete_memory(
     current_user: Dict[str, Any] = Depends(get_current_user)
 ):
     """
-    Deletes an individual memory record belonging to the authenticated user.
+    Deletes an individual memory record belonging to the caller.
     """
     user_id = current_user["id"]
     token = current_user.get("token")
 
-    if not user_id or user_id == "guest_user":
+    if not user_id:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required."
+            detail="Valid identity required."
         )
 
     try:
@@ -170,20 +170,20 @@ async def delete_memory(
 @router.delete("", summary="Clear All Memories")
 async def clear_all_memories(current_user: Dict[str, Any] = Depends(get_current_user)):
     """
-    Clears all stored memories for the authenticated user without affecting conversations or profile.
+    Clears all stored memories for the caller without affecting conversations or profile.
     """
     user_id = current_user["id"]
     token = current_user.get("token")
 
-    if not user_id or user_id == "guest_user":
+    if not user_id:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required."
+            detail="Valid identity required."
         )
 
     try:
         await DatabaseService.clear_all_memories(user_id=user_id, user_token=token)
-        return {"status": "success", "message": "All long-term memories cleared successfully."}
+        return {"status": "success", "message": "All memories cleared successfully."}
     except Exception as err:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

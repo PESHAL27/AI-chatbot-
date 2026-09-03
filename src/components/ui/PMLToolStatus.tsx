@@ -1,7 +1,7 @@
 import React from 'react';
-import { Globe, Calculator, BookOpen, Eye, Mic, Brain, CheckCircle2 } from 'lucide-react';
+import { Globe, Calculator, BookOpen, Eye, Mic, Brain, CheckCircle2, Sparkles } from 'lucide-react';
 
-export type ToolType = 'web_search' | 'calculator' | 'rag' | 'vision' | 'voice' | 'memory' | 'wikipedia_search' | 'wikipedia';
+export type ToolType = 'web_search' | 'calculator' | 'rag' | 'vision' | 'voice' | 'memory' | 'wikipedia_search' | 'wikipedia' | 'generate_image' | 'image_generation';
 
 interface PMLToolStatusProps {
   tool: ToolType | string;
@@ -18,6 +18,17 @@ export const PMLToolStatus: React.FC<PMLToolStatusProps> = ({
 }) => {
   const getToolConfig = () => {
     switch (tool) {
+      case 'generate_image':
+      case 'image_generation':
+        return {
+          icon: <Sparkles className="w-3.5 h-3.5 text-[#9CFF45]" />,
+          label: customLabel || 'AI Image Generated',
+          badge: 'Image Gen',
+          borderColor: 'border-[rgba(180,255,100,0.35)]',
+          bgColor: 'bg-[#0a180b]/90',
+          textColor: 'text-white',
+          glow: 'shadow-[0_0_15px_rgba(156,255,69,0.2)]',
+        };
       case 'wikipedia_search':
       case 'wikipedia':
         return {

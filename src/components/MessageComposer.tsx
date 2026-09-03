@@ -10,11 +10,13 @@ import {
   Plus,
   BookOpen,
   Camera,
-  Radio
+  Radio,
+  Sparkles
 } from 'lucide-react';
-import type { Attachment, AttachmentType, DocumentItem } from '../types/pml';
+import type { Attachment, AttachmentType, DocumentItem, ImageGenerationOptions } from '../types/pml';
 import { voiceService } from '../services/voiceService';
 import { PMLFileCard } from './ui/PMLFileCard';
+import { ImageGenerationControls } from './ImageGenerationControls';
 
 interface MessageComposerProps {
   onSendMessage: (text: string, attachments: Attachment[]) => void;
@@ -29,7 +31,7 @@ interface MessageComposerProps {
 
 const ROTATING_PLACEHOLDERS = [
   "Message PML AI or speak with voice 🎤...",
-  "Ask PML anything, upload an image 📷, or analyze documents 📄...",
+  "Ask PML anything, generate an image 🎨, or analyze documents 📄...",
   "Search the live web 🌐 or calculate complex formulas 🧮...",
   "Paste screenshots directly with Ctrl+V to analyze code & math...",
 ];
@@ -50,6 +52,11 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
   const [isRecording, setIsRecording] = useState(false);
   const [isDraggingFile, setIsDraggingFile] = useState(false);
   const [showPlusMenu, setShowPlusMenu] = useState(false);
+  const [showImageControls, setShowImageControls] = useState(false);
+  const [imageOptions, setImageOptions] = useState<ImageGenerationOptions>({
+    aspect_ratio: '1:1',
+    style: 'auto',
+  });
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -314,7 +321,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
 
   return (
     <div 
-      className="w-full max-w-4xl mx-auto px-4 pb-4 pt-2 z-30 relative"
+      className="w-full max-w-4xl mx-auto px-4 pb-4 pt-2 z-30 relative flex-shrink-0"
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
@@ -421,14 +428,17 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
             <button
               type="button"
               onClick={() => {
-                if (!input.toLowerCase().startsWith('calculate')) {
-                  setInput(prev => prev ? `Calculate: ${prev}` : 'Calculate: ');
+                setShowImageControls(prev => !prev);
+                if (!input.toLowerCase().startsWith('create an image') && !input.toLowerCase().startsWith('generate an image')) {
+                  setInput(prev => prev ? `Create an image of ${prev}` : 'Create an image of ');
                   textareaRef.current?.focus();
                 }
               }}
-              className="pml-mode-pill px-2.5 py-0.5 rounded-full text-[11px] font-medium flex items-center gap-1 cursor-pointer"
+              className={`pml-mode-pill px-2.5 py-0.5 rounded-full text-[11px] font-medium flex items-center gap-1 cursor-pointer ${
+                showImageControls ? 'active text-[#9CFF45] border-[rgba(180,255,100,0.4)]' : ''
+              }`}
             >
-              <span>🧮 Math</span>
+              <span>🎨 Image</span>
             </button>
           </div>
 
@@ -437,6 +447,15 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
             <span>PML 4.5 Pro</span>
           </div>
         </div>
+
+        {/* Collapsible Image Generation Controls */}
+        {showImageControls && (
+          <ImageGenerationControls
+            options={imageOptions}
+            onChange={setImageOptions}
+            onClose={() => setShowImageControls(false)}
+          />
+        )}
 
         <textarea
           ref={textareaRef}
@@ -452,7 +471,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
                 : ROTATING_PLACEHOLDERS[placeholderIndex]
           }
           rows={1}
-          className="w-full bg-transparent px-2 py-1 text-sm md:text-base text-white placeholder-[#758072] focus:outline-none resize-none max-h-[160px] font-sans leading-relaxed"
+          className="w-full bg-transparent px-2 py-1.5 text-sm md:text-base text-white placeholder-[#8d9b89] focus:outline-none resize-none min-h-[44px] max-h-[160px] font-sans leading-relaxed"
         />
 
         {/* Action Controls Bar */}
@@ -474,6 +493,27 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
 
               {showPlusMenu && (
                 <div className="absolute bottom-full left-0 mb-3 w-64 p-2.5 rounded-2xl bg-[#09120a]/95 border border-[rgba(180,255,100,0.25)] shadow-2xl shadow-black/90 backdrop-blur-2xl z-50 animate-fadeIn text-xs text-[#A8B0A5] flex flex-col gap-2">
+                  {/* Create AI Image */}
+                  <button
+                    onClick={() => {
+                      setShowPlusMenu(false);
+                      setShowImageControls(true);
+                      if (!input.toLowerCase().startsWith('create an image') && !input.toLowerCase().startsWith('generate an image')) {
+                        setInput('Create an image of ');
+                      }
+                      textareaRef.current?.focus();
+                    }}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/[0.04] hover:bg-[#9CFF45]/15 border border-white/5 hover:border-[#9CFF45]/30 transition-all text-left cursor-pointer group"
+                  >
+                    <div className="p-1.5 rounded-lg bg-[#9CFF45]/10 text-[#9CFF45] group-hover:scale-110 transition-transform">
+                      <Sparkles className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="font-semibold text-white">Create AI Image</div>
+                      <div className="text-[10px] text-[#A8B0A5]">3D renders, logos, illustration</div>
+                    </div>
+                  </button>
+
                   {/* Vision Upload */}
                   <button
                     onClick={() => {

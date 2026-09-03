@@ -1,5 +1,6 @@
 from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field, model_validator
+from app.schemas.image import GeneratedImageData
 
 class ChatMessage(BaseModel):
     role: str = Field(..., description="Role of message author: 'user', 'assistant', or 'system'")
@@ -54,6 +55,7 @@ class ChatResponse(BaseModel):
     web_sources: Optional[List[WebSourceCitation]] = Field(None, description="List of live web sources utilized for answer grounding")
     wikipedia_sources: Optional[List[WikipediaSourceCitation]] = Field(None, description="List of Wikipedia sources utilized for encyclopedia grounding")
     tools_called: Optional[List[str]] = Field(None, description="List of tool names executed during response generation")
+    generated_images: Optional[List[GeneratedImageData]] = Field(None, description="List of AI images generated during this turn")
 
 class HealthCheckResponse(BaseModel):
     status: str = Field("ok", description="Service status")

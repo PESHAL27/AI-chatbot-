@@ -6,12 +6,10 @@ import {
   Menu, 
   ChevronDown, 
   FileText, 
-  ImageIcon,
   X, 
   LogOut, 
   LogIn,
-  User as UserIcon, 
-  Plus 
+  User as UserIcon
 } from 'lucide-react';
 import type { Conversation, PMLCoreState, ThemeMode, DocumentItem, UserProfile } from '../types/pml';
 
@@ -45,11 +43,9 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   theme,
   onToggleTheme,
   onOpenSettings,
-  onClearChat,
   isAuthenticated = false,
   onOpenAuth,
   onOpenProfile,
-  onOpenDocuments,
   onSignOut,
   userProfile,
   selectedDocument,
@@ -60,7 +56,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   const isLight = theme === 'light';
 
   return (
-    <header className="pml-navbar h-16 px-4 sm:px-6 lg:px-8 flex items-center justify-between z-40 w-full transition-all duration-200">
+    <header className="pml-navbar h-16 flex-shrink-0 px-4 sm:px-6 lg:px-8 flex items-center justify-between z-40 w-full transition-all duration-200">
       {/* LEFT: Sidebar Toggle Button + PML Logo */}
       <div className="flex items-center gap-3">
         {/* Modern Sidebar Toggle Button */}

@@ -175,6 +175,7 @@ DIRECTIVES FOR DOCUMENT RAG:
         tools_schema = tool_registry.get_openai_tools_schema() if enable_tools else None
         web_sources: List[Dict[str, str]] = []
         tools_called: List[str] = []
+        generated_images: List[Dict[str, Any]] = []
 
         max_iterations = 3
         iteration = 0
@@ -250,6 +251,10 @@ DIRECTIVES FOR DOCUMENT RAG:
                                 if item not in web_sources:
                                     web_sources.append(item)
 
+                        # Capture generated image records
+                        if tool_name == "generate_image" and tool_res.success and isinstance(tool_res.data, dict):
+                            generated_images.append(tool_res.data)
+
                         # Format tool output with untrusted wrapper
                         formatted_tool_output = f"<untrusted_tool_result tool=\"{tool_name}\">\n{tool_res.formatted_output}\n</untrusted_tool_result>"
 
@@ -271,14 +276,16 @@ DIRECTIVES FOR DOCUMENT RAG:
                 return {
                     "content": final_text,
                     "web_sources": web_sources,
-                    "tools_called": tools_called
+                    "tools_called": tools_called,
+                    "generated_images": generated_images
                 }
 
             # If loop limit reached, return latest message content
             return {
                 "content": (messages[-1].get("content") or "Tool execution completed.").strip(),
                 "web_sources": web_sources,
-                "tools_called": tools_called
+                "tools_called": tools_called,
+                "generated_images": generated_images
             }
 
         except AuthenticationError as auth_err:
